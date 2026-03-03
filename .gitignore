@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+*.log
+*.tmp
+*.zip
+webstore-images/
+temp-build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+debug/
+*.swp
+*.swo
+
+# Chrome extension reserved
+_metadata/

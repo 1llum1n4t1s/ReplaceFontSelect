@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <script src="../font-config.js"></script>
+  <script src="popup.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="icon">✨</div>
+      <h1 class="title">目に優しいフォント置換</h1>
+    </div>
+
+    <div class="status-card">
+      <div class="status-indicator">
+        <span class="dot active"></span>
+        <span class="status-text">動作中</span>
+      </div>
+      <p class="description">読みづらいフォントを好みの日本語フォントに自動置換します</p>
+    </div>
+
+    <div class="settings-section">
+      <h2 class="section-title">フォント設定</h2>
+
+      <div class="setting-row">
+        <label class="setting-label" for="body-font">本文フォント</label>
+        <select id="body-font" class="font-select">
+        </select>
+      </div>
+
+      <div class="setting-row">
+        <label class="setting-label" for="mono-font">等幅フォント</label>
+        <select id="mono-font" class="font-select">
+        </select>
+      </div>
+
+      <div class="save-notice" id="save-notice">
+        ページを再読み込みすると反映されます
+      </div>
+    </div>
+
+    <div class="footer">
+      <p class="version" id="version">v-.-.-</p>
+    </div>
+  </div>
+</body>
+
+</html>
