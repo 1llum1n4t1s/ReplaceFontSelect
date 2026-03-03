@@ -85,6 +85,7 @@ New-Item -ItemType Directory -Path $tempDir | Out-Null
 Write-Host "📂 必要なファイルをコピー中..." -ForegroundColor Yellow
 
 Copy-Item "manifest.json" -Destination $tempDir
+Copy-Item "font-config.js" -Destination $tempDir
 Copy-Item "preload-fonts.js" -Destination $tempDir
 Copy-Item "inject.js" -Destination $tempDir
 Copy-Item "popup" -Destination $tempDir -Recurse

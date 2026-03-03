@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -L \"https://fonts.google.com/download?family=Murecho\" -o murecho.zip)",
+      "Bash(curl -L \"https://fonts.google.com/download?family=Zen+Kaku+Gothic+New\" -o zen-kaku-gothic-new.zip)"
+    ]
+  }
+}

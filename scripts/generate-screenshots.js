@@ -117,23 +117,24 @@ async function main() {
   // ブラウザを1回だけ起動して全画像で共有
   const browser = await puppeteer.launch({
     headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    protocolTimeout: 120000
   });
 
   try {
-    // 全画像を並列生成
-    await Promise.all(IMAGE_CONFIGS.map(config => {
+    // 全画像を順次生成（並列だとタイムアウトしやすいため）
+    for (const config of IMAGE_CONFIGS) {
       const inputPath = config.input;
       const outputPath = path.join(OUTPUT_DIR, config.output);
 
       // HTMLファイルの存在確認（存在しない場合はスキップ）
       if (!fs.existsSync(inputPath)) {
         console.error(`❌ HTMLファイルが見つかりません: ${inputPath}`);
-        return Promise.resolve();
+        continue;
       }
 
-      return generateScreenshot(browser, inputPath, outputPath, config.width, config.height);
-    }));
+      await generateScreenshot(browser, inputPath, outputPath, config.width, config.height);
+    }
   } finally {
     await browser.close();
   }
