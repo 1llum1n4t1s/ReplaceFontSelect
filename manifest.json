@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "目に優しいフォント置換",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "読みづらいフォントを好みの日本語フォントに自動置換。フォント選択機能付き。",
   "permissions": [
     "storage"
@@ -18,6 +18,17 @@
     "<all_urls>"
   ],
   "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "inject.js"
+      ],
+      "all_frames": true,
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
     {
       "matches": [
         "<all_urls>"

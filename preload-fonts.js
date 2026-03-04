@@ -18,40 +18,69 @@
 
   // クラス名の衝突を防ぐためのユニークID
   const uniqueId = `preloadFontTag${Date.now()}`;
-  const cssUrls = [CSS_URL];
+  // cssUrls 削除: CSS_URL を直接使用（配列は不要）
 
   // キャッシュされた固定済みCSS
   const fixedCSSCache = new Map();
-  // Constructable Stylesheets のキャッシュ
-  const sheetCache = new Map();
-  const isConstructableSupported = typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype;
+  // Shadow DOM用の軽量CSSキャッシュ（@font-face リダイレクトを除外）
+  let shadowCSSCache = null;
 
   // 選択されたフォント情報（設定読み込み後にセットされる）
   let selectedBodyFont = null;
   let selectedMonoFont = null;
   let fontConfig = []; // preload/force-load用の動的FONT_CONFIG
+  let settingsReady = false; // 設定読み込み完了フラグ
+  const pendingRoots = []; // 設定読み込み前に検出された Shadow Root のキュー
 
   /**
-   * chrome.storage.local からフォント設定を読み込む
+   * デフォルトのフォント設定を返す
+   */
+  function getDefaultSettings() {
+    return {
+      bodyFont: (typeof FONT_REGISTRY !== 'undefined' && FONT_REGISTRY.defaults)
+        ? FONT_REGISTRY.defaults.bodyFont : 'noto-sans-jp',
+      monoFont: (typeof FONT_REGISTRY !== 'undefined' && FONT_REGISTRY.defaults)
+        ? FONT_REGISTRY.defaults.monoFont : 'udev-gothic-jpdoc'
+    };
+  }
+
+  /**
+   * chrome.storage.local からフォント設定を読み込む（タイムアウト付き）
    * @returns {Promise<{bodyFont: string, monoFont: string}>}
    */
   function loadFontSettings() {
+    const defaults = getDefaultSettings();
     return new Promise((resolve) => {
+      // タイムアウト: 3秒以内に読み込めなければデフォルト値を使用
+      const timeout = setTimeout(() => {
+        console.debug('[フォント置換] Settings load timeout, using defaults');
+        resolve(defaults);
+      }, 3000);
+
       try {
+        if (typeof FONT_REGISTRY === 'undefined') {
+          clearTimeout(timeout);
+          console.debug('[フォント置換] FONT_REGISTRY not defined, using defaults');
+          resolve(defaults);
+          return;
+        }
         chrome.storage.local.get(FONT_REGISTRY.storageKey, (result) => {
+          clearTimeout(timeout);
+          if (chrome.runtime.lastError) {
+            console.debug('[フォント置換] Storage error:', chrome.runtime.lastError.message);
+            resolve(defaults);
+            return;
+          }
           const settings = result[FONT_REGISTRY.storageKey] || {};
           resolve({
-            bodyFont: settings.bodyFont || FONT_REGISTRY.defaults.bodyFont,
-            monoFont: settings.monoFont || FONT_REGISTRY.defaults.monoFont
+            bodyFont: settings.bodyFont || defaults.bodyFont,
+            monoFont: settings.monoFont || defaults.monoFont
           });
         });
       } catch (e) {
-        // storage APIが使えない場合はデフォルト値を返す
+        clearTimeout(timeout);
         console.debug('[フォント置換] Storage API unavailable, using defaults:', e.message);
-        resolve({
-          bodyFont: FONT_REGISTRY.defaults.bodyFont,
-          monoFont: FONT_REGISTRY.defaults.monoFont
-        });
+        resolve(defaults);
       }
     });
   }
@@ -61,48 +90,53 @@
    */
   function buildFontConfig(bodyFontInfo, monoFontInfo) {
     return [
-      { weight: 'Regular', fontUrl: `${FONT_BASE_URL}${bodyFontInfo.woff2Regular}` },
-      { weight: 'Bold', fontUrl: `${FONT_BASE_URL}${bodyFontInfo.woff2Bold}` },
-      { weight: 'MonoRegular', fontUrl: `${FONT_BASE_URL}${monoFontInfo.woff2Regular}` },
-      { weight: 'MonoBold', fontUrl: `${FONT_BASE_URL}${monoFontInfo.woff2Bold}` }
+      { weight: 'Regular', fontFamily: bodyFontInfo.name, fontWeight: '500', fontUrl: `${FONT_BASE_URL}${bodyFontInfo.woff2Regular}` },
+      { weight: 'Bold', fontFamily: bodyFontInfo.name, fontWeight: 'bold', fontUrl: `${FONT_BASE_URL}${bodyFontInfo.woff2Bold}` },
+      { weight: 'MonoRegular', fontFamily: monoFontInfo.name, fontWeight: '500', fontUrl: `${FONT_BASE_URL}${monoFontInfo.woff2Regular}` },
+      { weight: 'MonoBold', fontFamily: monoFontInfo.name, fontWeight: 'bold', fontUrl: `${FONT_BASE_URL}${monoFontInfo.woff2Bold}` }
     ];
   }
 
   /**
    * CSSテキスト内のプレースホルダーを選択フォント情報に置換する
+   * 単一パスの正規表現で全プレースホルダーを一括置換（12回→1回の文字列走査）
    */
   function replaceFontPlaceholders(text) {
     if (!selectedBodyFont || !selectedMonoFont) return text;
 
-    // ベースURLプレースホルダー
-    text = text.replace(/__REPLACE_FONT_BASE__/g, BASE_URL);
-    text = text.replace(/\.\.\/fonts\//g, FONT_BASE_URL);
+    // 置換マップを構築（初回のみ、以降はクロージャでキャッシュ）
+    if (!replaceFontPlaceholders._map) {
+      replaceFontPlaceholders._map = {
+        '__REPLACE_FONT_BASE__': BASE_URL,
+        '../fonts/': FONT_BASE_URL,
+        '__BODY_FONT_NAME__': selectedBodyFont.name,
+        '__BODY_FONT_FALLBACK__': selectedBodyFont.fallback,
+        '__BODY_LOCAL_REGULAR__': selectedBodyFont.localFontsRegular.map(f => `local("${f}")`).join(', '),
+        '__BODY_LOCAL_BOLD__': selectedBodyFont.localFontsBold.map(f => `local("${f}")`).join(', '),
+        '__BODY_WOFF2_REGULAR__': selectedBodyFont.woff2Regular,
+        '__BODY_WOFF2_BOLD__': selectedBodyFont.woff2Bold,
+        '__MONO_FONT_NAME__': selectedMonoFont.name,
+        '__MONO_FONT_FALLBACK__': selectedMonoFont.fallback,
+        '__MONO_LOCAL_REGULAR__': selectedMonoFont.localFontsRegular.map(f => `local("${f}")`).join(', '),
+        '__MONO_LOCAL_BOLD__': selectedMonoFont.localFontsBold.map(f => `local("${f}")`).join(', '),
+        '__MONO_WOFF2_REGULAR__': selectedMonoFont.woff2Regular,
+        '__MONO_WOFF2_BOLD__': selectedMonoFont.woff2Bold,
+      };
+      // エスケープ済みキーから単一の正規表現を構築
+      const escaped = Object.keys(replaceFontPlaceholders._map)
+        .map(k => k.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'));
+      replaceFontPlaceholders._regex = new RegExp(escaped.join('|'), 'g');
+    }
 
-    // 本文フォントプレースホルダー
-    text = text.replace(/__BODY_FONT_NAME__/g, selectedBodyFont.name);
-    text = text.replace(/__BODY_FONT_FALLBACK__/g, selectedBodyFont.fallback);
-    text = text.replace(/__BODY_LOCAL_REGULAR__/g,
-      selectedBodyFont.localFontsRegular.map(f => `local("${f}")`).join(', '));
-    text = text.replace(/__BODY_LOCAL_BOLD__/g,
-      selectedBodyFont.localFontsBold.map(f => `local("${f}")`).join(', '));
-    text = text.replace(/__BODY_WOFF2_REGULAR__/g, selectedBodyFont.woff2Regular);
-    text = text.replace(/__BODY_WOFF2_BOLD__/g, selectedBodyFont.woff2Bold);
-
-    // 等幅フォントプレースホルダー
-    text = text.replace(/__MONO_FONT_NAME__/g, selectedMonoFont.name);
-    text = text.replace(/__MONO_FONT_FALLBACK__/g, selectedMonoFont.fallback);
-    text = text.replace(/__MONO_LOCAL_REGULAR__/g,
-      selectedMonoFont.localFontsRegular.map(f => `local("${f}")`).join(', '));
-    text = text.replace(/__MONO_LOCAL_BOLD__/g,
-      selectedMonoFont.localFontsBold.map(f => `local("${f}")`).join(', '));
-    text = text.replace(/__MONO_WOFF2_REGULAR__/g, selectedMonoFont.woff2Regular);
-    text = text.replace(/__MONO_WOFF2_BOLD__/g, selectedMonoFont.woff2Bold);
-
-    return text;
+    return text.replace(replaceFontPlaceholders._regex, match => replaceFontPlaceholders._map[match]);
   }
+
+  // Shadow DOM 境界マーカー（generate-css.js が出力）
+  const SHADOW_BOUNDARY = '/* __SHADOW_CSS_BOUNDARY__ */';
 
   /**
    * CSSファイルをフェッチして、プレースホルダーを置換したものを返す
+   * 同時に Shadow DOM 用の軽量CSSも生成・キャッシュする
    */
   async function getFixedCSS(url) {
     if (fixedCSSCache.has(url)) return fixedCSSCache.get(url);
@@ -112,6 +146,15 @@
       let text = await response.text();
       text = replaceFontPlaceholders(text);
       fixedCSSCache.set(url, text);
+
+      // Shadow DOM 用: 境界マーカーより上の部分（プロパティ宣言＋置換フォント @font-face のみ）
+      // 350+ 件のリダイレクト @font-face はドキュメントスコープで有効なので Shadow 内には不要
+      if (!shadowCSSCache) {
+        const boundaryIdx = text.indexOf(SHADOW_BOUNDARY);
+        shadowCSSCache = boundaryIdx > 0 ? text.substring(0, boundaryIdx) : text;
+        console.debug(`[フォント置換] CSS分割: full=${text.length}文字, shadow=${shadowCSSCache.length}文字 (${Math.round(shadowCSSCache.length / text.length * 100)}%)`);
+      }
+
       return text;
     } catch (e) {
       return null;
@@ -119,33 +162,24 @@
   }
 
   /**
-   * StyleSheet オブジェクトを取得（サポートされている場合）
+   * Shadow DOM 用の軽量CSSを取得
+   * @font-face リダイレクトルールを除外し、プロパティ宣言のみ返す
    */
-  async function getStyleSheet(url) {
-    if (sheetCache.has(url)) return sheetCache.get(url);
-    const cssText = await getFixedCSS(url);
-    if (!cssText) return null;
-
-    if (isConstructableSupported) {
-      try {
-        const sheet = new CSSStyleSheet();
-        sheet.replaceSync(cssText);
-        sheetCache.set(url, sheet);
-        return sheet;
-      } catch (e) {
-        sheetCache.set(url, cssText); // フォールバック時もキャッシュに保存
-        return cssText;
-      }
-    }
-    return cssText;
+  async function getShadowCSS() {
+    if (shadowCSSCache) return shadowCSSCache;
+    // まだフルCSS未取得の場合はフェッチを実行（副作用で shadowCSSCache も生成される）
+    await getFixedCSS(CSS_URL);
+    return shadowCSSCache;
   }
 
   /**
-   * Shadow DOM (open/closed) 対応のためのスクリプト注入
+   * Shadow DOM (open/closed) 対応のためのスクリプト注入（フォールバック）
+   * manifest.json の world: "MAIN" で inject.js が先に実行されるため、
+   * 通常はこのフォールバックは不要。CSP等で manifest 注入が失敗した場合の保険。
    */
   function injectShadowDOMHandler() {
     try {
-      const root = document.head;
+      const root = document.head || document.documentElement;
       if (!root) return;
 
       const scriptUrl = chrome.runtime.getURL('inject.js');
@@ -163,21 +197,39 @@
   }
 
   // Shadow DOM 注入イベントの待機
-  window.addEventListener('replace-font-inject-shadow', (e) => {
-    const shadowRoot = e.detail;
-    if (shadowRoot) {
-      injectCSS(shadowRoot);
+  // inject.js (MAIN World) が attachShadow インターセプト時に
+  // host element に data-rfs-shadow 属性を付与 → Event で通知
+  // ※ CustomEvent.detail に DOM オブジェクトを渡しても MAIN → ISOLATED World 間の
+  //   構造化クローンで null になるため、data 属性方式を使用
+  window.addEventListener('replace-font-shadow-created', () => {
+    const elements = document.querySelectorAll('[data-rfs-shadow]:not([data-rfs-done])');
+    for (const el of elements) {
+      el.setAttribute('data-rfs-done', '');
+      if (el.shadowRoot) {
+        console.debug('[フォント置換] inject.js経由でShadow Root検出:', el.tagName);
+        injectCSS(el.shadowRoot);
+      }
     }
   });
 
   /**
    * 指定したルート（ShadowRootなど）に CSS を注入する
+   * ShadowRoot にはプロパティ宣言のみの軽量CSS（~3KB）、
+   * document.head にはフルCSS（~85KB、@font-face リダイレクト含む）を使い分ける
    */
   async function injectCSS(root) {
     if (!root) return;
 
     // 既に適用済み、または注入実行中かチェック
     if (root._replaceFontApplied || root._replaceFontInProgress) return;
+
+    // 設定が読み込まれていない場合はキューに追加して後で処理
+    if (!settingsReady) {
+      if (!pendingRoots.includes(root)) {
+        pendingRoots.push(root);
+      }
+      return;
+    }
 
     // styleタグ方式が既に存在するか念のため確認
     if (root.querySelector && root.querySelector('[data-replace-font]')) {
@@ -186,48 +238,33 @@
     }
 
     root._replaceFontInProgress = true;
+    const isShadow = root instanceof ShadowRoot;
+    const rootType = isShadow ? 'ShadowRoot' : (root === document.head ? 'head' : root.nodeName);
 
     try {
-      const resources = await Promise.all(cssUrls.map(url => getStyleSheet(url)));
-      // url と resource のペアで管理し、filter 後もインデックス対応を保持
-      const validPairs = cssUrls.map((url, i) => ({ url, resource: resources[i] }))
-                                .filter(pair => pair.resource);
+      // ShadowRoot: 軽量CSS（プロパティ宣言 + 置換フォント @font-face のみ）
+      //   → @font-face リダイレクトルールはドキュメントスコープで有効なため不要
+      //   → 85KB → ~3KB でメモリ大幅削減（Reddit: 572 roots × 85KB = 48MB → 572 × 3KB = 1.7MB）
+      // document.head: フルCSS（全 @font-face リダイレクト含む）
+      const cssText = isShadow ? await getShadowCSS() : await getFixedCSS(CSS_URL);
 
-      if (validPairs.length === 0) {
-        // 一時的なエラーの可能性があるため、3回まで再試行を許可
+      if (!cssText) {
         root._replaceFontRetryCount = (root._replaceFontRetryCount || 0) + 1;
+        console.debug(`[フォント置換] CSS未取得 (${rootType}), retry ${root._replaceFontRetryCount}/3`);
         if (root._replaceFontRetryCount >= 3) {
           root._replaceFontApplied = true;
         }
         return;
       }
 
-      if (isConstructableSupported && root instanceof ShadowRoot) {
-        // Constructable Stylesheets を使用（メモリ効率が良い）
-        // 既存のシートを壊さないようにスプレッド演算子で追加
-        const sheets = validPairs
-          .filter(pair => pair.resource instanceof CSSStyleSheet)
-          .map(pair => pair.resource);
-        if (sheets.length > 0) {
-          root.adoptedStyleSheets = [...root.adoptedStyleSheets, ...sheets];
-          root._replaceFontApplied = true;
-          return;
-        }
-      }
-
-      // 通常の style タグ方式（fallback または非 ShadowRoot 用）
-      const fragment = document.createDocumentFragment();
-      validPairs.forEach(pair => {
-        const style = document.createElement('style');
-        // resource が文字列ならそのまま、Sheet なら元のテキスト（キャッシュ）を使用
-        style.textContent = typeof pair.resource === 'string' ? pair.resource : fixedCSSCache.get(pair.url);
-        style.dataset.replaceFont = 'true';
-        fragment.appendChild(style);
-      });
-      root.appendChild(fragment);
+      const style = document.createElement('style');
+      style.textContent = cssText;
+      style.dataset.replaceFont = 'true';
+      root.appendChild(style);
       root._replaceFontApplied = true;
+      console.debug(`[フォント置換] CSS注入成功 (${rootType}), ${cssText.length}文字`);
     } catch (e) {
-      console.debug('[フォント置換] Injection failed:', e);
+      console.debug(`[フォント置換] CSS注入失敗 (${rootType}):`, e.message);
     } finally {
       root._replaceFontInProgress = false;
     }
@@ -243,6 +280,7 @@
     // 起点となるノード自体の Shadow DOM を処理
     // createTreeWalker の nextNode() は起点ノードを含まないため、ここで明示的に処理する
     if (node.isConnected && node.shadowRoot) {
+      console.debug('[フォント置換] MutationObserver経由でShadow Root検出:', node.tagName);
       injectCSS(node.shadowRoot);
     }
 
@@ -256,6 +294,7 @@
     let currentNode;
     while ((currentNode = walker.nextNode())) {
       if (currentNode.isConnected && currentNode.shadowRoot) {
+        console.debug('[フォント置換] MutationObserver子孫走査でShadow Root検出:', currentNode.tagName);
         injectCSS(currentNode.shadowRoot);
       }
     }
@@ -309,7 +348,11 @@
 
       if (count === CHUNK_SIZE) {
         // まだ要素がある可能性がある
-        (window.requestIdleCallback || window.setTimeout)(processChunks, 0);
+        if (window.requestIdleCallback) {
+          window.requestIdleCallback(processChunks, { timeout: 100 });
+        } else {
+          setTimeout(processChunks, 0);
+        }
       }
     }
 
@@ -345,37 +388,48 @@
     }
   }
 
-  // ページ読み込み完了後、CSS Font Loading API でフォントを強制的にロード
+  // CSS Font Loading API でフォントを即時ロード開始
+  // window.load を待たず document_start 時点で呼び出す → FOIT（Flash of Invisible Text）を最小化
   function setupFontForceLoad() {
-    const forceLoad = () => {
-      for (const config of fontConfig) {
-        // 有効な絶対URLであることを確認
-        if (!config.fontUrl || !config.fontUrl.includes('://')) continue;
+    for (const config of fontConfig) {
+      // 有効な絶対URLであることを確認
+      if (!config.fontUrl || !config.fontUrl.includes('://')) continue;
 
-        try {
-          const fontFace = new FontFace(
-            `ForceLoad${config.weight}`,
-            `url("${config.fontUrl}")`,
-            { display: 'swap' }
-          );
-          fontFace.load().then(loadedFace => {
-            // ドキュメントが有効な場合のみ追加
-            if (document.fonts) {
-              document.fonts.add(loadedFace);
-            }
-          }).catch((e) => {
-            console.debug('[フォント置換] Font preload failed:', config.weight, e.message);
-          });
-        } catch (e) {
-          console.debug('[フォント置換] FontFace creation failed:', config.weight, e.message);
-        }
+      const fontName = config.fontFamily || config.weight;
+      const fontWeight = config.fontWeight || 'normal';
+
+      try {
+        const fontFace = new FontFace(
+          fontName,
+          `url("${config.fontUrl}")`,
+          { display: 'swap', weight: fontWeight }
+        );
+        // load() は非同期でネットワークリクエストを発行 — ブロッキングしない
+        fontFace.load().then(loadedFace => {
+          if (document.fonts) {
+            document.fonts.add(loadedFace);
+            console.debug(`[フォント置換] フォント強制ロード成功: ${fontName} (${fontWeight})`);
+          }
+        }).catch((e) => {
+          console.debug('[フォント置換] Font preload failed:', fontName, fontWeight, e.message);
+        });
+      } catch (e) {
+        console.debug('[フォント置換] FontFace creation failed:', fontName, fontWeight, e.message);
       }
-    };
+    }
+  }
 
-    if (document.readyState === 'complete') {
-      forceLoad();
-    } else {
-      window.addEventListener('load', forceLoad, { once: true });
+  /**
+   * キューに溜まった Shadow Root を処理する
+   */
+  function flushPendingRoots() {
+    if (pendingRoots.length > 0) {
+      console.debug(`[フォント置換] キュー処理: ${pendingRoots.length}件のShadow Root`);
+    }
+    const roots = [...pendingRoots];
+    pendingRoots.length = 0;
+    for (const root of roots) {
+      injectCSS(root);
     }
   }
 
@@ -383,14 +437,38 @@
   async function initialize() {
     if (document.documentElement.dataset.replaceFontInitialized) return;
     document.documentElement.dataset.replaceFontInitialized = 'true';
+    console.debug('[フォント置換] 初期化開始', location.href.substring(0, 80));
 
-    // フォント設定を読み込む
+    // inject.js を最速で注入（設定読み込みの前に Shadow DOM インターセプトを開始）
+    // これにより、非同期の設定読み込み中に作成される Shadow DOM も捕捉できる
+    injectShadowDOMHandler();
+
+    // Shadow DOM 監視も早期開始（injectCSS 内でキューイングするので安全）
+    setupShadowDOMObserver();
+
+    // フォント設定を読み込む（非同期）
     const settings = await loadFontSettings();
-    selectedBodyFont = FONT_REGISTRY.body[settings.bodyFont] || FONT_REGISTRY.body[FONT_REGISTRY.defaults.bodyFont];
-    selectedMonoFont = FONT_REGISTRY.mono[settings.monoFont] || FONT_REGISTRY.mono[FONT_REGISTRY.defaults.monoFont];
+    console.debug('[フォント置換] 設定読み込み完了:', settings);
+
+    const bodyFontInfo = (typeof FONT_REGISTRY !== 'undefined' && FONT_REGISTRY.body)
+      ? (FONT_REGISTRY.body[settings.bodyFont] || FONT_REGISTRY.body[getDefaultSettings().bodyFont])
+      : null;
+    const monoFontInfo = (typeof FONT_REGISTRY !== 'undefined' && FONT_REGISTRY.mono)
+      ? (FONT_REGISTRY.mono[settings.monoFont] || FONT_REGISTRY.mono[getDefaultSettings().monoFont])
+      : null;
+
+    if (!bodyFontInfo || !monoFontInfo) {
+      console.debug('[フォント置換] フォント情報が取得できません。FONT_REGISTRY:', typeof FONT_REGISTRY);
+      return;
+    }
+    selectedBodyFont = bodyFontInfo;
+    selectedMonoFont = monoFontInfo;
 
     // 動的FONT_CONFIGを構築
     fontConfig = buildFontConfig(selectedBodyFont, selectedMonoFont);
+
+    // 設定準備完了 → 以降の injectCSS はキューイングせず即実行される
+    settingsReady = true;
 
     // メインドキュメントへの注入処理（head が利用可能になってから実行）
     const performInjections = () => {
@@ -399,6 +477,7 @@
 
       injectCSS(head);
       createPreloadTag();
+      // head が利用可能になった時点で inject.js も再確認
       injectShadowDOMHandler();
     };
 
@@ -414,8 +493,11 @@
       observer.observe(document.documentElement, { childList: true });
     }
 
-    setupShadowDOMObserver(); // Shadow DOM 監視（Content Script側）
+    // 設定読み込み中にキューされた Shadow Root を処理
+    flushPendingRoots();
     setupFontForceLoad();
+
+    console.debug(`[フォント置換] 初期化完了: body=${selectedBodyFont.name}, mono=${selectedMonoFont.name}`);
   }
 
   // 実行開始

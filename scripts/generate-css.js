@@ -100,7 +100,7 @@ const GOTHIC_CONFIGS = [
     weight: 'Regular',
     localFonts: '__BODY_LOCAL_REGULAR__',
     webFont: '__BODY_WOFF2_REGULAR__',
-    fontWeight: null
+    fontWeight: 500
   },
   {
     weight: 'Bold',
@@ -115,7 +115,7 @@ const MONO_CONFIGS = [
     weight: 'Regular',
     localFonts: '__MONO_LOCAL_REGULAR__',
     webFont: '__MONO_WOFF2_REGULAR__',
-    fontWeight: null
+    fontWeight: 500
   },
   {
     weight: 'Bold',
@@ -197,12 +197,17 @@ function generateCSS(outputConfig) {
   --font-geist-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
   --font-code: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
   --font-family-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
+  --font-family-code: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
   --tw-font-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
   --mono-font: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
   --code-font: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --font-family-code: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
   --monospace-font: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
   --pplx-font-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
+}
+
+/* 本文フォントの強制適用（@font-face だけではサイト側のウェブフォント読み込みに負ける場合がある） */
+*:not(pre):not(code):not(kbd):not(samp):not(i):not([class*="icon"]):not([class*="Icon"]):not([class*="font-mono"]):not([class*="codeblock"]):not([class*="shiki"]):not([class*="hljs"]):not([class*="prism"]):not([class*="language-"]):not([class*="material-icons"]):not([class*="fa-"]):not([class*="emoji"]) {
+  font-family: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
 }
 
 /* 汎用的な等幅フォント要素に対する強制指定（詳細度を高めて上書きを確実に） */
@@ -215,14 +220,52 @@ function generateCSS(outputConfig) {
 }
 `;
 
-  /** @type {string[]} 各セクション（Gothic/Mono）の @font-face ルール */
+  /** @type {string} 置換フォント自体の @font-face 定義（これがないとフォント名から woff2 を解決できない） */
+  const replacementFontFaces = `
+/* 置換フォント自体の @font-face 定義 */
+@font-face {
+  font-family: "__BODY_FONT_NAME__";
+  src:  __BODY_LOCAL_REGULAR__,
+        url('__REPLACE_FONT_BASE__fonts/__BODY_WOFF2_REGULAR__') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "__BODY_FONT_NAME__";
+  src:  __BODY_LOCAL_BOLD__,
+        url('__REPLACE_FONT_BASE__fonts/__BODY_WOFF2_BOLD__') format('woff2');
+  font-weight: bold;
+  font-display: swap;
+}
+@font-face {
+  font-family: "__MONO_FONT_NAME__";
+  src:  __MONO_LOCAL_REGULAR__,
+        url('__REPLACE_FONT_BASE__fonts/__MONO_WOFF2_REGULAR__') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "__MONO_FONT_NAME__";
+  src:  __MONO_LOCAL_BOLD__,
+        url('__REPLACE_FONT_BASE__fonts/__MONO_WOFF2_BOLD__') format('woff2');
+  font-weight: bold;
+  font-display: swap;
+}
+`;
+
+  /** @type {string[]} 各セクション（Gothic/Mono）の @font-face ルール（既存フォント名のリダイレクト） */
   const sections = outputConfig.configs.map(item => {
     return item.families.map(family =>
       generateFontFace(family, item.config)
     ).join('\n');
   });
 
-  return `${header}\n${variableOverrides}\n${sections.join('\n')}\n`;
+  // マーカーコメント: preload-fonts.js がここで CSS を分割し、
+  // Shadow DOM には上部（プロパティ宣言 + 置換フォント @font-face）のみ注入する。
+  // 下部（350+ 件のリダイレクト @font-face）はドキュメント head のみに必要。
+  const shadowBoundary = '\n/* __SHADOW_CSS_BOUNDARY__ */\n';
+
+  return `${header}\n${variableOverrides}\n${replacementFontFaces}\n${shadowBoundary}${sections.join('\n')}\n`;
 }
 
 /**

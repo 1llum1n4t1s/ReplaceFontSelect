@@ -1,0 +1,41 @@
+ウェブサイト上の読みづらい日本語フォントを、好みのフォントに自動で置き換える Chrome 拡張機能です。
+8種類のフォント（本文用5種 + 等幅用3種）から選択でき、設定はポップアップから簡単に変更できます。
+
+■ 選択可能フォント
+
+【本文フォント（5種類）】
+• Noto Sans JP（デフォルト）— Google 製。幅広いウェイトに対応し、あらゆるサイズで美しく表示
+• IBM Plex Sans JP — IBM のデザインシステム用フォント。可読性と現代的な印象を両立
+• M PLUS 2 — やや幅広で丸みのあるデザイン。柔らかく親しみやすい印象
+• Murecho — 直線的でスッキリしたデザイン。UI やダッシュボードとの相性が良好
+• Zen Kaku Gothic New — 伝統的なゴシック体の雰囲気を残しつつ、モダンに仕上げたフォント
+
+【等幅フォント（3種類）】
+• UDEV Gothic JPDOC（デフォルト）— BIZ UDゴシック + JetBrains Mono ベース。濁点・半濁点の判別がしやすく、コードの可読性に優れます
+• PlemolJP — IBM Plex Mono + IBM Plex Sans JP ベース。プログラミングと日本語の両方に最適化
+• Moralerspace Neon JPDOC — JetBrains Mono + IBM Plex Sans JP ベースの合成フォント。コーディング向け等幅フォント
+
+すべてのフォントは Medium (500) ウェイトを採用。Regular (400) よりもわずかに太く、画面上での視認性が向上します。
+
+■ 特徴
+
+🎨 フォント選択 — ポップアップから好みのフォントを選択。設定は自動保存されます。
+⚡ 高速 & 軽量 — ページの表示速度に影響を与えないよう最適化されています。
+🔄 完全自動 — インストールするだけで、あらゆるサイトのフォントが自動的に置換されます。
+📦 モダンなWeb対応 — Shadow DOM 内のフォントも漏らさず置換します（YouTube や各種モダンWebアプリに対応）。
+🎯 デザインを尊重 — フォントの種類（ゴシック/明朝/等幅）を判別し、元のデザイン意図を維持したまま最適なフォントへ置き換えます。
+🛠️ 広範なサポート — Windows/Mac/Linux の標準フォントから、Inter や Roboto などの主要 Web フォントまで幅広くカバー。
+
+■ 置換の仕組み
+
+• ゴシック体・明朝体・システムフォント → 選択した本文フォント
+  MS ゴシック、メイリオ、游ゴシック、Arial、Helvetica、Inter、system-ui など
+• 等幅フォント・コード → 選択した等幅フォント
+  MS ゴシック（等幅）、Consolas、JetBrains Mono など
+
+■ ライセンス
+
+プロジェクト本体: MIT License
+搭載フォント: すべて SIL Open Font License 1.1
+  Noto Sans JP / IBM Plex Sans JP / M PLUS 2 / Murecho / Zen Kaku Gothic New
+  UDEV Gothic JPDOC / PlemolJP / Moralerspace Neon JPDOC
