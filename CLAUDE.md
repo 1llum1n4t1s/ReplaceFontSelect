@@ -16,6 +16,11 @@ npm run generate-icons     # Regenerate PNG icons from icons/icon.svg
 npm run generate-screenshots  # Generate Chrome Web Store promotional images
 ```
 
+**Release workflow** — `.\zip.ps1` runs the complete pipeline:
+1. Syncs version from `package.json` → `manifest.json`, `README.md`, screenshot HTMLs
+2. `npm install` → icon generation → font conversion → screenshots → CSS generation
+3. Copies extension files to temp directory and creates `replace-font-select-chrome.zip`
+
 There are no tests or linting configured.
 
 ## Architecture
@@ -27,18 +32,21 @@ chrome.storage.local (user font selection)
         ↓
 font-config.js → FONT_REGISTRY (shared global, loaded first)
         ↓
-preload-fonts.js (content script, runs at document_start)
+preload-fonts.js (content script, runs at document_start, all_frames: true)
   1. loadFontSettings() → reads from storage
   2. Fetches css/replacefont-extension.css (contains placeholders)
   3. replaceFontPlaceholders() → replaces __BODY_FONT_NAME__, __MONO_WOFF2_REGULAR__, etc.
   4. Injects resolved CSS into document.head
-  5. inject.js intercepts attachShadow → dispatches custom event
-  6. preload-fonts.js listens → injects CSS into each ShadowRoot
+  5. createPreloadTag() + setupFontForceLoad() → ensures fonts load early
+  6. inject.js intercepts attachShadow → dispatches custom event
+  7. preload-fonts.js listens → injects CSS into each ShadowRoot
 ```
 
-### Placeholder System
+### Two-Stage CSS System
 
-`generate-css.js` outputs CSS with placeholder tokens (not hardcoded font names). `preload-fonts.js` replaces them at runtime based on user selection:
+**Build time** (`generate-css.js`): Outputs ~2300 lines of CSS with placeholder tokens — 100+ gothic font families × 2 weights + 20+ mono font families × 2 weights = 240+ `@font-face` rules, plus CSS variable overrides for frameworks (Tailwind, Geist, etc.).
+
+**Runtime** (`preload-fonts.js`): `replaceFontPlaceholders()` does global string replacement of all `__*__` tokens with actual font names/paths based on user selection. Results cached in `fixedCSSCache` Map.
 
 | Placeholder | Example Replacement |
 |---|---|
@@ -52,19 +60,19 @@ preload-fonts.js (content script, runs at document_start)
 
 ### Key Files
 
-- **`font-config.js`** — Single source of truth for all font metadata (`FONT_REGISTRY`). Shared between content scripts and popup via different loading mechanisms (content_script injection vs `<script>` tag).
-- **`preload-fonts.js`** — Main content script. Handles CSS fetching, placeholder replacement, injection into document + Shadow DOM, font preloading, and MutationObserver-based monitoring.
-- **`inject.js`** — Tiny page-context script that overrides `Element.prototype.attachShadow` to dispatch a custom event, enabling CSS injection into closed Shadow DOM.
-- **`scripts/generate-css.js`** — Build-time script generating `@font-face` rules for 100+ font families (Gothic/Mono) with placeholder tokens. Run via `npm run generate-css`.
-- **`popup/popup.js`** — Reads `FONT_REGISTRY` to populate dropdowns, saves selections to `chrome.storage.local`.
+- **`font-config.js`** — Single source of truth for all font metadata (`FONT_REGISTRY`). Shared between content scripts (manifest injection) and popup (`<script>` tag).
+- **`preload-fonts.js`** — Main content script (IIFE-wrapped). Handles CSS fetching, placeholder replacement, injection into document + Shadow DOM, font preloading, and MutationObserver-based monitoring.
+- **`inject.js`** — Tiny page-context script that overrides `Element.prototype.attachShadow` to dispatch a custom event, enabling CSS injection into closed Shadow DOM. Removes itself from DOM after execution.
+- **`scripts/generate-css.js`** — Build-time script generating `@font-face` rules with placeholder tokens. Regenerate after modifying.
+- **`popup/popup.js`** — Reads `FONT_REGISTRY` to dynamically populate dropdowns, saves selections to `chrome.storage.local`.
 
 ### Shadow DOM Strategy
 
 Two mechanisms ensure CSS reaches Shadow DOM:
-1. **`inject.js`** (page context) — Intercepts `attachShadow()` calls, dispatches event for newly created roots.
-2. **`setupShadowDOMObserver()`** (content script) — MutationObserver + TreeWalker scans for open Shadow DOM roots on existing/new elements. Uses chunked scanning (200 elements/batch via `requestIdleCallback`).
+1. **`inject.js`** (page context) — Intercepts `attachShadow()` calls, dispatches event for newly created roots (including closed Shadow DOM).
+2. **`setupShadowDOMObserver()`** (content script) — MutationObserver + TreeWalker scans for open Shadow DOM roots. Uses chunked scanning (200 elements/batch via `requestIdleCallback`).
 
-CSS is injected via Constructable Stylesheets (`adoptedStyleSheets`) when supported, falling back to `<style>` tags.
+CSS injection uses Constructable Stylesheets (`adoptedStyleSheets`) for ShadowRoot (memory efficient), falling back to `<style>` tags. Deduplication via `_replaceFontApplied` flag on each root prevents re-injection.
 
 ### Adding a New Font
 
@@ -83,8 +91,8 @@ Values are keys from `FONT_REGISTRY.body` / `FONT_REGISTRY.mono`. Font changes r
 
 ## Important Notes
 
+- `manifest.json` content_scripts load order is critical: `font-config.js` **must** load before `preload-fonts.js`.
+- `web_accessible_resources` must include `fonts/*.woff2`, `css/*.css`, and `inject.js`.
 - M PLUS 2 and Murecho are **variable fonts** — single woff2 file serves both Regular and Bold weights.
-- The generated CSS (`css/replacefont-extension.css`) is ~2300 lines. Regenerate after modifying `generate-css.js`.
-- `manifest.json` loads `font-config.js` before `preload-fonts.js` in `content_scripts` so `FONT_REGISTRY` is available as a global.
-- Popup loads `font-config.js` via `<script src="../font-config.js">` tag.
-- Extension uses `"run_at": "document_start"` for earliest possible font injection.
+- Extension uses `"run_at": "document_start"` and `"all_frames": true` for earliest possible font injection across all frames.
+- Font changes in popup require page reload — CSS is fetched once at `document_start` and cached.

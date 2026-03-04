@@ -70,8 +70,8 @@ Write-Host ""
 Write-Host "📦 Chrome Web Store用のZIPファイルを作成中..." -ForegroundColor Cyan
 
 # 古いZIPファイルを削除
-if (Test-Path "./replace-font-chrome.zip") {
-    Remove-Item "./replace-font-chrome.zip" -Force
+if (Test-Path "./replace-font-select-chrome.zip") {
+    Remove-Item "./replace-font-select-chrome.zip" -Force
 }
 
 # 一時ディレクトリを作成
@@ -97,16 +97,16 @@ Copy-Item "icons" -Destination $tempDir -Recurse
 Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~" | Remove-Item -Force
 
 # ZIPファイルを作成
-Compress-Archive -Path "$tempDir/*" -DestinationPath "./replace-font-chrome.zip" -Force
+Compress-Archive -Path "$tempDir/*" -DestinationPath "./replace-font-select-chrome.zip" -Force
 
 # 一時ディレクトリを削除
 Remove-Item $tempDir -Recurse -Force
 
-if (Test-Path "./replace-font-chrome.zip") {
-    Write-Host "✅ ZIPファイルを作成しました: replace-font-chrome.zip" -ForegroundColor Green
+if (Test-Path "./replace-font-select-chrome.zip") {
+    Write-Host "✅ ZIPファイルを作成しました: replace-font-select-chrome.zip" -ForegroundColor Green
     Write-Host ""
     Write-Host "📊 ファイルサイズ:" -ForegroundColor Cyan
-    $fileSize = (Get-Item "./replace-font-chrome.zip").Length
+    $fileSize = (Get-Item "./replace-font-select-chrome.zip").Length
     $fileSizeMB = [math]::Round($fileSize / 1MB, 2)
     Write-Host "   $fileSizeMB MB" -ForegroundColor White
     Write-Host ""
