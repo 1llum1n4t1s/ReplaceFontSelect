@@ -1,99 +1,90 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- ネオングロー効果 -->
-    <filter id="neonGlow">
-      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+    <!-- メイングラデーション（拡張機能テーマカラー） -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- 文字用の白グラデーション -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e8e8ff;stop-opacity:0.95" />
+    </linearGradient>
+
+    <!-- キラキラ用グラデーション -->
+    <linearGradient id="sparkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffaa00;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- ソフトシャドウ -->
+    <filter id="softShadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+
+    <!-- テキストシャドウ -->
+    <filter id="textShadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#4a3a8a" flood-opacity="0.4"/>
+    </filter>
+
+    <!-- キラキラグロー -->
+    <filter id="sparkGlow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
       <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
-
-    <filter id="strongGlow">
-      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-
-    <!-- サイバーグラデーション -->
-    <linearGradient id="cyberGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0a0e27;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#1a1f3a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#0f1629;stop-opacity:1" />
-    </linearGradient>
-
-    <!-- ネオンシアングラデーション -->
-    <linearGradient id="neonCyan" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#00f0ff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:1" />
-    </linearGradient>
-
-    <!-- マゼンタグラデーション -->
-    <linearGradient id="neonMagenta" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#ff00ff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#ff0080;stop-opacity:1" />
-    </linearGradient>
   </defs>
 
-  <!-- 背景 -->
-  <rect width="512" height="512" rx="115" fill="url(#cyberGradient)"/>
+  <!-- 背景（角丸） -->
+  <rect width="512" height="512" rx="108" fill="url(#bgGradient)"/>
 
-  <!-- サイバーグリッド（背景装飾） -->
-  <g opacity="0.15">
-    <!-- 横線 -->
-    <line x1="0" y1="128" x2="512" y2="128" stroke="#00f0ff" stroke-width="1"/>
-    <line x1="0" y1="256" x2="512" y2="256" stroke="#00f0ff" stroke-width="1"/>
-    <line x1="0" y1="384" x2="512" y2="384" stroke="#00f0ff" stroke-width="1"/>
-    <!-- 縦線 -->
-    <line x1="128" y1="0" x2="128" y2="512" stroke="#00f0ff" stroke-width="1"/>
-    <line x1="256" y1="0" x2="256" y2="512" stroke="#00f0ff" stroke-width="1"/>
-    <line x1="384" y1="0" x2="384" y2="512" stroke="#00f0ff" stroke-width="1"/>
+  <!-- 装飾サークル（ガラスモーフィズム風） -->
+  <circle cx="80" cy="80" r="120" fill="white" opacity="0.08"/>
+  <circle cx="440" cy="440" r="100" fill="white" opacity="0.06"/>
+  <circle cx="400" cy="120" r="60" fill="white" opacity="0.05"/>
+
+  <!-- メイン文字「あ」 -->
+  <g filter="url(#textShadow)">
+    <text x="240" y="355"
+          font-family="'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', 'Meiryo', sans-serif"
+          font-size="300"
+          font-weight="700"
+          fill="url(#textGradient)"
+          text-anchor="middle">あ</text>
   </g>
 
-  <!-- コーナーアクセント（サイバー感） -->
-  <g stroke="url(#neonCyan)" stroke-width="4" fill="none" filter="url(#neonGlow)">
-    <!-- 左上 -->
-    <path d="M 60,120 L 60,60 L 120,60"/>
-    <!-- 右上 -->
-    <path d="M 392,60 L 452,60 L 452,120"/>
-    <!-- 左下 -->
-    <path d="M 120,452 L 60,452 L 60,392"/>
-    <!-- 右下 -->
-    <path d="M 452,392 L 452,452 L 392,452"/>
+  <!-- 置換矢印（右上に小さく） -->
+  <g transform="translate(370, 100)" filter="url(#softShadow)">
+    <!-- 循環矢印 -->
+    <g fill="none" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
+      <!-- 上の矢印弧 -->
+      <path d="M 0,30 A 30,30 0 0 1 52,8"/>
+      <polyline points="44,-4 54,8 42,16"/>
+      <!-- 下の矢印弧 -->
+      <path d="M 60,30 A 30,30 0 0 1 8,52"/>
+      <polyline points="16,44 6,52 18,62"/>
+    </g>
   </g>
 
-  <!-- メインの「N」文字 -->
-  <g filter="url(#strongGlow)">
-    <text x="256" y="340"
-          font-family="'Arial Black', 'Arial', sans-serif"
-          font-size="280"
-          font-weight="900"
-          fill="url(#neonCyan)"
-          text-anchor="middle"
-          letter-spacing="-10">N</text>
+  <!-- キラキラ（左上） -->
+  <g filter="url(#sparkGlow)" transform="translate(90, 115)">
+    <!-- 四方向の星 -->
+    <path d="M 0,-18 L 4,-4 L 18,0 L 4,4 L 0,18 L -4,4 L -18,0 L -4,-4 Z"
+          fill="url(#sparkGradient)"/>
   </g>
 
-  <!-- アクセントドット -->
-  <g filter="url(#neonGlow)">
-    <circle cx="420" cy="420" r="12" fill="url(#neonMagenta)"/>
-    <circle cx="92" cy="92" r="8" fill="url(#neonCyan)"/>
-    <circle cx="420" cy="92" r="8" fill="url(#neonMagenta)"/>
+  <!-- キラキラ（小・右上寄り） -->
+  <g filter="url(#sparkGlow)" transform="translate(340, 170)">
+    <path d="M 0,-10 L 2.5,-2.5 L 10,0 L 2.5,2.5 L 0,10 L -2.5,2.5 L -10,0 L -2.5,-2.5 Z"
+          fill="white" opacity="0.8"/>
   </g>
 
-  <!-- サブテキスト「FONT」 -->
-  <g filter="url(#neonGlow)">
-    <text x="256" y="420"
-          font-family="'Arial', sans-serif"
-          font-size="40"
-          font-weight="bold"
-          fill="url(#neonMagenta)"
-          text-anchor="middle"
-          letter-spacing="8"
-          opacity="0.9">FONT</text>
+  <!-- キラキラ（小・左下） -->
+  <g filter="url(#sparkGlow)" transform="translate(120, 400)">
+    <path d="M 0,-12 L 3,-3 L 12,0 L 3,3 L 0,12 L -3,3 L -12,0 L -3,-3 Z"
+          fill="white" opacity="0.7"/>
   </g>
 </svg>
