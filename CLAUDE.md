@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**目に優しいフォント置換** — A Chrome Extension (Manifest V3) that replaces hard-to-read fonts on all websites with user-selected Japanese fonts. Users choose from 5 body fonts (Noto Sans JP, IBM Plex Sans JP, M PLUS 2, Murecho, Zen Kaku Gothic New) and 2 monospace fonts (UDEV Gothic JPDOC, PlemolJP) via a popup dropdown. Settings persist in `chrome.storage.local`.
+**目に優しいフォント置換** — A Chrome Extension (Manifest V3) that replaces hard-to-read fonts on all websites with user-selected Japanese fonts. Users choose from 5 body fonts (Noto Sans JP, IBM Plex Sans JP, M PLUS 2, Murecho, Zen Kaku Gothic New) and 3 monospace fonts (UDEV Gothic JPDOC, PlemolJP, Moralerspace Neon JPDOC) via a popup dropdown. Body font weight is selectable (Regular 400 / Medium 500); monospace fonts are fixed at Regular 400. Settings persist in `chrome.storage.local`.
 
 ## Build Commands
 
@@ -53,7 +53,8 @@ preload-fonts.js (content script, runs at document_start, all_frames: true)
 | `__BODY_FONT_NAME__` | `Noto Sans JP` |
 | `__BODY_FONT_FALLBACK__` | `sans-serif` |
 | `__BODY_LOCAL_REGULAR__` | `local("Noto Sans JP"), local("Noto Sans CJK Variable")` |
-| `__BODY_WOFF2_REGULAR__` | `NotoSansJP-Regular.woff2` |
+| `__BODY_FONT_WEIGHT__` | `400` or `500` |
+| `__BODY_WOFF2_REGULAR__` | `NotoSansJP-Regular.woff2` (or Medium variant based on weight) |
 | `__MONO_FONT_NAME__` | `UDEV Gothic JPDOC` |
 | `__MONO_LOCAL_BOLD__` | `local("UDEV Gothic JPDOC Bold")` |
 | `__REPLACE_FONT_BASE__` | `chrome-extension://<id>/` |
@@ -85,9 +86,9 @@ CSS injection uses Constructable Stylesheets (`adoptedStyleSheets`) for ShadowRo
 
 Key: `fontSettings` in `chrome.storage.local`
 ```json
-{ "bodyFont": "noto-sans-jp", "monoFont": "udev-gothic-jpdoc" }
+{ "bodyFont": "noto-sans-jp", "monoFont": "udev-gothic-jpdoc", "bodyFontWeight": "400" }
 ```
-Values are keys from `FONT_REGISTRY.body` / `FONT_REGISTRY.mono`. Font changes require page reload.
+Values: `bodyFont`/`monoFont` are keys from `FONT_REGISTRY.body`/`FONT_REGISTRY.mono`. `bodyFontWeight` is `"400"` (Regular) or `"500"` (Medium). Font changes require page reload.
 
 ## Important Notes
 

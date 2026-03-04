@@ -36,7 +36,7 @@
 | **PlemolJP** | IBM Plex Mono + IBM Plex Sans JP ベース。プログラミングと日本語の両方に最適化されています。 |
 | **Moralerspace Neon JPDOC** | JetBrains Mono + IBM Plex Sans JP ベースの合成フォント。コーディング向けにデザインされた等幅フォントです。 |
 
-> すべてのフォントは **Medium (500)** ウェイトを採用しています。Regular (400) よりもわずかに太く、画面上での視認性が向上します。Bold はそのまま維持されます。
+> 本文フォントは **Regular (400)** と **Medium (500)** から太さを選択できます（デフォルト: Regular）。等幅フォントは Regular (400) 固定です。Bold はそのまま維持されます。
 
 ## 🔄 置換の仕組み
 
@@ -74,7 +74,7 @@ It targets specific fonts (MS Gothic, Meiryo, Yu Gothic, System fonts, etc.) to 
 - **Body**: Noto Sans JP, IBM Plex Sans JP, M PLUS 2, Murecho, Zen Kaku Gothic New
 - **Monospace**: UDEV Gothic JPDOC, PlemolJP, Moralerspace Neon JPDOC
 
-> All fonts use **Medium (500)** weight for improved on-screen legibility.
+> Body fonts support **Regular (400)** and **Medium (500)** weight selection (default: Regular). Monospace fonts are fixed at Regular (400). Bold weights are preserved.
 
 ### Replacement Logic
 - **General Fonts (Gothic/Serif/System)**: Replaced with the selected body font.

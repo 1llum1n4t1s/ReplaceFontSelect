@@ -100,7 +100,7 @@ const GOTHIC_CONFIGS = [
     weight: 'Regular',
     localFonts: '__BODY_LOCAL_REGULAR__',
     webFont: '__BODY_WOFF2_REGULAR__',
-    fontWeight: 500
+    fontWeight: '__BODY_FONT_WEIGHT__'
   },
   {
     weight: 'Bold',
@@ -115,7 +115,7 @@ const MONO_CONFIGS = [
     weight: 'Regular',
     localFonts: '__MONO_LOCAL_REGULAR__',
     webFont: '__MONO_WOFF2_REGULAR__',
-    fontWeight: 500
+    fontWeight: 400
   },
   {
     weight: 'Bold',
@@ -227,7 +227,7 @@ function generateCSS(outputConfig) {
   font-family: "__BODY_FONT_NAME__";
   src:  __BODY_LOCAL_REGULAR__,
         url('__REPLACE_FONT_BASE__fonts/__BODY_WOFF2_REGULAR__') format('woff2');
-  font-weight: 500;
+  font-weight: __BODY_FONT_WEIGHT__;
   font-display: swap;
 }
 @font-face {
@@ -241,7 +241,7 @@ function generateCSS(outputConfig) {
   font-family: "__MONO_FONT_NAME__";
   src:  __MONO_LOCAL_REGULAR__,
         url('__REPLACE_FONT_BASE__fonts/__MONO_WOFF2_REGULAR__') format('woff2');
-  font-weight: 500;
+  font-weight: 400;
   font-display: swap;
 }
 @font-face {

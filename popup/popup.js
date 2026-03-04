@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const bodyFontSelect = document.getElementById('body-font');
+  const bodyWeightSelect = document.getElementById('body-weight');
   const monoFontSelect = document.getElementById('mono-font');
   const saveNotice = document.getElementById('save-notice');
 
@@ -31,9 +32,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const result = await chrome.storage.local.get(FONT_REGISTRY.storageKey);
     const settings = result[FONT_REGISTRY.storageKey] || {};
     bodyFontSelect.value = settings.bodyFont || FONT_REGISTRY.defaults.bodyFont;
+    bodyWeightSelect.value = settings.bodyFontWeight || FONT_REGISTRY.defaults.bodyFontWeight;
     monoFontSelect.value = settings.monoFont || FONT_REGISTRY.defaults.monoFont;
   } catch (e) {
     bodyFontSelect.value = FONT_REGISTRY.defaults.bodyFont;
+    bodyWeightSelect.value = FONT_REGISTRY.defaults.bodyFontWeight;
     monoFontSelect.value = FONT_REGISTRY.defaults.monoFont;
   }
 
@@ -41,6 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function saveSettings() {
     const settings = {
       bodyFont: bodyFontSelect.value,
+      bodyFontWeight: bodyWeightSelect.value,
       monoFont: monoFontSelect.value
     };
 
@@ -54,5 +58,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   bodyFontSelect.addEventListener('change', saveSettings);
+  bodyWeightSelect.addEventListener('change', saveSettings);
   monoFontSelect.addEventListener('change', saveSettings);
 });
