@@ -46,7 +46,7 @@ preload-fonts.js (content script, runs at document_start, all_frames: true)
 
 **Build time** (`generate-css.js`): Outputs ~2300 lines of CSS with placeholder tokens — 100+ gothic font families × 2 weights + 20+ mono font families × 2 weights = 240+ `@font-face` rules, plus CSS variable overrides for frameworks (Tailwind, Geist, etc.).
 
-**Runtime** (`preload-fonts.js`): `replaceFontPlaceholders()` does global string replacement of all `__*__` tokens with actual font names/paths based on user selection. Results cached in `fixedCSSCache` Map.
+**Runtime** (`preload-fonts.js`): `replaceFontPlaceholders()` does global string replacement of all `__*__` tokens with actual font names/paths based on user selection. Results cached as Promises in `fixedCSSCache` Map (prevents duplicate in-flight fetches).
 
 | Placeholder | Example Replacement |
 |---|---|

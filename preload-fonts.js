@@ -24,12 +24,12 @@
   const uniqueId = `preloadFontTag${Date.now()}`;
   // cssUrls 削除: CSS_URL を直接使用（配列は不要）
 
-  // キャッシュされた固定済みCSS
+  // キャッシュされた固定済みCSS（Promise を格納して並行 fetch を防止）
   const fixedCSSCache = new Map();
   // Shadow DOM用の軽量CSSキャッシュ（@font-face リダイレクトを除外）
   let shadowCSSCache = null;
   // Shadow DOM用の共有CSSStyleSheet（adoptedStyleSheets用、メモリ効率的）
-  let shadowStyleSheet = null;
+  let shadowStyleSheetPromise = null;
 
   // 選択されたフォント情報（設定読み込み後にセットされる）
   let selectedBodyFont = null;
@@ -94,10 +94,17 @@
   }
 
   /**
+   * ウェイトに応じた本文フォントの woff2 ファイル名を返す
+   */
+  function getBodyWoff2(fontInfo, weight) {
+    return weight === '500' ? fontInfo.woff2Medium : fontInfo.woff2Regular;
+  }
+
+  /**
    * 選択されたフォント情報を元に動的FONT_CONFIGを構築
    */
   function buildFontConfig(bodyFontInfo, monoFontInfo, bodyFontWeight) {
-    const bodyWoff2 = bodyFontWeight === '500' ? bodyFontInfo.woff2Medium : bodyFontInfo.woff2Regular;
+    const bodyWoff2 = getBodyWoff2(bodyFontInfo, bodyFontWeight);
     return [
       { weight: 'Regular', fontFamily: bodyFontInfo.name, fontWeight: bodyFontWeight, fontUrl: `${FONT_BASE_URL}${bodyWoff2}` },
       { weight: 'Bold', fontFamily: bodyFontInfo.name, fontWeight: 'bold', fontUrl: `${FONT_BASE_URL}${bodyFontInfo.woff2Bold}` },
@@ -115,7 +122,7 @@
 
     // 置換マップを構築（初回のみ、以降はクロージャでキャッシュ）
     if (!replaceFontPlaceholders._map) {
-      const bodyWoff2 = selectedBodyFontWeight === '500' ? selectedBodyFont.woff2Medium : selectedBodyFont.woff2Regular;
+      const bodyWoff2 = getBodyWoff2(selectedBodyFont, selectedBodyFontWeight);
       replaceFontPlaceholders._map = {
         '__REPLACE_FONT_BASE__': BASE_URL,
         '../fonts/': FONT_BASE_URL,
@@ -149,27 +156,32 @@
    * CSSファイルをフェッチして、プレースホルダーを置換したものを返す
    * 同時に Shadow DOM 用の軽量CSSも生成・キャッシュする
    */
-  async function getFixedCSS(url) {
+  function getFixedCSS(url) {
     if (fixedCSSCache.has(url)) return fixedCSSCache.get(url);
-    try {
-      const response = await fetch(url);
-      if (!response.ok) return null;
-      let text = await response.text();
-      text = replaceFontPlaceholders(text);
-      fixedCSSCache.set(url, text);
+    // Promise を即座にキャッシュして並行呼び出しの重複 fetch を防止
+    const promise = (async () => {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        let text = await response.text();
+        text = replaceFontPlaceholders(text);
 
-      // Shadow DOM 用: 境界マーカーより上の部分（プロパティ宣言＋置換フォント @font-face のみ）
-      // 350+ 件のリダイレクト @font-face はドキュメントスコープで有効なので Shadow 内には不要
-      if (!shadowCSSCache) {
-        const boundaryIdx = text.indexOf(SHADOW_BOUNDARY);
-        shadowCSSCache = boundaryIdx > 0 ? text.substring(0, boundaryIdx) : text;
-        log(`[フォント置換] CSS分割: full=${text.length}文字, shadow=${shadowCSSCache.length}文字 (${Math.round(shadowCSSCache.length / text.length * 100)}%)`);
+        // Shadow DOM 用: 境界マーカーより上の部分（プロパティ宣言＋置換フォント @font-face のみ）
+        // 350+ 件のリダイレクト @font-face はドキュメントスコープで有効なので Shadow 内には不要
+        if (!shadowCSSCache) {
+          const boundaryIdx = text.indexOf(SHADOW_BOUNDARY);
+          shadowCSSCache = boundaryIdx > 0 ? text.substring(0, boundaryIdx) : text;
+          log(`[フォント置換] CSS分割: full=${text.length}文字, shadow=${shadowCSSCache.length}文字 (${Math.round(shadowCSSCache.length / text.length * 100)}%)`);
+        }
+
+        return text;
+      } catch (e) {
+        fixedCSSCache.delete(url); // 失敗時はキャッシュを除去してリトライ可能に
+        return null;
       }
-
-      return text;
-    } catch (e) {
-      return null;
-    }
+    })();
+    fixedCSSCache.set(url, promise);
+    return promise;
   }
 
   /**
@@ -188,19 +200,23 @@
    * 単一インスタンスを全 Shadow Root で共有し、メモリを大幅に削減する
    * （例: 572 roots × <style> 複製 → 1 インスタンス共有）
    */
-  async function getShadowStyleSheet() {
-    if (shadowStyleSheet) return shadowStyleSheet;
-    const cssText = await getShadowCSS();
-    if (!cssText) return null;
-    try {
-      const sheet = new CSSStyleSheet();
-      sheet.replaceSync(cssText);
-      shadowStyleSheet = sheet;
-      return sheet;
-    } catch (e) {
-      // Constructable Stylesheets 非対応環境 → <style> タグにフォールバック
-      return null;
-    }
+  function getShadowStyleSheet() {
+    if (shadowStyleSheetPromise) return shadowStyleSheetPromise;
+    // Promise を即座にキャッシュして並行呼び出しの重複構築を防止
+    shadowStyleSheetPromise = (async () => {
+      const cssText = await getShadowCSS();
+      if (!cssText) { shadowStyleSheetPromise = null; return null; }
+      try {
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync(cssText);
+        return sheet;
+      } catch (e) {
+        // Constructable Stylesheets 非対応環境 → <style> タグにフォールバック
+        shadowStyleSheetPromise = null;
+        return null;
+      }
+    })();
+    return shadowStyleSheetPromise;
   }
 
   /**
@@ -488,6 +504,7 @@
 
     if (!bodyFontInfo || !monoFontInfo) {
       log('[フォント置換] フォント情報が取得できません。FONT_REGISTRY:', typeof FONT_REGISTRY);
+      pendingRoots.clear();
       return;
     }
     selectedBodyFont = bodyFontInfo;
@@ -507,8 +524,6 @@
 
       injectCSS(head);
       createPreloadTag();
-      // head が利用可能になった時点で inject.js も再確認
-      injectShadowDOMHandler();
     };
 
     if (document.head) {
