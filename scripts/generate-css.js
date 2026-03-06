@@ -205,11 +205,6 @@ function generateCSS(outputConfig) {
   --pplx-font-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
 }
 
-/* 本文フォントの強制適用（@font-face だけではサイト側のウェブフォント読み込みに負ける場合がある） */
-*:not(pre):not(code):not(kbd):not(samp):not(i):not([class*="icon"]):not([class*="Icon"]):not([class*="font-mono"]):not([class*="codeblock"]):not([class*="shiki"]):not([class*="hljs"]):not([class*="prism"]):not([class*="language-"]):not([class*="material-icons"]):not([class*="fa-"]):not([class*="emoji"]) {
-  font-family: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-}
-
 /* 汎用的な等幅フォント要素に対する強制指定（詳細度を高めて上書きを確実に） */
 :root :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]),
 :host :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]),
@@ -260,12 +255,7 @@ function generateCSS(outputConfig) {
     ).join('\n');
   });
 
-  // マーカーコメント: preload-fonts.js がここで CSS を分割し、
-  // Shadow DOM には上部（プロパティ宣言 + 置換フォント @font-face）のみ注入する。
-  // 下部（350+ 件のリダイレクト @font-face）はドキュメント head のみに必要。
-  const shadowBoundary = '\n/* __SHADOW_CSS_BOUNDARY__ */\n';
-
-  return `${header}\n${variableOverrides}\n${replacementFontFaces}\n${shadowBoundary}${sections.join('\n')}\n`;
+  return `${header}\n${variableOverrides}\n${replacementFontFaces}\n${sections.join('\n')}\n`;
 }
 
 /**

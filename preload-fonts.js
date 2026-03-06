@@ -26,10 +26,8 @@
 
   // キャッシュされた固定済みCSS（Promise を格納して並行 fetch を防止）
   const fixedCSSCache = new Map();
-  // Shadow DOM用の軽量CSSキャッシュ（@font-face リダイレクトを除外）
-  let shadowCSSCache = null;
-  // Shadow DOM用の共有CSSStyleSheet（adoptedStyleSheets用、メモリ効率的）
-  let shadowStyleSheetPromise = null;
+  // 共有CSSStyleSheet（adoptedStyleSheets用、全 ShadowRoot でインスタンス共有）
+  let sharedStyleSheetPromise = null;
 
   // 選択されたフォント情報（設定読み込み後にセットされる）
   let selectedBodyFont = null;
@@ -149,12 +147,8 @@
     return text.replace(replaceFontPlaceholders._regex, match => replaceFontPlaceholders._map[match]);
   }
 
-  // Shadow DOM 境界マーカー（generate-css.js が出力）
-  const SHADOW_BOUNDARY = '/* __SHADOW_CSS_BOUNDARY__ */';
-
   /**
    * CSSファイルをフェッチして、プレースホルダーを置換したものを返す
-   * 同時に Shadow DOM 用の軽量CSSも生成・キャッシュする
    */
   function getFixedCSS(url) {
     if (fixedCSSCache.has(url)) return fixedCSSCache.get(url);
@@ -165,15 +159,6 @@
         if (!response.ok) return null;
         let text = await response.text();
         text = replaceFontPlaceholders(text);
-
-        // Shadow DOM 用: 境界マーカーより上の部分（プロパティ宣言＋置換フォント @font-face のみ）
-        // 350+ 件のリダイレクト @font-face はドキュメントスコープで有効なので Shadow 内には不要
-        if (!shadowCSSCache) {
-          const boundaryIdx = text.indexOf(SHADOW_BOUNDARY);
-          shadowCSSCache = boundaryIdx > 0 ? text.substring(0, boundaryIdx) : text;
-          log(`[フォント置換] CSS分割: full=${text.length}文字, shadow=${shadowCSSCache.length}文字 (${Math.round(shadowCSSCache.length / text.length * 100)}%)`);
-        }
-
         return text;
       } catch (e) {
         fixedCSSCache.delete(url); // 失敗時はキャッシュを除去してリトライ可能に
@@ -185,38 +170,26 @@
   }
 
   /**
-   * Shadow DOM 用の軽量CSSを取得
-   * @font-face リダイレクトルールを除外し、プロパティ宣言のみ返す
+   * 共有 CSSStyleSheet を取得（adoptedStyleSheets 用）
+   * 単一インスタンスを全 ShadowRoot で共有し、メモリを削減する
    */
-  async function getShadowCSS() {
-    if (shadowCSSCache) return shadowCSSCache;
-    // まだフルCSS未取得の場合はフェッチを実行（副作用で shadowCSSCache も生成される）
-    await getFixedCSS(CSS_URL);
-    return shadowCSSCache;
-  }
-
-  /**
-   * Shadow DOM 用の共有 CSSStyleSheet を取得（adoptedStyleSheets 用）
-   * 単一インスタンスを全 Shadow Root で共有し、メモリを大幅に削減する
-   * （例: 572 roots × <style> 複製 → 1 インスタンス共有）
-   */
-  function getShadowStyleSheet() {
-    if (shadowStyleSheetPromise) return shadowStyleSheetPromise;
+  function getSharedStyleSheet() {
+    if (sharedStyleSheetPromise) return sharedStyleSheetPromise;
     // Promise を即座にキャッシュして並行呼び出しの重複構築を防止
-    shadowStyleSheetPromise = (async () => {
-      const cssText = await getShadowCSS();
-      if (!cssText) { shadowStyleSheetPromise = null; return null; }
+    sharedStyleSheetPromise = (async () => {
+      const cssText = await getFixedCSS(CSS_URL);
+      if (!cssText) { sharedStyleSheetPromise = null; return null; }
       try {
         const sheet = new CSSStyleSheet();
         sheet.replaceSync(cssText);
         return sheet;
       } catch (e) {
         // Constructable Stylesheets 非対応環境 → <style> タグにフォールバック
-        shadowStyleSheetPromise = null;
+        sharedStyleSheetPromise = null;
         return null;
       }
     })();
-    return shadowStyleSheetPromise;
+    return sharedStyleSheetPromise;
   }
 
   /**
@@ -287,29 +260,27 @@
 
     try {
       if (isShadow) {
-        // ShadowRoot: adoptedStyleSheets で単一 CSSStyleSheet インスタンスを共有
-        // → <style> タグ複製と比べ、メモリ使用量が劇的に削減される
-        //   （572 roots × 3KB テキスト複製 → 1 インスタンス共有）
-        const sheet = await getShadowStyleSheet();
+        // ShadowRoot: adoptedStyleSheets でフルCSSの単一インスタンスを共有
+        const sheet = await getSharedStyleSheet();
         if (sheet) {
           root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
           root._replaceFontApplied = true;
           return;
         }
         // adoptedStyleSheets 非対応 → <style> タグにフォールバック
-        const shadowCSS = await getShadowCSS();
-        if (!shadowCSS) {
+        const cssText = await getFixedCSS(CSS_URL);
+        if (!cssText) {
           root._replaceFontRetryCount = (root._replaceFontRetryCount || 0) + 1;
           if (root._replaceFontRetryCount >= 3) root._replaceFontApplied = true;
           return;
         }
         const style = document.createElement('style');
-        style.textContent = shadowCSS;
+        style.textContent = cssText;
         style.dataset.replaceFont = 'true';
         root.appendChild(style);
         root._replaceFontApplied = true;
       } else {
-        // document.head: フルCSS（全 @font-face リダイレクト含む）
+        // document.head: フルCSS
         const cssText = await getFixedCSS(CSS_URL);
         if (!cssText) {
           root._replaceFontRetryCount = (root._replaceFontRetryCount || 0) + 1;

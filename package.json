@@ -1,6 +1,6 @@
 {
   "name": "eye-friendly-font-replacer",
-  "version": "1.0.4",
+  "version": "1.0.10",
   "type": "commonjs",
   "description": "Chrome extension to replace hard-to-read fonts with user-selected Japanese fonts",
   "scripts": {
