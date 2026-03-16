@@ -5,13 +5,11 @@
   "description": "Chrome extension to replace hard-to-read fonts with user-selected Japanese fonts",
   "scripts": {
     "generate-icons": "node scripts/generate-icons.js",
-    "generate-screenshots": "node scripts/generate-screenshots.js",
     "generate-css": "node scripts/generate-css.js",
     "convert-fonts": "node scripts/convert-fonts.js",
     "build": "npm run generate-icons && npm run generate-css"
   },
   "devDependencies": {
-    "puppeteer": "^24.37.5",
     "sharp": "^0.33.0",
     "ttf2woff2": "^8.0.0"
   },
