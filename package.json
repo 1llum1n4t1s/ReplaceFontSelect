@@ -1,6 +1,6 @@
 {
   "name": "eye-friendly-font-replacer",
-  "version": "1.0.10",
+  "version": "1.0.14",
   "type": "commonjs",
   "description": "Chrome extension to replace hard-to-read fonts with user-selected Japanese fonts",
   "scripts": {
@@ -8,7 +8,7 @@
     "generate-screenshots": "node scripts/generate-screenshots.js",
     "generate-css": "node scripts/generate-css.js",
     "convert-fonts": "node scripts/convert-fonts.js",
-    "build": "npm run generate-icons && npm run generate-css && npm run generate-screenshots"
+    "build": "npm run generate-icons && npm run generate-css"
   },
   "devDependencies": {
     "puppeteer": "^24.37.5",
