@@ -13,19 +13,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const saveNotice = document.getElementById('save-notice');
 
   // ドロップダウンの選択肢を FONT_REGISTRY から動的生成
-  for (const [key, font] of Object.entries(FONT_REGISTRY.body)) {
-    const option = document.createElement('option');
-    option.value = key;
-    option.textContent = font.displayName;
-    bodyFontSelect.appendChild(option);
+  function populateSelect(selectEl, registry) {
+    for (const [key, font] of Object.entries(registry)) {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = font.name;
+      selectEl.appendChild(option);
+    }
   }
-
-  for (const [key, font] of Object.entries(FONT_REGISTRY.mono)) {
-    const option = document.createElement('option');
-    option.value = key;
-    option.textContent = font.displayName;
-    monoFontSelect.appendChild(option);
-  }
+  populateSelect(bodyFontSelect, FONT_REGISTRY.body);
+  populateSelect(monoFontSelect, FONT_REGISTRY.mono);
 
   // 現在の設定を読み込んでドロップダウンに反映
   try {

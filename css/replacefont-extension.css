@@ -30,11 +30,9 @@
   --pplx-font-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
 }
 
-/* 汎用的な等幅フォント要素に対する強制指定（詳細度を高めて上書きを確実に） */
+/* 汎用的な等幅フォント要素に対する強制指定（CSS継承で子孫に伝播） */
 :root :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]),
 :host :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]),
-:root :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]) :not(i, .icon, [class*="icon"], [class*="Icon"]),
-:host :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]) :not(i, .icon, [class*="icon"], [class*="Icon"]),
 [style*="monospace"], [style*="ui-monospace"] {
   font-family: "__MONO_FONT_NAME__", "Berkeley Mono", "IBM Plex Mono", "Geist Mono", "Cascadia Code", "Cascadia Mono", "Consolas", "Monaco", "Courier New", __MONO_FONT_FALLBACK__ !important;
 }

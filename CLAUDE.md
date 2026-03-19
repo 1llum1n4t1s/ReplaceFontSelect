@@ -9,11 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build Commands
 
 ```bash
-npm run build              # Full build: icons + CSS + screenshots
-npm run generate-css       # Regenerate css/replacefont-extension.css from scripts/generate-css.js
-npm run convert-fonts      # Convert all fonts/*.ttf → fonts/*.woff2
-npm run generate-icons     # Regenerate PNG icons from icons/icon.svg
-npm run generate-screenshots  # Generate Chrome Web Store promotional images
+npm run build                # Full build: icons + CSS
+npm run generate-css         # Regenerate css/replacefont-extension.css from scripts/generate-css.js
+npm run convert-fonts        # Convert all fonts/*.ttf → fonts/*.woff2
+npm run generate-icons       # Regenerate PNG icons from icons/icon.svg
+npm run generate-screenshots # Generate Chrome Web Store promotional images (requires puppeteer)
 ```
 
 **Release workflow** — `.\zip.ps1` runs the complete pipeline:
@@ -64,16 +64,16 @@ preload-fonts.js (content script, runs at document_start, all_frames: true)
 - **`font-config.js`** — Single source of truth for all font metadata (`FONT_REGISTRY`). Shared between content scripts (manifest injection) and popup (`<script>` tag).
 - **`preload-fonts.js`** — Main content script (IIFE-wrapped). Handles CSS fetching, placeholder replacement, injection into document + Shadow DOM, font preloading, and MutationObserver-based monitoring.
 - **`inject.js`** — Tiny page-context script that overrides `Element.prototype.attachShadow` to dispatch a custom event, enabling CSS injection into closed Shadow DOM. Removes itself from DOM after execution.
-- **`scripts/generate-css.js`** — Build-time script generating `@font-face` rules with placeholder tokens. Regenerate after modifying.
+- **`scripts/generate-css.js`** — Build-time script generating `@font-face` rules with placeholder tokens. **Must run `npm run generate-css` after any modification** to regenerate `css/replacefont-extension.css`.
 - **`popup/popup.js`** — Reads `FONT_REGISTRY` to dynamically populate dropdowns, saves selections to `chrome.storage.local`.
 
 ### Shadow DOM Strategy
 
 Two mechanisms ensure CSS reaches Shadow DOM:
-1. **`inject.js`** (page context) — Intercepts `attachShadow()` calls, dispatches event for newly created roots (including closed Shadow DOM).
-2. **`setupShadowDOMObserver()`** (content script) — MutationObserver + TreeWalker scans for open Shadow DOM roots. Uses chunked scanning (200 elements/batch via `requestIdleCallback`).
+1. **`inject.js`** (page context, MAIN world) — Intercepts `attachShadow()` calls, sets `data-rfs-shadow` attribute on host, dispatches event for newly created roots (including closed Shadow DOM). Uses `queueMicrotask` to defer `setAttribute` for custom element constructor compatibility.
+2. **`setupShadowDOMObserver()`** (content script, ISOLATED world) — MutationObserver + TreeWalker scans for open Shadow DOM roots. Uses chunked scanning (200 elements/batch via `requestIdleCallback`).
 
-CSS injection uses Constructable Stylesheets (`adoptedStyleSheets`) for ShadowRoot (memory efficient), falling back to `<style>` tags. Deduplication via `_replaceFontApplied` flag on each root prevents re-injection.
+CSS injection uses Constructable Stylesheets (`adoptedStyleSheets`) for ShadowRoot (single shared `CSSStyleSheet` instance across all roots for memory efficiency), falling back to `<style>` tags. Deduplication via `_replaceFontApplied` flag on each root prevents re-injection.
 
 ### Adding a New Font
 
@@ -90,10 +90,38 @@ Key: `fontSettings` in `chrome.storage.local`
 ```
 Values: `bodyFont`/`monoFont` are keys from `FONT_REGISTRY.body`/`FONT_REGISTRY.mono`. `bodyFontWeight` is `"400"` (Regular) or `"500"` (Medium). Font changes require page reload.
 
-## Important Notes
+## Critical Constraints
 
-- `manifest.json` content_scripts load order is critical: `font-config.js` **must** load before `preload-fonts.js`.
+### CSS Selector Rules — No Universal Selectors
+
+**ユニバーサルセレクタ (`*`) や暗黙的にユニバーサルセレクタとして機能するセレクタは絶対に使用しないこと。** Font Awesome、Material Icons、codicon 等のアイコンフォントの `font-family` を上書きして表示が崩壊する。
+
+禁止パターン:
+- `* { font-family: ... }` — 明示的なユニバーサルセレクタ
+- `:is(pre, code) :not(i, .icon)` — `:not()` 単独の子孫セレクタは `*:not(...)` と同義
+- あらゆる形で「全子孫要素にマッチ」するセレクタ
+
+許可パターン:
+- `:root :is(pre, code, kbd, samp, ...)` — コンテナ要素自体にマッチ（CSS継承で子孫に伝播）
+- `[style*="monospace"]` — インラインスタイルを持つ特定要素のみ
+
+### Performance — Content Script Hot Path
+
+`preload-fonts.js` は全ページの `document_start` で全フレームにて実行される。以下を遵守:
+- `document_start` 時点の同期処理を最小限に保つ
+- DOM が空の状態での無意味な `querySelector` を避ける
+- `MutationObserver` コールバック内で重い処理を行わない（`_replaceFontApplied` フラグで早期リターン）
+
+### Manifest Load Order
+
+`manifest.json` content_scripts load order is critical:
+- `inject.js` — MAIN world, `document_start` (Shadow DOM intercept must be first)
+- `font-config.js` → `preload-fonts.js` — ISOLATED world, `document_start` (config must load before main script)
+
+### Other Constraints
+
 - `web_accessible_resources` must include `fonts/*.woff2`, `css/*.css`, and `inject.js`.
 - M PLUS 2 and Murecho are **variable fonts** — single woff2 file serves both Regular and Bold weights.
 - Extension uses `"run_at": "document_start"` and `"all_frames": true` for earliest possible font injection across all frames.
 - Font changes in popup require page reload — CSS is fetched once at `document_start` and cached.
+- MAIN → ISOLATED world 間の `CustomEvent.detail` は構造化クローンで `null` になるため、`data-rfs-shadow` 属性方式で通信する。

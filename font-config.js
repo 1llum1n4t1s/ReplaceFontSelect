@@ -7,7 +7,6 @@ const FONT_REGISTRY = {
   body: {
     'noto-sans-jp': {
       name: 'Noto Sans JP',
-      displayName: 'Noto Sans JP',
       fallback: 'sans-serif',
       localFontsRegular: ['Noto Sans JP', 'Noto Sans CJK Variable', 'Noto Sans CJK JP'],
       localFontsBold: ['Noto Sans JP', 'Noto Sans CJK Variable', 'Noto Sans CJK JP'],
@@ -17,7 +16,6 @@ const FONT_REGISTRY = {
     },
     'ibm-plex-sans-jp': {
       name: 'IBM Plex Sans JP',
-      displayName: 'IBM Plex Sans JP',
       fallback: 'sans-serif',
       localFontsRegular: ['IBM Plex Sans JP'],
       localFontsBold: ['IBM Plex Sans JP Bold'],
@@ -27,7 +25,6 @@ const FONT_REGISTRY = {
     },
     'm-plus-2': {
       name: 'M PLUS 2',
-      displayName: 'M PLUS 2',
       fallback: 'sans-serif',
       localFontsRegular: ['M PLUS 2'],
       localFontsBold: ['M PLUS 2'],
@@ -37,7 +34,6 @@ const FONT_REGISTRY = {
     },
     'murecho': {
       name: 'Murecho',
-      displayName: 'Murecho',
       fallback: 'sans-serif',
       localFontsRegular: ['Murecho'],
       localFontsBold: ['Murecho'],
@@ -47,7 +43,6 @@ const FONT_REGISTRY = {
     },
     'zen-kaku-gothic-new': {
       name: 'Zen Kaku Gothic New',
-      displayName: 'Zen Kaku Gothic New',
       fallback: 'sans-serif',
       localFontsRegular: ['Zen Kaku Gothic New'],
       localFontsBold: ['Zen Kaku Gothic New Bold'],
@@ -59,7 +54,6 @@ const FONT_REGISTRY = {
   mono: {
     'udev-gothic-jpdoc': {
       name: 'UDEV Gothic JPDOC',
-      displayName: 'UDEV Gothic JPDOC',
       fallback: 'monospace',
       localFontsRegular: ['UDEV Gothic JPDOC'],
       localFontsBold: ['UDEV Gothic JPDOC Bold'],
@@ -68,7 +62,6 @@ const FONT_REGISTRY = {
     },
     'plemoljp': {
       name: 'PlemolJP',
-      displayName: 'PlemolJP',
       fallback: 'monospace',
       localFontsRegular: ['PlemolJP'],
       localFontsBold: ['PlemolJP Bold'],
@@ -77,7 +70,6 @@ const FONT_REGISTRY = {
     },
     'moralerspace-neon-jpdoc': {
       name: 'Moralerspace Neon JPDOC',
-      displayName: 'Moralerspace Neon JPDOC',
       fallback: 'monospace',
       localFontsRegular: ['Moralerspace Neon JPDOC'],
       localFontsBold: ['Moralerspace Neon JPDOC Bold'],

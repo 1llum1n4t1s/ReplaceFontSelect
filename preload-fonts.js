@@ -8,7 +8,9 @@
     try {
       const url = chrome.runtime.getURL('');
       if (url && url.includes('://')) return url;
-    } catch (e) {}
+    } catch (e) {
+      log('[フォント置換] runtime.getURL failed:', e.message);
+    }
     // フォールバック: manifest から取得を試みる（通常は不要）
     return `chrome-extension://${chrome.runtime.id}/`;
   };
@@ -22,7 +24,6 @@
 
   // クラス名の衝突を防ぐためのユニークID
   const uniqueId = `preloadFontTag${Date.now()}`;
-  // cssUrls 削除: CSS_URL を直接使用（配列は不要）
 
   // キャッシュされた固定済みCSS（Promise を格納して並行 fetch を防止）
   const fixedCSSCache = new Map();
@@ -111,6 +112,10 @@
     ];
   }
 
+  // 置換マップ・正規表現のキャッシュ（初回構築後は不変）
+  let placeholderMap = null;
+  let placeholderRegex = null;
+
   /**
    * CSSテキスト内のプレースホルダーを選択フォント情報に置換する
    * 単一パスの正規表現で全プレースホルダーを一括置換（12回→1回の文字列走査）
@@ -118,12 +123,11 @@
   function replaceFontPlaceholders(text) {
     if (!selectedBodyFont || !selectedMonoFont) return text;
 
-    // 置換マップを構築（初回のみ、以降はクロージャでキャッシュ）
-    if (!replaceFontPlaceholders._map) {
+    // 置換マップを構築（初回のみ）
+    if (!placeholderMap) {
       const bodyWoff2 = getBodyWoff2(selectedBodyFont, selectedBodyFontWeight);
-      replaceFontPlaceholders._map = {
+      placeholderMap = {
         '__REPLACE_FONT_BASE__': BASE_URL,
-        '../fonts/': FONT_BASE_URL,
         '__BODY_FONT_NAME__': selectedBodyFont.name,
         '__BODY_FONT_FALLBACK__': selectedBodyFont.fallback,
         '__BODY_FONT_WEIGHT__': selectedBodyFontWeight,
@@ -139,12 +143,12 @@
         '__MONO_WOFF2_BOLD__': selectedMonoFont.woff2Bold,
       };
       // エスケープ済みキーから単一の正規表現を構築
-      const escaped = Object.keys(replaceFontPlaceholders._map)
+      const escaped = Object.keys(placeholderMap)
         .map(k => k.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'));
-      replaceFontPlaceholders._regex = new RegExp(escaped.join('|'), 'g');
+      placeholderRegex = new RegExp(escaped.join('|'), 'g');
     }
 
-    return text.replace(replaceFontPlaceholders._regex, match => replaceFontPlaceholders._map[match]);
+    return text.replace(placeholderRegex, match => placeholderMap[match]);
   }
 
   /**
@@ -249,50 +253,31 @@
       return;
     }
 
-    // styleタグ方式が既に存在するか念のため確認
-    if (root.querySelector && root.querySelector('[data-replace-font]')) {
-      root._replaceFontApplied = true;
-      return;
-    }
-
     root._replaceFontInProgress = true;
-    const isShadow = root instanceof ShadowRoot;
 
     try {
-      if (isShadow) {
-        // ShadowRoot: adoptedStyleSheets でフルCSSの単一インスタンスを共有
+      // ShadowRoot: adoptedStyleSheets で共有インスタンスを優先使用
+      if (root instanceof ShadowRoot) {
         const sheet = await getSharedStyleSheet();
         if (sheet) {
           root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
           root._replaceFontApplied = true;
           return;
         }
-        // adoptedStyleSheets 非対応 → <style> タグにフォールバック
-        const cssText = await getFixedCSS(CSS_URL);
-        if (!cssText) {
-          root._replaceFontRetryCount = (root._replaceFontRetryCount || 0) + 1;
-          if (root._replaceFontRetryCount >= 3) root._replaceFontApplied = true;
-          return;
-        }
-        const style = document.createElement('style');
-        style.textContent = cssText;
-        style.dataset.replaceFont = 'true';
-        root.appendChild(style);
-        root._replaceFontApplied = true;
-      } else {
-        // document.head: フルCSS
-        const cssText = await getFixedCSS(CSS_URL);
-        if (!cssText) {
-          root._replaceFontRetryCount = (root._replaceFontRetryCount || 0) + 1;
-          if (root._replaceFontRetryCount >= 3) root._replaceFontApplied = true;
-          return;
-        }
-        const style = document.createElement('style');
-        style.textContent = cssText;
-        style.dataset.replaceFont = 'true';
-        root.appendChild(style);
-        root._replaceFontApplied = true;
       }
+
+      // document.head または adoptedStyleSheets 非対応時: <style> タグで注入
+      const cssText = await getFixedCSS(CSS_URL);
+      if (!cssText) {
+        root._replaceFontRetryCount = (root._replaceFontRetryCount || 0) + 1;
+        if (root._replaceFontRetryCount >= 3) root._replaceFontApplied = true;
+        return;
+      }
+      const style = document.createElement('style');
+      style.textContent = cssText;
+      style.dataset.replaceFont = 'true';
+      root.appendChild(style);
+      root._replaceFontApplied = true;
     } catch (e) {
       // エラー時はサイレントに失敗（ユーザー体験に影響しない）
     } finally {
@@ -389,8 +374,6 @@
     for (const config of fontConfig) {
       // 有効な絶対URLであることを確認
       if (!config.fontUrl || !config.fontUrl.includes('://')) continue;
-      // 重複チェック
-      if (document.querySelector(`link[href="${config.fontUrl}"]`)) continue;
 
       const preloadTag = document.createElement('link');
       preloadTag.rel = 'preload';
@@ -468,10 +451,10 @@
     const settings = await loadFontSettings();
     log('[フォント置換] 設定読み込み完了:', settings);
 
+    // loadFontSettings() が既にデフォルト適用済みの値を返すため、二重フォールバック不要
     const registry = (typeof FONT_REGISTRY !== 'undefined') ? FONT_REGISTRY : null;
-    const defaults = getDefaultSettings();
-    const bodyFontInfo = registry?.body?.[settings.bodyFont] || registry?.body?.[defaults.bodyFont] || null;
-    const monoFontInfo = registry?.mono?.[settings.monoFont] || registry?.mono?.[defaults.monoFont] || null;
+    const bodyFontInfo = registry?.body?.[settings.bodyFont] || null;
+    const monoFontInfo = registry?.mono?.[settings.monoFont] || null;
 
     if (!bodyFontInfo || !monoFontInfo) {
       log('[フォント置換] フォント情報が取得できません。FONT_REGISTRY:', typeof FONT_REGISTRY);
