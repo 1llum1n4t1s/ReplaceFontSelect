@@ -1,11 +1,15 @@
 {
   "manifest_version": 3,
   "name": "目に優しいフォント置換",
-  "version": "1.0.16",
+  "version": "1.0.20",
   "description": "読みづらいフォントを好みの日本語フォントに自動置換。フォント選択機能付き。",
   "permissions": [
-    "storage"
+    "storage",
+    "scripting"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "icons": {
     "16": "icons/icon-16x16.png",
     "48": "icons/icon-48x48.png",

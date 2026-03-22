@@ -49,6 +49,15 @@ const FONT_REGISTRY = {
       woff2Regular: 'ZenKakuGothicNew-Regular.woff2',
       woff2Medium: 'ZenKakuGothicNew-Medium.woff2',
       woff2Bold: 'ZenKakuGothicNew-Bold.woff2'
+    },
+    'line-seed-jp': {
+      name: 'LINE Seed JP',
+      fallback: 'sans-serif',
+      localFontsRegular: ['LINE Seed JP'],
+      localFontsBold: ['LINE Seed JP Bold'],
+      woff2Regular: 'LINESeedJP-Regular.woff2',
+      woff2Medium: 'LINESeedJP-Regular.woff2',
+      woff2Bold: 'LINESeedJP-Bold.woff2'
     }
   },
   mono: {
@@ -78,9 +87,15 @@ const FONT_REGISTRY = {
     }
   },
   defaults: {
+    enabled: true,
     bodyFont: 'noto-sans-jp',
     monoFont: 'udev-gothic-jpdoc',
     bodyFontWeight: '400'
   },
   storageKey: 'fontSettings'
 };
+
+// Node.js（ビルドスクリプト）からも require() で使用可能にする
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { FONT_REGISTRY };
+}

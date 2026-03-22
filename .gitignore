@@ -22,3 +22,4 @@ debug/
 
 # Chrome extension reserved
 _metadata/
+temp/

@@ -3,7 +3,6 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" type="text/css" href="style.css">
   <script src="../font-config.js"></script>
@@ -13,14 +12,20 @@
 <body>
   <div class="container">
     <div class="header">
-      <div class="icon">✨</div>
+      <div class="icon">Aa</div>
       <h1 class="title">目に優しいフォント置換</h1>
     </div>
 
     <div class="status-card">
-      <div class="status-indicator">
-        <span class="dot active"></span>
-        <span class="status-text">動作中</span>
+      <div class="status-row">
+        <div class="status-indicator">
+          <span class="dot active" id="status-dot"></span>
+          <span class="status-text" id="status-text">動作中</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="enabled-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
       </div>
       <p class="description">読みづらいフォントを好みの日本語フォントに自動置換します</p>
     </div>

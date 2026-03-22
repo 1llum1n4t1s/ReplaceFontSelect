@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { FONT_REGISTRY } = require('../font-config');
 
 // ---------------------------------------------
 // 置換対象フォント
@@ -80,33 +81,32 @@ const MONO_FONT_FAMILIES = [
   'monospace' // 汎用等幅
 ];
 
-// ヒラギノシリーズのバリエーション生成（既存ロジック維持）
-const HIRAGINO_WEIGHTS = Array.from({ length: 9 }, (_, i) => i + 1);
-const HIRAGINO_VARIANTS = [];
-for (const weight of HIRAGINO_WEIGHTS) {
-  HIRAGINO_VARIANTS.push(`Hiragino Kaku Gothic ProN W${weight}`);
-  HIRAGINO_VARIANTS.push(`Hiragino Kaku Gothic Pro W${weight}`);
-  HIRAGINO_VARIANTS.push(`ヒラギノ角ゴ ProN W${weight}`);
-  HIRAGINO_VARIANTS.push(`ヒラギノ角ゴ Pro W${weight}`);
-}
-HIRAGINO_VARIANTS.unshift('Hiragino Kaku Gothic ProN', 'Hiragino Kaku Gothic Pro', 'ヒラギノ角ゴ ProN', 'ヒラギノ角ゴ Pro');
+// ヒラギノシリーズのバリエーション生成
+const HIRAGINO_BASES = ['Hiragino Kaku Gothic ProN', 'Hiragino Kaku Gothic Pro', 'ヒラギノ角ゴ ProN', 'ヒラギノ角ゴ Pro'];
+const HIRAGINO_VARIANTS = [
+  ...HIRAGINO_BASES,
+  ...Array.from({ length: 9 }, (_, i) => i + 1).flatMap(w => HIRAGINO_BASES.map(b => `${b} W${w}`))
+];
 
 // 最終的なフォントファミリー配列
 const GOTHIC_FAMILIES = [...new Set([...GOTHIC_FONT_FAMILIES, ...HIRAGINO_VARIANTS])]; // 重複排除を追加
 
 // フォント設定（プレースホルダーを使用）
+// リダイレクトルール: 範囲指定で全ウェイトをカバーする
+// 100-599 → Regular woff2、600-900 → Bold woff2
+// これにより font-weight: 500 (Medium) や 600 (SemiBold) もマッチする
 const GOTHIC_CONFIGS = [
   {
     weight: 'Regular',
     localFonts: '__BODY_LOCAL_REGULAR__',
     webFont: '__BODY_WOFF2_REGULAR__',
-    fontWeight: '__BODY_FONT_WEIGHT__'
+    fontWeight: '100 599'
   },
   {
     weight: 'Bold',
     localFonts: '__BODY_LOCAL_BOLD__',
     webFont: '__BODY_WOFF2_BOLD__',
-    fontWeight: 'bold'
+    fontWeight: '600 900'
   }
 ];
 
@@ -115,13 +115,13 @@ const MONO_CONFIGS = [
     weight: 'Regular',
     localFonts: '__MONO_LOCAL_REGULAR__',
     webFont: '__MONO_WOFF2_REGULAR__',
-    fontWeight: 400
+    fontWeight: '100 599'
   },
   {
     weight: 'Bold',
     localFonts: '__MONO_LOCAL_BOLD__',
     webFont: '__MONO_WOFF2_BOLD__',
-    fontWeight: 'bold'
+    fontWeight: '600 900'
   }
 ];
 
@@ -190,6 +190,12 @@ function generateCSS(outputConfig) {
   --tw-font-sans: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
   --font-anthropic-serif: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
   --font-anthropic-sans: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
+  --font-ui: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
+  --font-ui-serif: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
+  --font-user-message: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
+  --font-claude-response: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
+  --font-sans-serif: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
+  --font-serif: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
 
   /* Monospace 系 CSS 変数 */
   --font-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
@@ -214,34 +220,35 @@ function generateCSS(outputConfig) {
 `;
 
   /** @type {string} 置換フォント自体の @font-face 定義（これがないとフォント名から woff2 を解決できない） */
+  // リダイレクトルールと同じ範囲指定にして、中間ウェイト（500等）もカバーする
   const replacementFontFaces = `
 /* 置換フォント自体の @font-face 定義 */
 @font-face {
   font-family: "__BODY_FONT_NAME__";
   src:  __BODY_LOCAL_REGULAR__,
         url('__REPLACE_FONT_BASE__fonts/__BODY_WOFF2_REGULAR__') format('woff2');
-  font-weight: __BODY_FONT_WEIGHT__;
+  font-weight: 100 599;
   font-display: swap;
 }
 @font-face {
   font-family: "__BODY_FONT_NAME__";
   src:  __BODY_LOCAL_BOLD__,
         url('__REPLACE_FONT_BASE__fonts/__BODY_WOFF2_BOLD__') format('woff2');
-  font-weight: bold;
+  font-weight: 600 900;
   font-display: swap;
 }
 @font-face {
   font-family: "__MONO_FONT_NAME__";
   src:  __MONO_LOCAL_REGULAR__,
         url('__REPLACE_FONT_BASE__fonts/__MONO_WOFF2_REGULAR__') format('woff2');
-  font-weight: 400;
+  font-weight: 100 599;
   font-display: swap;
 }
 @font-face {
   font-family: "__MONO_FONT_NAME__";
   src:  __MONO_LOCAL_BOLD__,
         url('__REPLACE_FONT_BASE__fonts/__MONO_WOFF2_BOLD__') format('woff2');
-  font-weight: bold;
+  font-weight: 600 900;
   font-display: swap;
 }
 `;
@@ -256,43 +263,143 @@ function generateCSS(outputConfig) {
   return `${header}\n${variableOverrides}\n${replacementFontFaces}\n${sections.join('\n')}\n`;
 }
 
+// ---------------------------------------------
+// プリセットCSS生成（事前ビルド方式）
+// ---------------------------------------------
+
+/**
+ * プレースホルダー置換マップを構築する
+ * @param {string} bodyKey - FONT_REGISTRY.body のキー
+ * @param {string} monoKey - FONT_REGISTRY.mono のキー
+ * @param {string} weight - '400' or '500'
+ * @param {string} baseUrl - フォントファイルのベースURL
+ * @returns {Object} プレースホルダー → 実際の値のマップ
+ */
+function buildPlaceholderMap(bodyKey, monoKey, weight, baseUrl) {
+  const bodyFont = FONT_REGISTRY.body[bodyKey];
+  const monoFont = FONT_REGISTRY.mono[monoKey];
+  const bodyWoff2 = weight === '500' ? bodyFont.woff2Medium : bodyFont.woff2Regular;
+
+  return {
+    '__REPLACE_FONT_BASE__': baseUrl,
+    '__BODY_FONT_NAME__': bodyFont.name,
+    '__BODY_FONT_FALLBACK__': bodyFont.fallback,
+    '__BODY_FONT_WEIGHT__': weight,
+    '__BODY_LOCAL_REGULAR__': bodyFont.localFontsRegular.map(f => `local("${f}")`).join(', '),
+    '__BODY_LOCAL_BOLD__': bodyFont.localFontsBold.map(f => `local("${f}")`).join(', '),
+    '__BODY_WOFF2_REGULAR__': bodyWoff2,
+    '__BODY_WOFF2_BOLD__': bodyFont.woff2Bold,
+    '__MONO_FONT_NAME__': monoFont.name,
+    '__MONO_FONT_FALLBACK__': monoFont.fallback,
+    '__MONO_LOCAL_REGULAR__': monoFont.localFontsRegular.map(f => `local("${f}")`).join(', '),
+    '__MONO_LOCAL_BOLD__': monoFont.localFontsBold.map(f => `local("${f}")`).join(', '),
+    '__MONO_WOFF2_REGULAR__': monoFont.woff2Regular,
+    '__MONO_WOFF2_BOLD__': monoFont.woff2Bold,
+  };
+}
+
+/**
+ * テンプレートCSSのプレースホルダーを一括置換する
+ * @param {string} templateCSS - プレースホルダー入りテンプレートCSS
+ * @param {Object} placeholderMap - 置換マップ
+ * @returns {string} 解決済みCSS
+ */
+function resolveTemplate(templateCSS, placeholderMap) {
+  const escaped = Object.keys(placeholderMap)
+    .map(k => k.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'));
+  const regex = new RegExp(escaped.join('|'), 'g');
+  return templateCSS.replace(regex, match => placeholderMap[match]);
+}
+
+/**
+ * プリセットJSのファイル名を生成する（background.js と共通の命名規則）
+ * @param {string} bodyKey - bodyフォントキー
+ * @param {string} monoKey - monoフォントキー
+ * @param {string} weight - '400' or '500'
+ * @returns {string} ファイル名
+ */
+function getPresetFileName(bodyKey, monoKey, weight) {
+  return `preset-${bodyKey}-${monoKey}-w${weight}.js`;
+}
+
+/**
+ * CSSテキストをJSテンプレートリテラル内に埋め込むためにエスケープする
+ * @param {string} css - エスケープ対象のCSSテキスト
+ * @returns {string} エスケープ済みテキスト
+ */
+function escapeForTemplateLiteral(css) {
+  return css
+    .replace(/\\/g, '\\\\')   // バックスラッシュ → \\
+    .replace(/`/g, '\\`')     // バッククォート → \`
+    .replace(/\$\{/g, '\\${'); // ${ → \${
+}
+
+/**
+ * 全プリセットJSを生成する
+ * JSファイル内で chrome.runtime.getURL('') を使い、
+ * __REPLACE_FONT_BASE__ を実行時に拡張機能の絶対URLに置換する。
+ * @param {string} templateCSS - プレースホルダー入りテンプレートCSS
+ * @param {string} cssDir - 出力ディレクトリ
+ */
+function generatePresets(templateCSS, cssDir) {
+  const bodyKeys = Object.keys(FONT_REGISTRY.body);
+  const monoKeys = Object.keys(FONT_REGISTRY.mono);
+  const weights = ['400', '500'];
+  let count = 0;
+
+  for (const bodyKey of bodyKeys) {
+    for (const monoKey of monoKeys) {
+      for (const weight of weights) {
+        const fileName = getPresetFileName(bodyKey, monoKey, weight);
+        // __REPLACE_FONT_BASE__ は実行時に chrome.runtime.getURL('') で置換するため残す
+        const map = buildPlaceholderMap(bodyKey, monoKey, weight, '__REPLACE_FONT_BASE__');
+        const resolvedCSS = resolveTemplate(templateCSS, map);
+        // JSテンプレートリテラル内に埋め込むためにエスケープ
+        const escapedCSS = escapeForTemplateLiteral(resolvedCSS);
+        const jsContent = `(() => {
+  const s = document.createElement('style');
+  s.dataset.replaceFont = 'preset';
+  s.textContent = \`${escapedCSS}\`.replace(/__REPLACE_FONT_BASE__/g, chrome.runtime.getURL(''));
+  (document.head || document.documentElement).appendChild(s);
+})();
+`;
+        const outputPath = path.join(cssDir, fileName);
+        fs.writeFileSync(outputPath, jsContent, 'utf8');
+        count++;
+      }
+    }
+  }
+
+  console.log(`✅ プリセット JS ${count} ファイルを生成しました`);
+}
+
 /**
  * メイン処理
  */
-async function main() {
+function main() {
   console.log('🎨 CSS ファイル生成を開始します...\n');
 
   const cssDir = path.join(__dirname, '../css');
+  fs.mkdirSync(cssDir, { recursive: true });
 
-  // css ディレクトリの確認
-  if (!fs.existsSync(cssDir)) {
-    fs.mkdirSync(cssDir, { recursive: true });
-  }
-
-  // 各設定ごとに CSS を生成
+  // 1. テンプレートCSS生成（プレースホルダー入り、Shadow DOM用フォールバック）
   for (const outputConfig of OUTPUT_CONFIGS) {
     const outputPath = path.join(cssDir, outputConfig.fileName);
-    const cssContent = generateCSS(outputConfig);
-
     try {
-      fs.writeFileSync(outputPath, cssContent, 'utf8');
-      console.log(`✅ ${outputConfig.title} CSS を生成しました: ${outputConfig.fileName}`);
+      const templateCSS = generateCSS(outputConfig);
+      fs.writeFileSync(outputPath, templateCSS, 'utf8');
       const totalFonts = outputConfig.configs.reduce((acc, curr) => acc + curr.families.length, 0);
-      console.log(`   - フォント定義数: ${totalFonts}`);
+      console.log(`✅ ${outputConfig.title} テンプレート CSS を生成しました: ${outputConfig.fileName} (フォント定義数: ${totalFonts})`);
+
+      // 2. プリセットCSS生成（全フォント組み合わせの解決済みCSS）
+      generatePresets(templateCSS, cssDir);
     } catch (error) {
-      console.error(`❌ ${outputConfig.title} CSS の生成に失敗しました:`, error.message);
+      console.error(`❌ CSS の生成に失敗しました:`, error.message);
       process.exit(1);
     }
   }
 
   console.log('\n🎉 CSS ファイル生成が完了しました！');
-  console.log('\n📂 生成されたファイル:');
-  OUTPUT_CONFIGS.forEach(config => {
-    console.log(`   - css/${config.fileName}`);
-  });
 }
 
-main().catch(error => {
-  console.error('❌ エラーが発生しました:', error);
-  process.exit(1);
-});
+main();
