@@ -70,8 +70,7 @@ The extension uses a two-path injection system for zero-flash font replacement:
 | `__BODY_FONT_NAME__` | `Noto Sans JP` |
 | `__BODY_FONT_FALLBACK__` | `sans-serif` |
 | `__BODY_LOCAL_REGULAR__` | `local("Noto Sans JP"), local("Noto Sans CJK Variable")` |
-| `__BODY_FONT_WEIGHT__` | `400` or `500` |
-| `__BODY_WOFF2_REGULAR__` | `NotoSansJP-Regular.woff2` (or Medium variant based on weight) |
+| `__BODY_WOFF2_REGULAR__` | `NotoSansJP-Regular.woff2` (weight=500 時は Medium バリアント) |
 | `__MONO_FONT_NAME__` | `UDEV Gothic JPDOC` |
 | `__MONO_LOCAL_BOLD__` | `local("UDEV Gothic JPDOC Bold")` |
 | `__REPLACE_FONT_BASE__` | `chrome-extension://<id>/` |

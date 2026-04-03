@@ -284,7 +284,6 @@ function buildPlaceholderMap(bodyKey, monoKey, weight, baseUrl) {
     '__REPLACE_FONT_BASE__': baseUrl,
     '__BODY_FONT_NAME__': bodyFont.name,
     '__BODY_FONT_FALLBACK__': bodyFont.fallback,
-    '__BODY_FONT_WEIGHT__': weight,
     '__BODY_LOCAL_REGULAR__': bodyFont.localFontsRegular.map(f => `local("${f}")`).join(', '),
     '__BODY_LOCAL_BOLD__': bodyFont.localFontsBold.map(f => `local("${f}")`).join(', '),
     '__BODY_WOFF2_REGULAR__': bodyWoff2,

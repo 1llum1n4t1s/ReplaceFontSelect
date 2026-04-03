@@ -12,14 +12,21 @@ function getPresetPath(settings) {
   return `css/preset-${bodyFont}-${monoFont}-w${bodyFontWeight}.js`;
 }
 
-async function loadSettings() {
+// 空文字・undefined を除外して defaults にマージ（preload-fonts.js と同一ポリシー）
+function mergeWithDefaults(stored) {
   const defaults = FONT_REGISTRY.defaults;
+  const filtered = Object.fromEntries(
+    Object.entries(stored).filter(([, v]) => v !== undefined && v !== '')
+  );
+  return { ...defaults, ...filtered };
+}
+
+async function loadSettings() {
   try {
     const result = await chrome.storage.local.get(FONT_REGISTRY.storageKey);
-    const stored = result[FONT_REGISTRY.storageKey] || {};
-    return { ...defaults, ...stored };
+    return mergeWithDefaults(result[FONT_REGISTRY.storageKey] || {});
   } catch {
-    return { ...defaults };
+    return { ...FONT_REGISTRY.defaults };
   }
 }
 
@@ -59,9 +66,15 @@ chrome.runtime.onInstalled.addListener(async () => {
   await ensureRegistration(settings);
 });
 
+// ブラウザ起動時の防御策（persistAcrossSessions が失われた場合のリカバリ）
+chrome.runtime.onStartup.addListener(async () => {
+  const settings = await loadSettings();
+  await ensureRegistration(settings);
+});
+
 // 設定変更の監視
 chrome.storage.onChanged.addListener(async (changes, area) => {
   if (area !== 'local' || !changes[FONT_REGISTRY.storageKey]) return;
-  const newSettings = { ...FONT_REGISTRY.defaults, ...(changes[FONT_REGISTRY.storageKey].newValue || {}) };
+  const newSettings = mergeWithDefaults(changes[FONT_REGISTRY.storageKey].newValue || {});
   await ensureRegistration(newSettings);
 });

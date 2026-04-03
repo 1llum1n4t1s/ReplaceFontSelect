@@ -47,10 +47,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const result = await chrome.storage.local.get(storageKey);
     const settings = result[storageKey] || {};
-    updateToggleUI(settings.enabled !== undefined ? settings.enabled : defaults.enabled);
-    bodyFontSelect.value = settings.bodyFont || defaults.bodyFont;
-    bodyWeightSelect.value = settings.bodyFontWeight || defaults.bodyFontWeight;
-    monoFontSelect.value = settings.monoFont || defaults.monoFont;
+    // 空文字・undefined はデフォルトにフォールバック（background.js, preload-fonts.js と同一ポリシー）
+    const v = (val, def) => (val !== undefined && val !== '') ? val : def;
+    updateToggleUI(v(settings.enabled, defaults.enabled));
+    bodyFontSelect.value = v(settings.bodyFont, defaults.bodyFont);
+    bodyWeightSelect.value = v(settings.bodyFontWeight, defaults.bodyFontWeight);
+    monoFontSelect.value = v(settings.monoFont, defaults.monoFont);
   } catch (e) {
     applyDefaults();
   }

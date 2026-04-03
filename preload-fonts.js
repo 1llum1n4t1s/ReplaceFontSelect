@@ -3,8 +3,11 @@
   const DEBUG = false;
   const log = DEBUG ? console.debug.bind(console) : () => {};
 
-  // data-replace-font 属性値の定数
+  // data-replace-font 属性の定数
+  // dataset API 用 (camelCase): element.dataset[RFS_ATTR]
   const RFS_ATTR = 'replaceFont';
+  // querySelector 用 (kebab-case): querySelector(`[${RFS_SELECTOR}]`)
+  const RFS_SELECTOR = 'data-replace-font';
   const RFS_PRESET = 'preset';
   const RFS_FALLBACK = 'true';
 
@@ -77,16 +80,16 @@
   function checkPresetCSSInDOM() {
     const root = document.head || document.documentElement;
     if (!root) return false;
-    return root.querySelector(`style[data-${RFS_ATTR}="${RFS_PRESET}"]`) !== null;
+    return root.querySelector(`style[${RFS_SELECTOR}="${RFS_PRESET}"]`) !== null;
   }
 
-  // ハードコードのフォールバック値
-  const HARDCODED_DEFAULTS = { enabled: true, bodyFont: 'noto-sans-jp', monoFont: 'udev-gothic-jpdoc', bodyFontWeight: '400' };
+  // FONT_REGISTRY 未定義時の緊急フォールバック（通常到達しない: manifest で先にロード済み）
+  const EMERGENCY_DEFAULTS = { enabled: true, bodyFont: 'noto-sans-jp', monoFont: 'udev-gothic-jpdoc', bodyFontWeight: '400' };
 
   function getDefaultSettings() {
     return (typeof FONT_REGISTRY !== 'undefined' && FONT_REGISTRY.defaults)
-      ? { ...HARDCODED_DEFAULTS, ...FONT_REGISTRY.defaults }
-      : HARDCODED_DEFAULTS;
+      ? { ...FONT_REGISTRY.defaults }
+      : EMERGENCY_DEFAULTS;
   }
 
   /**
@@ -156,7 +159,6 @@
         '__REPLACE_FONT_BASE__': BASE_URL,
         '__BODY_FONT_NAME__': selectedBodyFont.name,
         '__BODY_FONT_FALLBACK__': selectedBodyFont.fallback,
-        '__BODY_FONT_WEIGHT__': selectedBodyFontWeight,
         '__BODY_LOCAL_REGULAR__': selectedBodyFont.localFontsRegular.map(f => `local("${f}")`).join(', '),
         '__BODY_LOCAL_BOLD__': selectedBodyFont.localFontsBold.map(f => `local("${f}")`).join(', '),
         '__BODY_WOFF2_REGULAR__': bodyWoff2,
@@ -189,7 +191,7 @@
         if (prebuiltCSSRegistered) {
           // プリセットモード: プリセットJSが注入した <style> からCSSテキストを取得
           const presetStyle = (document.head || document.documentElement)
-            ?.querySelector(`style[data-${RFS_ATTR}="${RFS_PRESET}"]`);
+            ?.querySelector(`style[${RFS_SELECTOR}="${RFS_PRESET}"]`);
           if (presetStyle) {
             return presetStyle.textContent;
           }
@@ -252,15 +254,22 @@
     }
   }
 
+  // microtask バッチで複数の Shadow Root 生成を1回の DOM スキャンにまとめる (O(N²)→O(N))
+  let shadowBatchPending = false;
   window.addEventListener('replace-font-shadow-created', () => {
-    const elements = document.querySelectorAll('[data-rfs-shadow]:not([data-rfs-done])');
-    for (const el of elements) {
-      el.setAttribute('data-rfs-done', '');
-      if (el.shadowRoot) {
-        log('[フォント置換] inject.js経由でShadow Root検出:', el.tagName);
-        injectCSS(el.shadowRoot);
+    if (shadowBatchPending) return;
+    shadowBatchPending = true;
+    queueMicrotask(() => {
+      shadowBatchPending = false;
+      const elements = document.querySelectorAll('[data-rfs-shadow]:not([data-rfs-done])');
+      for (const el of elements) {
+        el.setAttribute('data-rfs-done', '');
+        if (el.shadowRoot) {
+          log('[フォント置換] inject.js経由でShadow Root検出:', el.tagName);
+          injectCSS(el.shadowRoot);
+        }
       }
-    }
+    });
   });
 
   // 現在の設定を保持（getCSSText に渡すため）
@@ -300,9 +309,7 @@
       if (root instanceof ShadowRoot) {
         const sheet = await getSharedStyleSheet(currentSettings);
         if (sheet) {
-          if (!root.adoptedStyleSheets.includes(sheet)) {
-            root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
-          }
+          root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
           root._replaceFontApplied = true;
           return;
         }
@@ -352,25 +359,30 @@
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
 
-    const walker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_ELEMENT);
     const CHUNK_SIZE = 200;
     let scanAborted = false;
 
-    function processChunks() {
-      if (scanAborted || !document.documentElement?.isConnected) { scanAborted = true; return; }
-      let count = 0;
-      let currentNode;
-      while (count < CHUNK_SIZE && (currentNode = walker.nextNode())) {
-        if (currentNode.isConnected && currentNode.shadowRoot) injectCSS(currentNode.shadowRoot);
-        count++;
+    function runInitialScan() {
+      scanAborted = false;
+      const walker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_ELEMENT);
+      function processChunks() {
+        if (scanAborted || !document.documentElement?.isConnected) return;
+        let count = 0;
+        let currentNode;
+        while (count < CHUNK_SIZE && (currentNode = walker.nextNode())) {
+          if (currentNode.isConnected && currentNode.shadowRoot) injectCSS(currentNode.shadowRoot);
+          count++;
+        }
+        if (count === CHUNK_SIZE) {
+          (window.requestIdleCallback || setTimeout)(processChunks, window.requestIdleCallback ? { timeout: 100 } : 0);
+        }
       }
-      if (count === CHUNK_SIZE) {
-        (window.requestIdleCallback || setTimeout)(processChunks, window.requestIdleCallback ? { timeout: 100 } : 0);
-      }
+      processChunks();
     }
 
-    window.addEventListener('pagehide', () => { scanAborted = true; }, { once: true });
-    processChunks();
+    window.addEventListener('pagehide', () => { scanAborted = true; });
+    window.addEventListener('pageshow', (e) => { if (e.persisted) runInitialScan(); });
+    runInitialScan();
   }
 
   // ── フォント preload ──
@@ -434,7 +446,7 @@
         if (selectedMonoFont) replacementNames.add(selectedMonoFont.name.toLowerCase());
 
         // 拡張機能が定義した @font-face のフォントファミリー名のみを収集
-        const extSheet = document.querySelector(`style[data-${RFS_ATTR}]`)?.sheet;
+        const extSheet = document.querySelector(`style[${RFS_SELECTOR}]`)?.sheet;
         if (extSheet) {
           try {
             for (const rule of extSheet.cssRules) {
@@ -511,7 +523,7 @@
 
     // CORS ブロックされたシートがある場合：拡張機能の <style> を <head> 末尾に再配置
     if (hasBlockedSheets) {
-      const extStyle = document.querySelector(`style[data-${RFS_ATTR}]`);
+      const extStyle = document.querySelector(`style[${RFS_SELECTOR}]`);
       if (extStyle?.parentNode) {
         queueMicrotask(() => {
           if (extStyle.parentNode) extStyle.parentNode.appendChild(extStyle);
@@ -532,7 +544,19 @@
     });
 
     headObserver.observe(document.head, { childList: true });
-    window.addEventListener('pagehide', () => headObserver.disconnect(), { once: true });
+    window.addEventListener('pagehide', () => headObserver.disconnect());
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted && document.head) {
+        // bfcache / freeze復帰時: 競合 @font-face 監視を再開
+        headObserver.observe(document.head, { childList: true });
+        // 復帰中に追加されたスタイルシートを再スキャン
+        for (const sheet of document.styleSheets) {
+          if (!sheet.ownerNode?.dataset?.[RFS_ATTR]) {
+            neutralizeCompetingFontFaces(sheet);
+          }
+        }
+      }
+    });
   }
 
   function flushPendingRoots() {

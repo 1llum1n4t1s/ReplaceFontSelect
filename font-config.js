@@ -56,7 +56,8 @@ const FONT_REGISTRY = {
       localFontsRegular: ['LINE Seed JP'],
       localFontsBold: ['LINE Seed JP Bold'],
       woff2Regular: 'LINESeedJP-Regular.woff2',
-      woff2Medium: 'LINESeedJP-Regular.woff2',
+      woff2Medium: 'LINESeedJP-Regular.woff2', // Medium 未提供のため Regular で代替
+
       woff2Bold: 'LINESeedJP-Bold.woff2'
     }
   },
