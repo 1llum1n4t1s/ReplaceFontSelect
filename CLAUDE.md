@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**目に優しいフォント置換** — A Chrome Extension (Manifest V3) that replaces hard-to-read fonts on all websites with user-selected Japanese fonts. Users choose from 6 body fonts (Noto Sans JP, IBM Plex Sans JP, M PLUS 2, Murecho, Zen Kaku Gothic New, LINE Seed JP) and 3 monospace fonts (UDEV Gothic JPDOC, PlemolJP, Moralerspace Neon JPDOC) via a popup dropdown. Body font weight is selectable (Regular 400 / Medium 500); monospace fonts are fixed at Regular 400. Settings persist in `chrome.storage.local`.
+**目に優しいフォント置換** — A Chrome/Firefox Extension (Manifest V3) that replaces hard-to-read fonts on all websites with user-selected Japanese fonts. Users choose from 6 body fonts (Noto Sans JP, IBM Plex Sans JP, M PLUS 2, Murecho, Zen Kaku Gothic New, LINE Seed JP) and 3 monospace fonts (UDEV Gothic JPDOC, PlemolJP, Moralerspace Neon JPDOC) via a popup dropdown. Body font weight is selectable (Regular 400 / Medium 500); monospace fonts are fixed at Regular 400. Settings persist in `chrome.storage.local`. Single codebase supports both Chrome and Firefox (128+).
 
 ## Build Commands
 
@@ -19,7 +19,7 @@ npm run generate-screenshots # Generate Chrome Web Store promotional images (req
 **Release workflow** — `.\zip.ps1` runs the complete pipeline:
 1. Syncs version from `package.json` → `manifest.json`, `README.md`, screenshot HTMLs
 2. `npm install` → icon generation → font conversion → screenshots → CSS generation
-3. Copies extension files to temp directory and creates `replace-font-select-chrome.zip`
+3. Copies extension files to temp directory and creates `replace-font-select-chrome.zip` + `replace-font-select-firefox.xpi`
 
 There are no tests or linting configured.
 
@@ -73,7 +73,7 @@ The extension uses a two-path injection system for zero-flash font replacement:
 | `__BODY_WOFF2_REGULAR__` | `NotoSansJP-Regular.woff2` (weight=500 時は Medium バリアント) |
 | `__MONO_FONT_NAME__` | `UDEV Gothic JPDOC` |
 | `__MONO_LOCAL_BOLD__` | `local("UDEV Gothic JPDOC Bold")` |
-| `__REPLACE_FONT_BASE__` | `chrome-extension://<id>/` |
+| `__REPLACE_FONT_BASE__` | `chrome-extension://<id>/` or `moz-extension://<uuid>/` |
 
 ### Key Files
 
@@ -158,7 +158,16 @@ Additional key: `prebuiltCSSRegistered` (boolean) — set by `background.js` to 
 
 ### CSP Limitations
 
-Sites with strict Content Security Policy (`font-src` or `default-src 'none'`) will block `url()` font loading from `chrome-extension://` origins. In such cases, only `local()` sources work (user must have the replacement font installed on their system). This is a browser-level limitation that cannot be circumvented by the extension.
+Sites with strict Content Security Policy (`font-src` or `default-src 'none'`) will block `url()` font loading from `chrome-extension://` / `moz-extension://` origins. In such cases, only `local()` sources work (user must have the replacement font installed on their system). This is a browser-level limitation that cannot be circumvented by the extension.
+
+### Cross-Browser Compatibility (Chrome / Firefox)
+
+Single codebase supports both Chrome and Firefox (128+). Key points:
+- All `chrome.*` APIs used by this extension are supported in Firefox's `chrome.*` namespace (no `browser.*` rewrite needed).
+- `chrome.scripting.registerContentScripts()` with `persistAcrossSessions` and `world` — supported in Firefox 128+.
+- `manifest.json` contains `browser_specific_settings.gecko` — Chrome ignores this field silently.
+- `preload-fonts.js` の `getExtensionBaseURL()` フォールバックは Chrome 専用（`chrome-extension://${runtime.id}`）。Firefox では `moz-extension://` のホストがランダム UUID のため `runtime.id` からURL構築不可だが、`chrome.runtime.getURL('')` が両ブラウザで正常動作するためフォールバックには到達しない。
+- `popup/style.css` のフォントURLは相対パス（`../fonts/...`）を使用。拡張機能オリジン内で動作するため両ブラウザで解決される。
 
 ### Other Constraints
 

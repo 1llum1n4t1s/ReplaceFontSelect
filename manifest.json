@@ -1,14 +1,24 @@
 {
   "manifest_version": 3,
   "name": "目に優しいフォント置換",
-  "version": "1.0.22",
+  "version": "1.0.24",
   "description": "読みづらいフォントを好みの日本語フォントに自動置換。フォント選択機能付き。",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{ee49eeb2-93a9-4062-ba75-06610054323f}",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
   "permissions": [
     "storage",
     "scripting"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
   },
   "icons": {
     "16": "icons/icon-16x16.png",

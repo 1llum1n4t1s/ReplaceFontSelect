@@ -71,7 +71,7 @@
   src: local('Noto Sans JP'),
        local('Noto Sans CJK Variable'),
        local('Noto Sans CJK JP'),
-       url('chrome-extension://__MSG_@@extension_id__/fonts/NotoSansJP-Regular.woff2') format('woff2');
+       url('../fonts/NotoSansJP-Regular.woff2') format('woff2');
   font-display: swap;
 }
 
@@ -80,7 +80,7 @@
   src: local('Noto Sans JP Bold'),
        local('Noto Sans CJK Variable'),
        local('Noto Sans CJK JP'),
-       url('chrome-extension://__MSG_@@extension_id__/fonts/NotoSansJP-Bold.woff2') format('woff2');
+       url('../fonts/NotoSansJP-Bold.woff2') format('woff2');
   font-weight: bold;
   font-display: swap;
 }

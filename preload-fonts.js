@@ -26,6 +26,9 @@
     } catch (e) {
       log('[フォント置換] runtime.getURL failed:', e.message);
     }
+    // フォールバック: Chrome では runtime.id がURLホストと一致するため有効。
+    // Firefox では moz-extension:// のホストがランダムUUIDのため runtime.id では構築不可だが、
+    // chrome.runtime.getURL('') が Firefox でも正常動作するためこのパスには到達しない。
     return `chrome-extension://${chrome.runtime.id}/`;
   };
 

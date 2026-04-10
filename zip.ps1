@@ -1,4 +1,4 @@
-# Chrome Web Store用のZIPファイルを作成するスクリプト (Windows PowerShell版)
+# Chrome Web Store / Firefox AMO 用のパッケージを作成するスクリプト (Windows PowerShell版)
 
 # バージョン同期: package.json から全ファイルにバージョンを自動同期
 $packageJson = Get-Content -Path "./package.json" -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -104,6 +104,24 @@ if (Test-Path "./replace-font-select-chrome.zip") {
     Write-Host ""
     Write-Host "✨ Chrome Web Store Developer Dashboardにアップロードできます！" -ForegroundColor Green
     Write-Host "   https://chrome.google.com/webstore/devconsole" -ForegroundColor Blue
+
+    # Firefox AMO用のXPIファイルを作成（コードベースは同一）
+    Write-Host ""
+    Write-Host "🦊 Firefox AMO用のXPIファイルを作成中..." -ForegroundColor Cyan
+
+    if (Test-Path "./replace-font-select-firefox.xpi") {
+        Remove-Item "./replace-font-select-firefox.xpi" -Force
+    }
+    Copy-Item "./replace-font-select-chrome.zip" "./replace-font-select-firefox.xpi" -Force
+
+    if (Test-Path "./replace-font-select-firefox.xpi") {
+        Write-Host "✅ XPIファイルを作成しました: replace-font-select-firefox.xpi" -ForegroundColor Green
+        Write-Host "✨ Firefox AMO Developer Hubにアップロードできます！" -ForegroundColor Green
+        Write-Host "   https://addons.mozilla.org/developers/" -ForegroundColor Blue
+    } else {
+        Write-Host "❌ XPIファイルの作成に失敗しました" -ForegroundColor Red
+        exit 1
+    }
 } else {
     Write-Host "❌ ZIPファイルの作成に失敗しました" -ForegroundColor Red
     exit 1
