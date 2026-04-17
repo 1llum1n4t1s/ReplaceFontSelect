@@ -194,8 +194,8 @@ const VAR_OVERRIDE_SELECTORS = [
   ...VAR_OVERRIDE_CLASS_SELECTORS,
 ];
 
-// 強制mono指定の対象要素（pre/code系 + [style*="monospace"]系）。
-// Block 2 で editable 配下の子孫 + editable 自身（compound）の両方に対して revert する
+// 強制mono指定の対象要素（pre/code系）。[style*="monospace"] / [style*="ui-monospace"]
+// はインライン指定用で別途扱う
 const MONO_FORCE_TARGETS = [
   'pre', 'code', 'kbd', 'samp', '.mono',
   '[class*="font-mono"]',
@@ -204,9 +204,18 @@ const MONO_FORCE_TARGETS = [
   '[class*="hljs"]',
   '[class*="prism"]',
   '[class*="language-"]',
-  '[style*="monospace"]',
-  '[style*="ui-monospace"]',
 ];
+
+/**
+ * editable 領域自身 + editable 配下を除外するためのセレクタ群を返す。
+ * ':not(:where(...))' 内で使用することで specificity を増やさずに除外できる。
+ */
+function buildEditableExclusionList() {
+  return [
+    ...EDITABLE_SELECTORS,
+    ...EDITABLE_SELECTORS.map(s => `${s} *`),
+  ].join(', ');
+}
 
 /**
  * 拡張機能の CSS 変数上書きルール（variableOverrides）を構築する。
@@ -221,6 +230,10 @@ function buildVariableOverrides() {
   const monoVarsSet = MONO_CSS_VARS
     .map(v => `  ${v}: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;`)
     .join('\n');
+  const monoForceCompound = MONO_FORCE_TARGETS.join(', ');
+  // :where() で包むことで :not() の specificity 寄与を 0 にし、元の (0,1,1) を維持
+  // → 除外ゾーンで編集領域を飛ばしつつ、非編集領域では既存の cascade 挙動を保つ
+  const editableExclusion = buildEditableExclusionList();
 
   return `
 ${selector} {
@@ -231,10 +244,16 @@ ${bodyVarsSet}
 ${monoVarsSet}
 }
 
-/* 汎用的な等幅フォント要素に対する強制指定（CSS継承で子孫に伝播） */
-:root :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]),
-:host :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]),
-[style*="monospace"], [style*="ui-monospace"] {
+/* 汎用的な等幅フォント要素に対する強制指定（CSS継承で子孫に伝播）。
+   editable 領域および editable 配下は ':not(:where(...))' で除外する。
+   ':where()' で specificity を 0 にすることで、非編集領域での specificity を
+   元の (0,1,1) のまま維持し、site の pre/code スタイルへの影響を最小化する。
+   editable 配下で我々の強制mono指定自体が発火しないため、site の author mono
+   宣言（!important の有無によらず）が正しく適用される（Codex レビュー指摘対応）。 */
+:root :is(${monoForceCompound}):not(:where(${editableExclusion})),
+:host :is(${monoForceCompound}):not(:where(${editableExclusion})),
+[style*="monospace"]:not(:where(${editableExclusion})),
+[style*="ui-monospace"]:not(:where(${editableExclusion})) {
   font-family: "__MONO_FONT_NAME__", "Berkeley Mono", "IBM Plex Mono", "Geist Mono", "Cascadia Code", "Cascadia Mono", "Consolas", "Monaco", "Courier New", __MONO_FONT_FALLBACK__ !important;
 }
 `;
@@ -249,16 +268,17 @@ ${monoVarsSet}
  *   で guaranteed-invalid value にすると子孫の var() は fallback または IACVT に落ちる
  * - font-family は意図的に revert しない — 'revert' は author origin 全体の宣言を
  *   落とすため、site/editor 自身のフォント指定まで壊す（Codex レビュー指摘）
+ * - mono 系要素への強制指定は buildVariableOverrides() 側で editable 配下を
+ *   ':not(:where(...))' で除外済みのため、除外ゾーン側では pre/code 向けルールは不要
  * - @font-face 再定義（Layer 2）はドキュメントグローバルで要素スコープ化不可。
  *   モダンRTEは主にCSS変数経由のため実用上これで大半をカバー
  * - specificity: ':is(:root, :host) :is(editable)' で (0,2,0) を確保し、
- *   variableOverrides の (0,1,0) や強制mono :root :is(pre,...) の (0,1,1) に勝つ
+ *   variableOverrides の (0,1,0) に勝つ
  */
 function buildExclusionZone() {
   const editableList = EDITABLE_SELECTORS.map(s => `  ${s}`).join(',\n');
   const bodyVarsReset = BODY_CSS_VARS.map(v => `  ${v}: initial !important;`).join('\n');
   const monoVarsReset = MONO_CSS_VARS.map(v => `  ${v}: initial !important;`).join('\n');
-  const monoTargets = MONO_FORCE_TARGETS.join(', ');
   const overrideClassTargets = VAR_OVERRIDE_CLASS_SELECTORS.join(', ');
 
   return `
@@ -286,23 +306,7 @@ ${bodyVarsReset}
 ${monoVarsReset}
 }
 
-/* Block 2: editable 配下の mono 系要素および editable 自身が mono 系要素。
-   我々の ':root :is(pre, code, ...) { font-family: MONO !important }' 強制
-   指定 (specificity 0,1,1) を打ち消す。'revert' だと site の pre/code スタイル
-   まで落とすため、'inherit !important' で親 (editable コンテナ) の font-family
-   を継承 — 破壊を最小化しつつ我々の強制指定のみ打ち消す。
-   子孫結合子版と compound 版で <pre contenteditable> のようなケースもカバー。
-   specificity (0,2,1): 強制mono (0,1,1) に勝つ */
-:is(:root, :host) :is(
-${editableList}
-) :is(${monoTargets}),
-:is(:root, :host) :is(
-${editableList}
-):is(${monoTargets}) {
-  font-family: inherit !important;
-}
-
-/* Block 3: editable 配下に出現する prose / markdown / content / dark 系クラスへ
+/* Block 2: editable 配下に出現する prose / markdown / content / dark 系クラスへ
    の直接宣言（variableOverrides の '[class*="content"]' 等への !important 指定）は
    継承より強く当たるため、ここで再度 initial に reset する */
 :is(:root, :host) :is(

@@ -39,10 +39,16 @@
   --pplx-font-mono: "Moralerspace Neon JPDOC", monospace !important;
 }
 
-/* 汎用的な等幅フォント要素に対する強制指定（CSS継承で子孫に伝播） */
-:root :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]),
-:host :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]),
-[style*="monospace"], [style*="ui-monospace"] {
+/* 汎用的な等幅フォント要素に対する強制指定（CSS継承で子孫に伝播）。
+   editable 領域および editable 配下は ':not(:where(...))' で除外する。
+   ':where()' で specificity を 0 にすることで、非編集領域での specificity を
+   元の (0,1,1) のまま維持し、site の pre/code スタイルへの影響を最小化する。
+   editable 配下で我々の強制mono指定自体が発火しないため、site の author mono
+   宣言（!important の有無によらず）が正しく適用される（Codex レビュー指摘対応）。 */
+:root :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]):not(:where([contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"], input, textarea, [role="textbox"], .ProseMirror, .ql-editor, .mce-content-body, .cke_editable, .CodeMirror, .cm-editor, .monaco-editor, .ace_editor, [contenteditable="true"] *, [contenteditable=""] *, [contenteditable="plaintext-only"] *, input *, textarea *, [role="textbox"] *, .ProseMirror *, .ql-editor *, .mce-content-body *, .cke_editable *, .CodeMirror *, .cm-editor *, .monaco-editor *, .ace_editor *)),
+:host :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]):not(:where([contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"], input, textarea, [role="textbox"], .ProseMirror, .ql-editor, .mce-content-body, .cke_editable, .CodeMirror, .cm-editor, .monaco-editor, .ace_editor, [contenteditable="true"] *, [contenteditable=""] *, [contenteditable="plaintext-only"] *, input *, textarea *, [role="textbox"] *, .ProseMirror *, .ql-editor *, .mce-content-body *, .cke_editable *, .CodeMirror *, .cm-editor *, .monaco-editor *, .ace_editor *)),
+[style*="monospace"]:not(:where([contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"], input, textarea, [role="textbox"], .ProseMirror, .ql-editor, .mce-content-body, .cke_editable, .CodeMirror, .cm-editor, .monaco-editor, .ace_editor, [contenteditable="true"] *, [contenteditable=""] *, [contenteditable="plaintext-only"] *, input *, textarea *, [role="textbox"] *, .ProseMirror *, .ql-editor *, .mce-content-body *, .cke_editable *, .CodeMirror *, .cm-editor *, .monaco-editor *, .ace_editor *)),
+[style*="ui-monospace"]:not(:where([contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"], input, textarea, [role="textbox"], .ProseMirror, .ql-editor, .mce-content-body, .cke_editable, .CodeMirror, .cm-editor, .monaco-editor, .ace_editor, [contenteditable="true"] *, [contenteditable=""] *, [contenteditable="plaintext-only"] *, input *, textarea *, [role="textbox"] *, .ProseMirror *, .ql-editor *, .mce-content-body *, .cke_editable *, .CodeMirror *, .cm-editor *, .monaco-editor *, .ace_editor *)) {
   font-family: "Moralerspace Neon JPDOC", "Berkeley Mono", "IBM Plex Mono", "Geist Mono", "Cascadia Code", "Cascadia Mono", "Consolas", "Monaco", "Courier New", monospace !important;
 }
 
@@ -112,49 +118,7 @@
   --pplx-font-mono: initial !important;
 }
 
-/* Block 2: editable 配下の mono 系要素および editable 自身が mono 系要素。
-   我々の ':root :is(pre, code, ...) { font-family: MONO !important }' 強制
-   指定 (specificity 0,1,1) を打ち消す。'revert' だと site の pre/code スタイル
-   まで落とすため、'inherit !important' で親 (editable コンテナ) の font-family
-   を継承 — 破壊を最小化しつつ我々の強制指定のみ打ち消す。
-   子孫結合子版と compound 版で <pre contenteditable> のようなケースもカバー。
-   specificity (0,2,1): 強制mono (0,1,1) に勝つ */
-:is(:root, :host) :is(
-  [contenteditable="true"],
-  [contenteditable=""],
-  [contenteditable="plaintext-only"],
-  input,
-  textarea,
-  [role="textbox"],
-  .ProseMirror,
-  .ql-editor,
-  .mce-content-body,
-  .cke_editable,
-  .CodeMirror,
-  .cm-editor,
-  .monaco-editor,
-  .ace_editor
-) :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"], [style*="monospace"], [style*="ui-monospace"]),
-:is(:root, :host) :is(
-  [contenteditable="true"],
-  [contenteditable=""],
-  [contenteditable="plaintext-only"],
-  input,
-  textarea,
-  [role="textbox"],
-  .ProseMirror,
-  .ql-editor,
-  .mce-content-body,
-  .cke_editable,
-  .CodeMirror,
-  .cm-editor,
-  .monaco-editor,
-  .ace_editor
-):is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"], [style*="monospace"], [style*="ui-monospace"]) {
-  font-family: inherit !important;
-}
-
-/* Block 3: editable 配下に出現する prose / markdown / content / dark 系クラスへ
+/* Block 2: editable 配下に出現する prose / markdown / content / dark 系クラスへ
    の直接宣言（variableOverrides の '[class*="content"]' 等への !important 指定）は
    継承より強く当たるため、ここで再度 initial に reset する */
 :is(:root, :host) :is(
