@@ -3,7 +3,7 @@
   s.dataset.replaceFont = 'preset';
   s.textContent = `@charset "UTF-8";
 
-:root, :host, html, body, .prose, [class*="prose"], [class*="markdown"], [class*="content"], [class*="answer"], [class*="light"], [class*="dark"] {
+:root, :host, html, body, [class*="prose"], [class*="markdown"], [class*="content"], [class*="answer"], [class*="light"], [class*="dark"] {
   /* Sans-serif 系 CSS 変数 */
   --font-sans: "Zen Kaku Gothic New", sans-serif !important;
   --font-inter: "Zen Kaku Gothic New", sans-serif !important;
@@ -54,9 +54,15 @@
    リストのメンテナンス不要。詳細は buildExclusionZone() のJSDoc参照
    ============================================================================ */
 
-/* Block 1: editable 要素自身の CSS 変数と font-family を無効化。
-   ':is(:root, :host) :is(editable)' で specificity (0,2,0) を確保し、editable 自身が
-   <pre contenteditable> のケースもここでカバー（強制mono (0,1,1) に勝つ） */
+/* Block 1: editable 要素自身の CSS 変数を無効化。
+   font-family は意図的に revert しない — author-origin の 'revert' は site/editor
+   自身の宣言も同じ origin として落とすため、WYSIWYG エディタが JS で inline style
+   を適用するフォント選択 (<span style="font-family:Arial">) や、site CSS の
+   'input { font-family: ... }' が壊れる (Codex レビュー指摘)。
+   CSS 変数を initial (guaranteed-invalid) に reset するだけで、モダンRTEの
+   フレームワーク（Tailwind/Next.js 等）が CSS 変数経由で指定するフォントは
+   無効化でき、同時に inline style / site 直接指定は保持される。
+   specificity (0,2,0): variableOverrides (0,1,0) に勝つ */
 :is(:root, :host) :is(
   [contenteditable="true"],
   [contenteditable=""],
@@ -104,13 +110,15 @@
   --code-font: initial !important;
   --monospace-font: initial !important;
   --pplx-font-mono: initial !important;
-
-  font-family: revert !important;
 }
 
-/* Block 2: editable 配下の mono 系要素および editable 自身が mono 系要素のケース。
-   子孫結合子版と compound 版の両方で対応し、[style*="monospace"] インライン
-   指定の span にも効かせる */
+/* Block 2: editable 配下の mono 系要素および editable 自身が mono 系要素。
+   我々の ':root :is(pre, code, ...) { font-family: MONO !important }' 強制
+   指定 (specificity 0,1,1) を打ち消す。'revert' だと site の pre/code スタイル
+   まで落とすため、'inherit !important' で親 (editable コンテナ) の font-family
+   を継承 — 破壊を最小化しつつ我々の強制指定のみ打ち消す。
+   子孫結合子版と compound 版で <pre contenteditable> のようなケースもカバー。
+   specificity (0,2,1): 強制mono (0,1,1) に勝つ */
 :is(:root, :host) :is(
   [contenteditable="true"],
   [contenteditable=""],
@@ -143,7 +151,7 @@
   .monaco-editor,
   .ace_editor
 ):is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"], [style*="monospace"], [style*="ui-monospace"]) {
-  font-family: revert !important;
+  font-family: inherit !important;
 }
 
 /* Block 3: editable 配下に出現する prose / markdown / content / dark 系クラスへ
@@ -164,7 +172,7 @@
   .cm-editor,
   .monaco-editor,
   .ace_editor
-) :is(.prose, [class*="prose"], [class*="markdown"], [class*="content"], [class*="answer"], [class*="light"], [class*="dark"]) {
+) :is([class*="prose"], [class*="markdown"], [class*="content"], [class*="answer"], [class*="light"], [class*="dark"]) {
   --font-sans: initial !important;
   --font-inter: initial !important;
   --font-geist-sans: initial !important;
