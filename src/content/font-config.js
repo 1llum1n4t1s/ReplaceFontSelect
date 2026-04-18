@@ -93,10 +93,40 @@ const FONT_REGISTRY = {
     monoFont: 'udev-gothic-jpdoc',
     bodyFontWeight: '400'
   },
-  storageKey: 'fontSettings'
+  storageKey: 'fontSettings',
+  presetRegisteredKey: 'prebuiltCSSRegistered'
 };
+
+// eslint-disable-next-line no-unused-vars
+const FONT_SETTINGS_VALIDATORS = {
+  enabled: (v) => typeof v === 'boolean',
+  bodyFont: (v) => typeof v === 'string' && Object.prototype.hasOwnProperty.call(FONT_REGISTRY.body, v),
+  monoFont: (v) => typeof v === 'string' && Object.prototype.hasOwnProperty.call(FONT_REGISTRY.mono, v),
+  bodyFontWeight: (v) => v === '400' || v === '500'
+};
+
+// 保存済み設定をデフォルトとマージし、無効値はデフォルトに戻す
+// eslint-disable-next-line no-unused-vars
+function mergeFontSettings(stored) {
+  const merged = Object.assign({}, FONT_REGISTRY.defaults);
+  if (stored && typeof stored === 'object') {
+    for (const key of Object.keys(FONT_REGISTRY.defaults)) {
+      const validator = FONT_SETTINGS_VALIDATORS[key];
+      if (Object.prototype.hasOwnProperty.call(stored, key) && validator(stored[key])) {
+        merged[key] = stored[key];
+      }
+    }
+  }
+  return merged;
+}
+
+// プリセット JS ファイル名を統一的に構築
+// eslint-disable-next-line no-unused-vars
+function getPresetFileName(bodyKey, monoKey, weight) {
+  return `preset-${bodyKey}-${monoKey}-w${weight}.js`;
+}
 
 // Node.js（ビルドスクリプト）からも require() で使用可能にする
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { FONT_REGISTRY };
+  module.exports = { FONT_REGISTRY, mergeFontSettings, getPresetFileName, FONT_SETTINGS_VALIDATORS };
 }

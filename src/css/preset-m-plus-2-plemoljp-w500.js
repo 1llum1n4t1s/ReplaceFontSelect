@@ -1,9 +1,16 @@
+// DO NOT EDIT — このファイルは scripts/generate-css.js により自動生成されます。
+// preset-m-plus-2-plemoljp-w500.js (body=m-plus-2, mono=plemoljp, weight=500)
 (() => {
   const s = document.createElement('style');
   s.dataset.replaceFont = 'preset';
   s.textContent = `@charset "UTF-8";
+/* ============================================================================
+ * DO NOT EDIT — このファイルは scripts/generate-css.js により自動生成されます。
+ * 変更は scripts/generate-css.js か src/content/font-config.js を編集し、
+ * npm run generate-css を実行してください。
+ * ============================================================================ */
 
-:root, :host, html, body, [class*="prose"], [class*="markdown"], [class*="content"], [class*="answer"], [class*="light"], [class*="dark"] {
+:root, :host, html, body, [class*="prose"], [class*="markdown"] {
   /* Sans-serif 系 CSS 変数 */
   --font-sans: "M PLUS 2", sans-serif !important;
   --font-inter: "M PLUS 2", sans-serif !important;
@@ -136,7 +143,7 @@
   .cm-editor,
   .monaco-editor,
   .ace_editor
-) :is([class*="prose"], [class*="markdown"], [class*="content"], [class*="answer"], [class*="light"], [class*="dark"]) {
+) :is([class*="prose"], [class*="markdown"]) {
   --font-sans: initial !important;
   --font-inter: initial !important;
   --font-geist-sans: initial !important;
@@ -171,13 +178,14 @@
 }
 
 
-/* 置換フォント自体の @font-face 定義 */
+/* 置換フォント自体の @font-face 定義 (unicode-range で CJK に限定) */
 @font-face {
   font-family: "M PLUS 2";
   src:  local("M PLUS 2"),
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "M PLUS 2";
@@ -185,6 +193,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "PlemolJP";
@@ -192,6 +201,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "PlemolJP";
@@ -199,6 +209,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 
 @font-face {
@@ -207,6 +218,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ms pgothic";
@@ -214,6 +226,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS Pゴシック";
@@ -221,6 +234,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ms pゴシック";
@@ -228,6 +242,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ＭＳ Ｐゴシック";
@@ -235,6 +250,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS UI Gothic";
@@ -242,6 +258,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "メイリオ";
@@ -249,6 +266,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Meiryo";
@@ -256,6 +274,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "YuGothic";
@@ -263,6 +282,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Yu Gothic";
@@ -270,6 +290,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "游ゴシック";
@@ -277,6 +298,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "YuGothic Medium";
@@ -284,6 +306,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Yu Gothic Medium";
@@ -291,6 +314,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "游ゴシック Medium";
@@ -298,6 +322,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Yu Gothic UI";
@@ -305,6 +330,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Meiryo UI";
@@ -312,6 +338,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Segoe UI";
@@ -319,6 +346,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Motiva Sans";
@@ -326,6 +354,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MotivaSans";
@@ -333,6 +362,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Arial";
@@ -340,6 +370,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ArialMT";
@@ -347,6 +378,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Roboto";
@@ -354,6 +386,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "RobotoDraft";
@@ -361,6 +394,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Helvetica";
@@ -368,6 +402,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Helvetica Neue";
@@ -375,6 +410,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "HelveticaNeue";
@@ -382,6 +418,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Trebuchet MS";
@@ -389,6 +426,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "TrebuchetMS";
@@ -396,6 +434,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Verdana";
@@ -403,6 +442,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "M PLUS Rounded 1c";
@@ -410,6 +450,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Malgun Gothic";
@@ -417,6 +458,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Arial Unicode MS";
@@ -424,6 +466,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Sans";
@@ -431,6 +474,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Sans Pro";
@@ -438,6 +482,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inter";
@@ -445,6 +490,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inter Variable";
@@ -452,6 +498,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inter-Regular";
@@ -459,6 +506,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inter-Bold";
@@ -466,6 +514,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inter UI";
@@ -473,6 +522,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Public Sans";
@@ -480,6 +530,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Roobert";
@@ -487,6 +538,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Geist";
@@ -494,6 +546,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Geist Sans";
@@ -501,6 +554,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FK Grotesk";
@@ -508,6 +562,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FK Grotesk Neue";
@@ -515,6 +570,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FK Grotesk Neue Thin";
@@ -522,6 +578,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FK Display";
@@ -529,6 +586,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FKGrotesk";
@@ -536,6 +594,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FKGroteskNeue";
@@ -543,6 +602,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FKGroteskNeueThin";
@@ -550,6 +610,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FKDisplay";
@@ -557,6 +618,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "IBM Plex Sans";
@@ -564,6 +626,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "IBMPlexSans";
@@ -571,6 +634,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ABC Social";
@@ -578,6 +642,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Graphik";
@@ -585,6 +650,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Euclid Circular";
@@ -592,6 +658,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Manrope";
@@ -599,6 +666,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Poppins";
@@ -606,6 +674,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Outfit";
@@ -613,6 +682,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Plus Jakarta Sans";
@@ -620,6 +690,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Söhne";
@@ -627,6 +698,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Söhne-Buch";
@@ -634,6 +706,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Söhne-Kraft";
@@ -641,6 +714,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Signifer";
@@ -648,6 +722,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Anthropic Serif Web Text";
@@ -655,6 +730,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Anthropic Sans Web Text";
@@ -662,6 +738,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Noto Sans JP";
@@ -669,6 +746,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "system-ui";
@@ -676,6 +754,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ui-sans-serif";
@@ -683,6 +762,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ui-serif";
@@ -690,6 +770,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "-apple-system";
@@ -697,6 +778,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "BlinkMacSystemFont";
@@ -704,6 +786,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "San Francisco";
@@ -711,6 +794,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Segoe UI Variable";
@@ -718,6 +802,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Segoe UI Variable Display";
@@ -725,6 +810,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Segoe UI Variable Text";
@@ -732,6 +818,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Segoe UI Historic";
@@ -739,6 +826,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Open Sans";
@@ -746,6 +834,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Lato";
@@ -753,6 +842,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Montserrat";
@@ -760,6 +850,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Source Sans Pro";
@@ -767,6 +858,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Oswald";
@@ -774,6 +866,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Raleway";
@@ -781,6 +874,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Merriweather Sans";
@@ -788,6 +882,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Noto Sans";
@@ -795,6 +890,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Noto Sans CJK JP";
@@ -802,6 +898,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS Mincho";
@@ -809,6 +906,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ms mincho";
@@ -816,6 +914,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS PMincho";
@@ -823,6 +922,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ＭＳ 明朝";
@@ -830,6 +930,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ＭＳ Ｐ明朝";
@@ -837,6 +938,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "YuMincho";
@@ -844,6 +946,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Yu Mincho";
@@ -851,6 +954,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "游明朝";
@@ -858,6 +962,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "游明朝体";
@@ -865,6 +970,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "HiraMinProN-W3";
@@ -872,6 +978,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Mincho ProN";
@@ -879,6 +986,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ明朝 ProN";
@@ -886,6 +994,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Times New Roman";
@@ -893,6 +1002,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Times";
@@ -900,6 +1010,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Georgia";
@@ -907,20 +1018,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
-}
-@font-face {
-  font-family: "serif";
-  src:  local("M PLUS 2"),
-        url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
-  font-weight: 100 599;
-  font-display: swap;
-}
-@font-face {
-  font-family: "sans-serif";
-  src:  local("M PLUS 2"),
-        url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
-  font-weight: 100 599;
-  font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN";
@@ -928,6 +1026,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro";
@@ -935,6 +1034,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN";
@@ -942,6 +1042,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro";
@@ -949,6 +1050,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W1";
@@ -956,6 +1058,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W1";
@@ -963,6 +1066,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W1";
@@ -970,6 +1074,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W1";
@@ -977,6 +1082,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W2";
@@ -984,6 +1090,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W2";
@@ -991,6 +1098,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W2";
@@ -998,6 +1106,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W2";
@@ -1005,6 +1114,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W3";
@@ -1012,6 +1122,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W3";
@@ -1019,6 +1130,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W3";
@@ -1026,6 +1138,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W3";
@@ -1033,6 +1146,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W4";
@@ -1040,6 +1154,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W4";
@@ -1047,6 +1162,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W4";
@@ -1054,6 +1170,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W4";
@@ -1061,6 +1178,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W5";
@@ -1068,6 +1186,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W5";
@@ -1075,6 +1194,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W5";
@@ -1082,6 +1202,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W5";
@@ -1089,6 +1210,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W6";
@@ -1096,6 +1218,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W6";
@@ -1103,6 +1226,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W6";
@@ -1110,6 +1234,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W6";
@@ -1117,6 +1242,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W7";
@@ -1124,6 +1250,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W7";
@@ -1131,6 +1258,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W7";
@@ -1138,6 +1266,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W7";
@@ -1145,6 +1274,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W8";
@@ -1152,6 +1282,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W8";
@@ -1159,6 +1290,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W8";
@@ -1166,6 +1298,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W8";
@@ -1173,6 +1306,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W9";
@@ -1180,6 +1314,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W9";
@@ -1187,6 +1322,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W9";
@@ -1194,6 +1330,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W9";
@@ -1201,6 +1338,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS PGothic";
@@ -1208,6 +1346,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ms pgothic";
@@ -1215,6 +1354,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS Pゴシック";
@@ -1222,6 +1362,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ms pゴシック";
@@ -1229,6 +1370,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ＭＳ Ｐゴシック";
@@ -1236,6 +1378,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS UI Gothic";
@@ -1243,6 +1386,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "メイリオ";
@@ -1250,6 +1394,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Meiryo";
@@ -1257,6 +1402,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "YuGothic";
@@ -1264,6 +1410,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Yu Gothic";
@@ -1271,6 +1418,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "游ゴシック";
@@ -1278,6 +1426,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "YuGothic Medium";
@@ -1285,6 +1434,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Yu Gothic Medium";
@@ -1292,6 +1442,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "游ゴシック Medium";
@@ -1299,6 +1450,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Yu Gothic UI";
@@ -1306,6 +1458,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Meiryo UI";
@@ -1313,6 +1466,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Segoe UI";
@@ -1320,6 +1474,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Motiva Sans";
@@ -1327,6 +1482,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MotivaSans";
@@ -1334,6 +1490,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Arial";
@@ -1341,6 +1498,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ArialMT";
@@ -1348,6 +1506,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Roboto";
@@ -1355,6 +1514,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "RobotoDraft";
@@ -1362,6 +1522,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Helvetica";
@@ -1369,6 +1530,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Helvetica Neue";
@@ -1376,6 +1538,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "HelveticaNeue";
@@ -1383,6 +1546,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Trebuchet MS";
@@ -1390,6 +1554,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "TrebuchetMS";
@@ -1397,6 +1562,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Verdana";
@@ -1404,6 +1570,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "M PLUS Rounded 1c";
@@ -1411,6 +1578,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Malgun Gothic";
@@ -1418,6 +1586,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Arial Unicode MS";
@@ -1425,6 +1594,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Sans";
@@ -1432,6 +1602,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Sans Pro";
@@ -1439,6 +1610,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inter";
@@ -1446,6 +1618,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inter Variable";
@@ -1453,6 +1626,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inter-Regular";
@@ -1460,6 +1634,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inter-Bold";
@@ -1467,6 +1642,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inter UI";
@@ -1474,6 +1650,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Public Sans";
@@ -1481,6 +1658,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Roobert";
@@ -1488,6 +1666,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Geist";
@@ -1495,6 +1674,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Geist Sans";
@@ -1502,6 +1682,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FK Grotesk";
@@ -1509,6 +1690,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FK Grotesk Neue";
@@ -1516,6 +1698,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FK Grotesk Neue Thin";
@@ -1523,6 +1706,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FK Display";
@@ -1530,6 +1714,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FKGrotesk";
@@ -1537,6 +1722,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FKGroteskNeue";
@@ -1544,6 +1730,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FKGroteskNeueThin";
@@ -1551,6 +1738,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "FKDisplay";
@@ -1558,6 +1746,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "IBM Plex Sans";
@@ -1565,6 +1754,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "IBMPlexSans";
@@ -1572,6 +1762,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ABC Social";
@@ -1579,6 +1770,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Graphik";
@@ -1586,6 +1778,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Euclid Circular";
@@ -1593,6 +1786,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Manrope";
@@ -1600,6 +1794,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Poppins";
@@ -1607,6 +1802,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Outfit";
@@ -1614,6 +1810,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Plus Jakarta Sans";
@@ -1621,6 +1818,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Söhne";
@@ -1628,6 +1826,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Söhne-Buch";
@@ -1635,6 +1834,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Söhne-Kraft";
@@ -1642,6 +1842,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Signifer";
@@ -1649,6 +1850,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Anthropic Serif Web Text";
@@ -1656,6 +1858,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Anthropic Sans Web Text";
@@ -1663,6 +1866,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Noto Sans JP";
@@ -1670,6 +1874,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "system-ui";
@@ -1677,6 +1882,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ui-sans-serif";
@@ -1684,6 +1890,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ui-serif";
@@ -1691,6 +1898,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "-apple-system";
@@ -1698,6 +1906,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "BlinkMacSystemFont";
@@ -1705,6 +1914,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "San Francisco";
@@ -1712,6 +1922,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Segoe UI Variable";
@@ -1719,6 +1930,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Segoe UI Variable Display";
@@ -1726,6 +1938,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Segoe UI Variable Text";
@@ -1733,6 +1946,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Segoe UI Historic";
@@ -1740,6 +1954,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Open Sans";
@@ -1747,6 +1962,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Lato";
@@ -1754,6 +1970,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Montserrat";
@@ -1761,6 +1978,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Source Sans Pro";
@@ -1768,6 +1986,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Oswald";
@@ -1775,6 +1994,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Raleway";
@@ -1782,6 +2002,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Merriweather Sans";
@@ -1789,6 +2010,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Noto Sans";
@@ -1796,6 +2018,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Noto Sans CJK JP";
@@ -1803,6 +2026,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS Mincho";
@@ -1810,6 +2034,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ms mincho";
@@ -1817,6 +2042,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS PMincho";
@@ -1824,6 +2050,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ＭＳ 明朝";
@@ -1831,6 +2058,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ＭＳ Ｐ明朝";
@@ -1838,6 +2066,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "YuMincho";
@@ -1845,6 +2074,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Yu Mincho";
@@ -1852,6 +2082,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "游明朝";
@@ -1859,6 +2090,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "游明朝体";
@@ -1866,6 +2098,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "HiraMinProN-W3";
@@ -1873,6 +2106,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Mincho ProN";
@@ -1880,6 +2114,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ明朝 ProN";
@@ -1887,6 +2122,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Times New Roman";
@@ -1894,6 +2130,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Times";
@@ -1901,6 +2138,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Georgia";
@@ -1908,20 +2146,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
-}
-@font-face {
-  font-family: "serif";
-  src:  local("M PLUS 2"),
-        url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
-  font-weight: 600 900;
-  font-display: swap;
-}
-@font-face {
-  font-family: "sans-serif";
-  src:  local("M PLUS 2"),
-        url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
-  font-weight: 600 900;
-  font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN";
@@ -1929,6 +2154,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro";
@@ -1936,6 +2162,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN";
@@ -1943,6 +2170,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro";
@@ -1950,6 +2178,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W1";
@@ -1957,6 +2186,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W1";
@@ -1964,6 +2194,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W1";
@@ -1971,6 +2202,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W1";
@@ -1978,6 +2210,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W2";
@@ -1985,6 +2218,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W2";
@@ -1992,6 +2226,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W2";
@@ -1999,6 +2234,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W2";
@@ -2006,6 +2242,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W3";
@@ -2013,6 +2250,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W3";
@@ -2020,6 +2258,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W3";
@@ -2027,6 +2266,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W3";
@@ -2034,6 +2274,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W4";
@@ -2041,6 +2282,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W4";
@@ -2048,6 +2290,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W4";
@@ -2055,6 +2298,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W4";
@@ -2062,6 +2306,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W5";
@@ -2069,6 +2314,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W5";
@@ -2076,6 +2322,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W5";
@@ -2083,6 +2330,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W5";
@@ -2090,6 +2338,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W6";
@@ -2097,6 +2346,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W6";
@@ -2104,6 +2354,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W6";
@@ -2111,6 +2362,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W6";
@@ -2118,6 +2370,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W7";
@@ -2125,6 +2378,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W7";
@@ -2132,6 +2386,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W7";
@@ -2139,6 +2394,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W7";
@@ -2146,6 +2402,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W8";
@@ -2153,6 +2410,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W8";
@@ -2160,6 +2418,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W8";
@@ -2167,6 +2426,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W8";
@@ -2174,6 +2434,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic ProN W9";
@@ -2181,6 +2442,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Hiragino Kaku Gothic Pro W9";
@@ -2188,6 +2450,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ ProN W9";
@@ -2195,6 +2458,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ヒラギノ角ゴ Pro W9";
@@ -2202,6 +2466,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/MPLUS2.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS Gothic";
@@ -2209,6 +2474,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ms gothic";
@@ -2216,6 +2482,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS ゴシック";
@@ -2223,6 +2490,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ms ゴシック";
@@ -2230,6 +2498,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ＭＳ ゴシック";
@@ -2237,6 +2506,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Consolas";
@@ -2244,6 +2514,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Monaco";
@@ -2251,6 +2522,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Courier New";
@@ -2258,6 +2530,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Courier";
@@ -2265,6 +2538,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Menlo";
@@ -2272,6 +2546,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Ubuntu Mono";
@@ -2279,6 +2554,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "source-code-pro";
@@ -2286,6 +2562,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Source Code Pro";
@@ -2293,6 +2570,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Cascadia Code";
@@ -2300,6 +2578,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Cascadia Mono";
@@ -2307,6 +2586,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Berkeley Mono";
@@ -2314,6 +2594,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "BerkeleyMono";
@@ -2321,6 +2602,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "IBM Plex Mono";
@@ -2328,6 +2610,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "IBMPlexMono";
@@ -2335,6 +2618,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Geist Mono";
@@ -2342,6 +2626,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Fira Code";
@@ -2349,6 +2634,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Fira Mono";
@@ -2356,6 +2642,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "JetBrains Mono";
@@ -2363,6 +2650,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Roboto Mono";
@@ -2370,6 +2658,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inconsolata";
@@ -2377,6 +2666,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "SFMono-Regular";
@@ -2384,6 +2674,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "SF Mono";
@@ -2391,6 +2682,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Söhne Mono";
@@ -2398,6 +2690,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "UDEV Gothic JPDOC";
@@ -2405,6 +2698,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ui-monospace";
@@ -2412,13 +2706,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
   font-weight: 100 599;
   font-display: swap;
-}
-@font-face {
-  font-family: "monospace";
-  src:  local("PlemolJP"),
-        url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Regular.woff2') format('woff2');
-  font-weight: 100 599;
-  font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS Gothic";
@@ -2426,6 +2714,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ms gothic";
@@ -2433,6 +2722,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "MS ゴシック";
@@ -2440,6 +2730,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ms ゴシック";
@@ -2447,6 +2738,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ＭＳ ゴシック";
@@ -2454,6 +2746,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Consolas";
@@ -2461,6 +2754,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Monaco";
@@ -2468,6 +2762,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Courier New";
@@ -2475,6 +2770,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Courier";
@@ -2482,6 +2778,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Menlo";
@@ -2489,6 +2786,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Ubuntu Mono";
@@ -2496,6 +2794,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "source-code-pro";
@@ -2503,6 +2802,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Source Code Pro";
@@ -2510,6 +2810,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Cascadia Code";
@@ -2517,6 +2818,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Cascadia Mono";
@@ -2524,6 +2826,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Berkeley Mono";
@@ -2531,6 +2834,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "BerkeleyMono";
@@ -2538,6 +2842,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "IBM Plex Mono";
@@ -2545,6 +2850,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "IBMPlexMono";
@@ -2552,6 +2858,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Geist Mono";
@@ -2559,6 +2866,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Fira Code";
@@ -2566,6 +2874,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Fira Mono";
@@ -2573,6 +2882,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "JetBrains Mono";
@@ -2580,6 +2890,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Roboto Mono";
@@ -2587,6 +2898,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Inconsolata";
@@ -2594,6 +2906,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "SFMono-Regular";
@@ -2601,6 +2914,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "SF Mono";
@@ -2608,6 +2922,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "Söhne Mono";
@@ -2615,6 +2930,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "UDEV Gothic JPDOC";
@@ -2622,6 +2938,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 @font-face {
   font-family: "ui-monospace";
@@ -2629,13 +2946,7 @@
         url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
   font-weight: 600 900;
   font-display: swap;
-}
-@font-face {
-  font-family: "monospace";
-  src:  local("PlemolJP Bold"),
-        url('__REPLACE_FONT_BASE__src/fonts/PlemolJP-Bold.woff2') format('woff2');
-  font-weight: 600 900;
-  font-display: swap;
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
 `.replace(/__REPLACE_FONT_BASE__/g, chrome.runtime.getURL(''));
   (document.head || document.documentElement).appendChild(s);

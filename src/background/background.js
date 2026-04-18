@@ -3,37 +3,34 @@
  */
 
 // font-config.js を単一の真実の源泉として使用
+// (mergeFontSettings / getPresetFileName / FONT_REGISTRY を公開)
 importScripts('/src/content/font-config.js');
 
 const SCRIPT_ID = 'replace-font-css';
+const STORAGE_DEBOUNCE_MS = 150;
+
+let _storageDebounceTimer = null;
+let _pendingSettings = null;
 
 function getPresetPath(settings) {
-  const { bodyFont, monoFont, bodyFontWeight } = settings;
-  return `src/css/preset-${bodyFont}-${monoFont}-w${bodyFontWeight}.js`;
-}
-
-// 空文字・undefined を除外して defaults にマージ（preload-fonts.js と同一ポリシー）
-function mergeWithDefaults(stored) {
-  const defaults = FONT_REGISTRY.defaults;
-  const filtered = Object.fromEntries(
-    Object.entries(stored).filter(([, v]) => v !== undefined && v !== '')
-  );
-  return { ...defaults, ...filtered };
+  return `src/css/${getPresetFileName(settings.bodyFont, settings.monoFont, settings.bodyFontWeight)}`;
 }
 
 async function loadSettings() {
   try {
     const result = await chrome.storage.local.get(FONT_REGISTRY.storageKey);
-    return mergeWithDefaults(result[FONT_REGISTRY.storageKey] || {});
+    return mergeFontSettings(result[FONT_REGISTRY.storageKey] || {});
   } catch {
-    return { ...FONT_REGISTRY.defaults };
+    return Object.assign({}, FONT_REGISTRY.defaults);
   }
 }
 
 async function ensureRegistration(settings) {
+  const presetKey = FONT_REGISTRY.presetRegisteredKey;
+
   if (!settings.enabled) {
     try { await chrome.scripting.unregisterContentScripts({ ids: [SCRIPT_ID] }); } catch {}
-    await chrome.storage.local.set({ prebuiltCSSRegistered: false });
+    try { await chrome.storage.local.set({ [presetKey]: false }); } catch {}
     return;
   }
 
@@ -53,10 +50,11 @@ async function ensureRegistration(settings) {
 
   try {
     await chrome.scripting.registerContentScripts([scriptConfig]);
-    await chrome.storage.local.set({ prebuiltCSSRegistered: true });
+    try { await chrome.storage.local.set({ [presetKey]: true }); } catch {}
   } catch (e) {
-    console.error('[フォント置換] JS登録失敗:', e.message);
-    await chrome.storage.local.set({ prebuiltCSSRegistered: false });
+    // 本番でも拾えるように console.error は残す (拡張機能のSWは通常ユーザに露出しない)
+    console.error('[フォント置換] JS登録失敗:', e && e.message);
+    try { await chrome.storage.local.set({ [presetKey]: false }); } catch {}
   }
 }
 
@@ -72,9 +70,17 @@ chrome.runtime.onStartup.addListener(async () => {
   await ensureRegistration(settings);
 });
 
-// 設定変更の監視
-chrome.storage.onChanged.addListener(async (changes, area) => {
-  if (area !== 'local' || !changes[FONT_REGISTRY.storageKey]) return;
-  const newSettings = mergeWithDefaults(changes[FONT_REGISTRY.storageKey].newValue || {});
-  await ensureRegistration(newSettings);
+// 設定変更の監視 (連続更新をデバウンスして registerContentScripts の無駄打ちを避ける)
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return;
+  // 我々自身が書いた presetRegisteredKey の変更は無視（無限ループ防止）
+  if (!changes[FONT_REGISTRY.storageKey]) return;
+  _pendingSettings = mergeFontSettings(changes[FONT_REGISTRY.storageKey].newValue || {});
+  if (_storageDebounceTimer) clearTimeout(_storageDebounceTimer);
+  _storageDebounceTimer = setTimeout(async () => {
+    _storageDebounceTimer = null;
+    const toApply = _pendingSettings;
+    _pendingSettings = null;
+    if (toApply) await ensureRegistration(toApply);
+  }, STORAGE_DEBOUNCE_MS);
 });

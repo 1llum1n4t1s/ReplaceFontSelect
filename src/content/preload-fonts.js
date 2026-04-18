@@ -62,9 +62,14 @@
     earlyHeadObserver.observe(head, { childList: true });
   }
 
-  // キャッシュ
+  // キャッシュ (bfcache 復帰時は再構築するため pagehide で破棄)
   const fixedCSSCache = new Map();
   let sharedStyleSheetPromise = null;
+  window.addEventListener('pagehide', (e) => {
+    if (!e.persisted) return;
+    fixedCSSCache.clear();
+    sharedStyleSheetPromise = null;
+  });
 
   // 選択されたフォント情報（設定読み込み後にセットされる）
   let selectedBodyFont = null;
@@ -74,6 +79,15 @@
   let settingsReady = false;
   let prebuiltCSSRegistered = false; // プリセットCSS登録済みフラグ
   const pendingRoots = new Set();
+
+  // ページ離脱時にクリーンアップする関数を登録するための配列
+  // MutationObserver / setInterval / requestIdleCallback 等のリーク防止
+  const disposers = [];
+  window.addEventListener('pagehide', () => {
+    for (const dispose of disposers) {
+      try { dispose(); } catch (e) {}
+    }
+  }, { once: false });
 
   /**
    * プリセットJSが注入した <style data-replace-font="preset"> がDOMに存在するかチェックする
@@ -86,49 +100,46 @@
     return root.querySelector(`style[${RFS_SELECTOR}="${RFS_PRESET}"]`) !== null;
   }
 
-  // FONT_REGISTRY 未定義時の緊急フォールバック（通常到達しない: manifest で先にロード済み）
-  const EMERGENCY_DEFAULTS = { enabled: true, bodyFont: 'noto-sans-jp', monoFont: 'udev-gothic-jpdoc', bodyFontWeight: '400' };
-
+  // FONT_REGISTRY は manifest.json の content_scripts 宣言順で preload-fonts.js より
+  // 先にロードされる。未定義ならバグのため panic せず defaults フォールバックで復帰する。
   function getDefaultSettings() {
-    return (typeof FONT_REGISTRY !== 'undefined' && FONT_REGISTRY.defaults)
-      ? { ...FONT_REGISTRY.defaults }
-      : EMERGENCY_DEFAULTS;
+    return Object.assign({}, FONT_REGISTRY.defaults);
   }
 
   /**
    * chrome.storage.local からフォント設定を読み込む（タイムアウト付き）
+   * 無効な値はバリデータで弾いて defaults に戻す。
    */
   function loadFontSettings() {
     const defaults = getDefaultSettings();
+    const presetKey = FONT_REGISTRY.presetRegisteredKey;
     return new Promise((resolve) => {
+      let settled = false;
+      const settle = (value) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
       const timeout = setTimeout(() => {
         log('[フォント置換] Settings load timeout, using defaults');
-        resolve(defaults);
+        settle(defaults);
       }, 3000);
 
       try {
-        if (typeof FONT_REGISTRY === 'undefined') {
-          clearTimeout(timeout);
-          resolve(defaults);
-          return;
-        }
-        // fontSettings と prebuiltCSSRegistered を同時に読み込む
-        chrome.storage.local.get([FONT_REGISTRY.storageKey, 'prebuiltCSSRegistered'], (result) => {
+        chrome.storage.local.get([FONT_REGISTRY.storageKey, presetKey], (result) => {
           clearTimeout(timeout);
           if (chrome.runtime.lastError) {
-            resolve(defaults);
+            settle(defaults);
             return;
           }
           const stored = result[FONT_REGISTRY.storageKey] || {};
-          prebuiltCSSRegistered = result.prebuiltCSSRegistered === true;
-          resolve({
-            ...defaults,
-            ...Object.fromEntries(Object.entries(stored).filter(([, v]) => v !== undefined && v !== ''))
-          });
+          prebuiltCSSRegistered = result[presetKey] === true;
+          // mergeFontSettings は FONT_SETTINGS_VALIDATORS でホワイトリスト検証する
+          settle(mergeFontSettings(stored));
         });
       } catch (e) {
         clearTimeout(timeout);
-        resolve(defaults);
+        settle(defaults);
       }
     });
   }
@@ -173,11 +184,12 @@
         '__MONO_WOFF2_REGULAR__': selectedMonoFont.woff2Regular,
         '__MONO_WOFF2_BOLD__': selectedMonoFont.woff2Bold,
       };
-      const escaped = Object.keys(placeholderMap)
-        .map(k => k.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'));
-      placeholderRegex = new RegExp(escaped.join('|'), 'g');
+      // プレースホルダーキーは __XXX__ 形式のみなので定数として単一の正規表現で十分
+      placeholderRegex = /__[A-Z_]+__/g;
     }
-    return text.replace(placeholderRegex, match => placeholderMap[match]);
+    return text.replace(placeholderRegex, match =>
+      Object.prototype.hasOwnProperty.call(placeholderMap, match) ? placeholderMap[match] : match
+    );
   }
 
   /**
@@ -240,26 +252,12 @@
   }
 
   // ── Shadow DOM 対応 ──
-
-  function injectShadowDOMHandler() {
-    try {
-      const root = document.head || document.documentElement;
-      if (!root) return;
-      const scriptUrl = chrome.runtime.getURL('src/content/inject.js');
-      if (document.querySelector(`script[src="${scriptUrl}"]`)) return;
-      const script = document.createElement('script');
-      script.src = scriptUrl;
-      script.async = false;
-      script.onload = () => script.remove();
-      root.appendChild(script);
-    } catch (e) {
-      log('[フォント置換] Shadow DOM handler injection failed:', e);
-    }
-  }
+  // inject.js は manifest.json の content_scripts で MAIN world に document_start 登録済み。
+  // 実行時に <script> タグで再注入する必要はない（以前の injectShadowDOMHandler() は撤去済）。
 
   // microtask バッチで複数の Shadow Root 生成を1回の DOM スキャンにまとめる (O(N²)→O(N))
   let shadowBatchPending = false;
-  window.addEventListener('replace-font-shadow-created', () => {
+  const handleShadowCreated = () => {
     if (shadowBatchPending) return;
     shadowBatchPending = true;
     queueMicrotask(() => {
@@ -273,7 +271,9 @@
         }
       }
     });
-  });
+  };
+  window.addEventListener('replace-font-shadow-created', handleShadowCreated);
+  disposers.push(() => window.removeEventListener('replace-font-shadow-created', handleShadowCreated));
 
   // 現在の設定を保持（getCSSText に渡すため）
   let currentSettings = null;
@@ -356,7 +356,11 @@
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (node.nodeType === Node.ELEMENT_NODE) findShadowRoots(node);
+          // Node.ELEMENT_NODE チェックに加えて早期リターン: shadowRoot を持たず
+          // 子要素もない葉ノードなら TreeWalker を起動しない (ホットパスの最適化)
+          if (node.nodeType !== Node.ELEMENT_NODE) continue;
+          if (!node.shadowRoot && !node.firstElementChild) continue;
+          findShadowRoots(node);
         }
       }
     });
@@ -364,11 +368,31 @@
 
     const CHUNK_SIZE = 200;
     let scanAborted = false;
+    let pendingIdleHandle = null;
+
+    function scheduleChunk(fn) {
+      if (window.requestIdleCallback) {
+        pendingIdleHandle = window.requestIdleCallback(fn, { timeout: 100 });
+      } else {
+        pendingIdleHandle = setTimeout(fn, 0);
+      }
+    }
+
+    function cancelPendingChunk() {
+      if (pendingIdleHandle == null) return;
+      if (window.cancelIdleCallback && window.requestIdleCallback) {
+        try { window.cancelIdleCallback(pendingIdleHandle); } catch (e) {}
+      } else {
+        clearTimeout(pendingIdleHandle);
+      }
+      pendingIdleHandle = null;
+    }
 
     function runInitialScan() {
       scanAborted = false;
       const walker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_ELEMENT);
       function processChunks() {
+        pendingIdleHandle = null;
         if (scanAborted || !document.documentElement?.isConnected) return;
         let count = 0;
         let currentNode;
@@ -376,15 +400,31 @@
           if (currentNode.isConnected && currentNode.shadowRoot) injectCSS(currentNode.shadowRoot);
           count++;
         }
-        if (count === CHUNK_SIZE) {
-          (window.requestIdleCallback || setTimeout)(processChunks, window.requestIdleCallback ? { timeout: 100 } : 0);
-        }
+        if (count === CHUNK_SIZE) scheduleChunk(processChunks);
       }
       processChunks();
     }
 
-    window.addEventListener('pagehide', () => { scanAborted = true; });
-    window.addEventListener('pageshow', (e) => { if (e.persisted) runInitialScan(); });
+    const onPagehide = () => {
+      scanAborted = true;
+      cancelPendingChunk();
+      observer.disconnect();
+    };
+    const onPageshow = (e) => {
+      if (!e.persisted) return;
+      scanAborted = false;
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      runInitialScan();
+    };
+    window.addEventListener('pagehide', onPagehide);
+    window.addEventListener('pageshow', onPageshow);
+    disposers.push(() => {
+      scanAborted = true;
+      cancelPendingChunk();
+      observer.disconnect();
+      window.removeEventListener('pagehide', onPagehide);
+      window.removeEventListener('pageshow', onPageshow);
+    });
     runInitialScan();
   }
 
@@ -399,6 +439,8 @@
       const preloadTag = document.createElement('link');
       preloadTag.rel = 'preload';
       preloadTag.as = 'font';
+      // type 省略は一部ブラウザで preload が無視される原因となる
+      preloadTag.type = 'font/woff2';
       preloadTag.href = config.fontUrl;
       preloadTag.crossOrigin = 'anonymous';
       fragment.appendChild(preloadTag);
@@ -547,8 +589,8 @@
     });
 
     headObserver.observe(document.head, { childList: true });
-    window.addEventListener('pagehide', () => headObserver.disconnect());
-    window.addEventListener('pageshow', (e) => {
+    const onHeadPagehide = () => headObserver.disconnect();
+    const onHeadPageshow = (e) => {
       if (e.persisted && document.head) {
         // bfcache / freeze復帰時: 競合 @font-face 監視を再開
         headObserver.observe(document.head, { childList: true });
@@ -559,6 +601,13 @@
           }
         }
       }
+    };
+    window.addEventListener('pagehide', onHeadPagehide);
+    window.addEventListener('pageshow', onHeadPageshow);
+    disposers.push(() => {
+      headObserver.disconnect();
+      window.removeEventListener('pagehide', onHeadPagehide);
+      window.removeEventListener('pageshow', onHeadPageshow);
     });
   }
 
@@ -576,7 +625,8 @@
     document.documentElement.dataset.replaceFontInitialized = 'true';
     log('[フォント置換] 初期化開始', location.href.substring(0, 80));
 
-    injectShadowDOMHandler();
+    // inject.js は manifest の content_scripts (MAIN world, document_start) で登録済。
+    // 実行時の再注入は不要。
     setupShadowDOMObserver();
 
     // 早期 <head> 監視を開始

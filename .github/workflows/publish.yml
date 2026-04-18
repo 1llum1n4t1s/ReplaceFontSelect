@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: リポジトリをチェックアウト
-        uses: actions/checkout@v5
+        # actions/checkout v5.0.0 (SHA pinned for supply chain security)
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
 
       - name: バージョンを取得
         id: version
@@ -36,12 +37,15 @@ jobs:
           echo "✅ ブランチ名と manifest バージョン一致: $expected"
 
       - name: Node セットアップ
-        uses: actions/setup-node@v5
+        # actions/setup-node v5.0.0 (SHA pinned)
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: 依存インストール
-        run: npm ci || npm install
+        # npm ci のみ: lockfile との不整合 (例: 手動編集 / インジェクション) を検出して失敗させる
+        run: npm ci
 
       - name: アイコン生成
         run: node scripts/generate-icons.js
@@ -69,8 +73,10 @@ jobs:
           CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
           CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+        # chrome-webstore-upload-cli は exact version で pin (major レンジ @3 は
+        # 予期せぬ機能変更・供給チェーン攻撃のリスクがあるため避ける)
         run: |
-          npx --yes chrome-webstore-upload-cli@3 upload \
+          npx --yes chrome-webstore-upload-cli@3.5.0 upload \
             --source replace-font-select-chrome.zip \
             --extension-id "$CWS_EXTENSION_ID" \
             --client-id "$CWS_CLIENT_ID" \

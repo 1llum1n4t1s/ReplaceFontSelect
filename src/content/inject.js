@@ -1,7 +1,14 @@
 (() => {
-  // 二重注入防止（manifest content_scripts と動的注入の両方で実行される可能性がある）
-  if (window.__replaceFontShadowInterceptor) return;
-  window.__replaceFontShadowInterceptor = true;
+  // 二重注入防止。グローバル名はページのスクリプトから衝突・上書き攻撃を受けにくいよう
+  // ビルドごとに変わらない固定ランダム接頭辞にしている（推測を困難にするのが目的）。
+  const FLAG_KEY = '__rfs_7d42f8c1_shadow_intercept__';
+  if (window[FLAG_KEY]) return;
+  Object.defineProperty(window, FLAG_KEY, {
+    value: true,
+    writable: false,
+    configurable: false,
+    enumerable: false
+  });
 
   try {
     const originalAttachShadow = Element.prototype.attachShadow;

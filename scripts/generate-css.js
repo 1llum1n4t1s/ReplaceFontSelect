@@ -1,6 +1,16 @@
 const fs = require('fs');
 const path = require('path');
-const { FONT_REGISTRY } = require('../src/content/font-config');
+const { FONT_REGISTRY, getPresetFileName } = require('../src/content/font-config');
+
+// 多言語対応: CJK 系文字のみを置換対象とする unicode-range
+// Latin 文字は元サイトの指定 (Arial / Helvetica / system-ui 等) をそのまま尊重するため、
+// 置換用 @font-face はこのレンジ内の文字だけを担当する。
+// - U+3000-30FF: Japanese punctuation, hiragana, katakana
+// - U+3400-4DBF: CJK Unified Ideographs Extension A
+// - U+4E00-9FFF: CJK Unified Ideographs (common + rare kanji)
+// - U+F900-FAFF: CJK Compatibility Ideographs
+// - U+FF00-FFEF: Halfwidth / Fullwidth Forms
+const CJK_UNICODE_RANGE = 'U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF';
 
 // ---------------------------------------------
 // 置換対象フォント
@@ -56,9 +66,11 @@ const GOTHIC_FONT_FAMILIES = [
   'MS Mincho', 'ms mincho', 'MS PMincho', 'ＭＳ 明朝', 'ＭＳ Ｐ明朝',
   'YuMincho', 'Yu Mincho', '游明朝', '游明朝体',
   'HiraMinProN-W3', 'Hiragino Mincho ProN', 'ヒラギノ明朝 ProN',
-  'Times New Roman', 'Times', 'Georgia',
-  'serif', // 一部のブラウザで有効
-  'sans-serif' // 汎用サンセリフ
+  'Times New Roman', 'Times', 'Georgia'
+  // 注: 'serif' / 'sans-serif' / 'monospace' などの CSS 汎用キーワードは
+  // @font-face の font-family 指定として spec 上無効であり、ブラウザによっては
+  // 未定義フォント扱いとなるため、置換対象には含めない。
+  // 汎用キーワードへの対応は BODY_CSS_VARS / MONO_CSS_VARS の上書きで行う。
 ];
 
 // 置換対象フォントの定義（等幅系）
@@ -77,8 +89,8 @@ const MONO_FONT_FAMILIES = [
   'SFMono-Regular', 'SF Mono',
   'Söhne Mono',
   'UDEV Gothic JPDOC',
-  'ui-monospace',
-  'monospace' // 汎用等幅
+  'ui-monospace'
+  // 'monospace' は CSS 汎用キーワードで @font-face の family 指定として無効
 ];
 
 // ヒラギノシリーズのバリエーション生成
@@ -179,13 +191,14 @@ const EDITABLE_SELECTORS = [
   '.ace_editor',
 ];
 
-// variableOverrides で CSS 変数を直接宣言する prose / markdown / dark 系クラス。
+// variableOverrides で CSS 変数を直接宣言する prose / markdown 系クラス。
 // editable 配下に出現すると直接宣言が継承より強く当たるため、除外ゾーンでも reset 必要。
-// '.prose' は '[class*="prose"]' が exact match もカバーするため省略
+// '.prose' は '[class*="prose"]' が exact match もカバーするため省略。
+// 注: 'content' / 'answer' / 'light' / 'dark' などの汎用ワードは class 名として広く
+// 使われており、例えば Material-UI の '.content' やアイコン系の '.dark' を巻き込む
+// ため、明示的に prose/markdown に絞る (#P0 対応)。
 const VAR_OVERRIDE_CLASS_SELECTORS = [
   '[class*="prose"]', '[class*="markdown"]',
-  '[class*="content"]', '[class*="answer"]',
-  '[class*="light"]', '[class*="dark"]',
 ];
 
 // variableOverrides の対象セレクタ（:root 等のルート系 + クラス系の合成）
@@ -321,6 +334,11 @@ ${monoVarsReset}
 
 /**
  * @font-face ルールを生成（プレースホルダー版）
+ *
+ * 多言語対応: 外部サイトのフォント (Arial / Helvetica / Segoe UI 等) を
+ * 置換対象とする場合、unicode-range を CJK に限定することで Latin 文字は
+ * オリジナルのフォント指定 (システムの Arial 等) をそのまま残す。
+ * これにより英語中心のサイトでも見た目が不自然にならない。
  */
 function generateFontFace(fontFamily, config) {
   const quotedFontFamily = `"${fontFamily}"`;
@@ -340,7 +358,10 @@ function generateFontFace(fontFamily, config) {
   }
 
   // display: swap は必須
-  rule += `\n  font-display: swap;\n}`;
+  rule += `\n  font-display: swap;`;
+  // CJK のみ置換 → Latin は元サイトのフォント指定にフォールバック
+  rule += `\n  unicode-range: ${CJK_UNICODE_RANGE};`;
+  rule += `\n}`;
 
   return rule;
 }
@@ -352,22 +373,31 @@ function generateFontFace(fontFamily, config) {
  */
 function generateCSS(outputConfig) {
   /** @type {string} CSSファイルのヘッダー */
-  const header = `@charset "UTF-8";`;
+  const header = `@charset "UTF-8";
+/* ============================================================================
+ * DO NOT EDIT — このファイルは scripts/generate-css.js により自動生成されます。
+ * 変更は scripts/generate-css.js か src/content/font-config.js を編集し、
+ * npm run generate-css を実行してください。
+ * ============================================================================ */`;
 
   // CSS変数上書き定義 (BODY_CSS_VARS / MONO_CSS_VARS から生成、除外ゾーンと同期)
   const variableOverrides = buildVariableOverrides();
   const exclusionZone = buildExclusionZone();
 
-  /** @type {string} 置換フォント自体の @font-face 定義（これがないとフォント名から woff2 を解決できない） */
-  // リダイレクトルールと同じ範囲指定にして、中間ウェイト（500等）もカバーする
+  /** @type {string} 置換フォント自体の @font-face 定義（これがないとフォント名から woff2 を解決できない）
+   * 多言語対応: unicode-range を CJK に限定することで、例えば
+   * `font-family: "Noto Sans JP", sans-serif` が適用された Latin 文字は
+   * 2nd fallback (sans-serif / ユーザシステムのネイティブフォント) に落ちる。
+   * 日本語だけ我々のフォント、Latin は元のまま、という挙動になる。 */
   const replacementFontFaces = `
-/* 置換フォント自体の @font-face 定義 */
+/* 置換フォント自体の @font-face 定義 (unicode-range で CJK に限定) */
 @font-face {
   font-family: "__BODY_FONT_NAME__";
   src:  __BODY_LOCAL_REGULAR__,
         url('__REPLACE_FONT_BASE__src/fonts/__BODY_WOFF2_REGULAR__') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: ${CJK_UNICODE_RANGE};
 }
 @font-face {
   font-family: "__BODY_FONT_NAME__";
@@ -375,6 +405,7 @@ function generateCSS(outputConfig) {
         url('__REPLACE_FONT_BASE__src/fonts/__BODY_WOFF2_BOLD__') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: ${CJK_UNICODE_RANGE};
 }
 @font-face {
   font-family: "__MONO_FONT_NAME__";
@@ -382,6 +413,7 @@ function generateCSS(outputConfig) {
         url('__REPLACE_FONT_BASE__src/fonts/__MONO_WOFF2_REGULAR__') format('woff2');
   font-weight: 100 599;
   font-display: swap;
+  unicode-range: ${CJK_UNICODE_RANGE};
 }
 @font-face {
   font-family: "__MONO_FONT_NAME__";
@@ -389,6 +421,7 @@ function generateCSS(outputConfig) {
         url('__REPLACE_FONT_BASE__src/fonts/__MONO_WOFF2_BOLD__') format('woff2');
   font-weight: 600 900;
   font-display: swap;
+  unicode-range: ${CJK_UNICODE_RANGE};
 }
 `;
 
@@ -436,6 +469,16 @@ function buildPlaceholderMap(bodyKey, monoKey, weight, baseUrl) {
   };
 }
 
+// プレースホルダーキー一覧は全プリセットで共通 (同じ buildPlaceholderMap 形式) のため
+// 正規表現を 1 度だけコンパイルしてキャッシュする (36 回の再コンパイルを回避)
+let _placeholderRegexCache = null;
+function getPlaceholderRegex(keys) {
+  if (_placeholderRegexCache) return _placeholderRegexCache;
+  const escaped = keys.map(k => k.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'));
+  _placeholderRegexCache = new RegExp(escaped.join('|'), 'g');
+  return _placeholderRegexCache;
+}
+
 /**
  * テンプレートCSSのプレースホルダーを一括置換する
  * @param {string} templateCSS - プレースホルダー入りテンプレートCSS
@@ -443,33 +486,22 @@ function buildPlaceholderMap(bodyKey, monoKey, weight, baseUrl) {
  * @returns {string} 解決済みCSS
  */
 function resolveTemplate(templateCSS, placeholderMap) {
-  const escaped = Object.keys(placeholderMap)
-    .map(k => k.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'));
-  const regex = new RegExp(escaped.join('|'), 'g');
+  const regex = getPlaceholderRegex(Object.keys(placeholderMap));
   return templateCSS.replace(regex, match => placeholderMap[match]);
 }
 
 /**
- * プリセットJSのファイル名を生成する（background.js と共通の命名規則）
- * @param {string} bodyKey - bodyフォントキー
- * @param {string} monoKey - monoフォントキー
- * @param {string} weight - '400' or '500'
- * @returns {string} ファイル名
- */
-function getPresetFileName(bodyKey, monoKey, weight) {
-  return `preset-${bodyKey}-${monoKey}-w${weight}.js`;
-}
-
-/**
  * CSSテキストをJSテンプレートリテラル内に埋め込むためにエスケープする
+ * バックスラッシュ・バッククォート・${ を単一スキャンで処理する (以前の 3 パス実装を統合)
  * @param {string} css - エスケープ対象のCSSテキスト
  * @returns {string} エスケープ済みテキスト
  */
 function escapeForTemplateLiteral(css) {
-  return css
-    .replace(/\\/g, '\\\\')   // バックスラッシュ → \\
-    .replace(/`/g, '\\`')     // バッククォート → \`
-    .replace(/\$\{/g, '\\${'); // ${ → \${
+  return css.replace(/[\\`]|\$\{/g, (m) => {
+    if (m === '\\') return '\\\\';
+    if (m === '`') return '\\`';
+    return '\\${';
+  });
 }
 
 /**
@@ -494,7 +526,9 @@ function generatePresets(templateCSS, cssDir) {
         const resolvedCSS = resolveTemplate(templateCSS, map);
         // JSテンプレートリテラル内に埋め込むためにエスケープ
         const escapedCSS = escapeForTemplateLiteral(resolvedCSS);
-        const jsContent = `(() => {
+        const jsContent = `// DO NOT EDIT — このファイルは scripts/generate-css.js により自動生成されます。
+// ${fileName} (body=${bodyKey}, mono=${monoKey}, weight=${weight})
+(() => {
   const s = document.createElement('style');
   s.dataset.replaceFont = 'preset';
   s.textContent = \`${escapedCSS}\`.replace(/__REPLACE_FONT_BASE__/g, chrome.runtime.getURL(''));

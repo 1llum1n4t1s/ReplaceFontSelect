@@ -68,9 +68,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   let noticeTimer = 0;
 
   function saveSettings() {
-    // バリデーション: FONT_REGISTRY に存在しない値の保存を防止
+    // バリデーション: FONT_REGISTRY に存在しない値 / 不正なウェイトの保存を防止
     if (!(bodyFontSelect.value in FONT_REGISTRY.body)) bodyFontSelect.value = defaults.bodyFont;
     if (!(monoFontSelect.value in FONT_REGISTRY.mono)) monoFontSelect.value = defaults.monoFont;
+    if (bodyWeightSelect.value !== '400' && bodyWeightSelect.value !== '500') {
+      bodyWeightSelect.value = defaults.bodyFontWeight;
+    }
 
     const settings = {
       enabled: enabledToggle.checked,
@@ -80,6 +83,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     chrome.storage.local.set({ [storageKey]: settings }, () => {
+      // 失敗時 (quota, corrupt storage 等) はユーザに明示 (自動で消さない)
+      if (chrome.runtime.lastError) {
+        saveNotice.textContent = `⚠️ 保存に失敗しました: ${chrome.runtime.lastError.message}`;
+        saveNotice.classList.add('visible');
+        clearTimeout(noticeTimer);
+        noticeTimer = 0;
+        return;
+      }
+      saveNotice.textContent = 'ページを再読み込みすると反映されます';
       saveNotice.classList.add('visible');
       clearTimeout(noticeTimer);
       noticeTimer = setTimeout(() => saveNotice.classList.remove('visible'), 3000);
