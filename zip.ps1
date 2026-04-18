@@ -4,7 +4,7 @@
 $packageJson = Get-Content -Path "./package.json" -Raw -Encoding UTF8 | ConvertFrom-Json
 $version = $packageJson.version
 
-$filesToUpdate = @("manifest.json", "README.md", "popup/popup.html", "webstore/screenshots/01-popup-ui.html", "webstore/screenshots/03-hero-promo.html", "webstore/screenshots/04-promo-small.html", "webstore/screenshots/05-promo-marquee.html")
+$filesToUpdate = @("manifest.json", "README.md", "src/popup/popup.html", "webstore/screenshots/01-popup-ui.html", "webstore/screenshots/03-hero-promo.html", "webstore/screenshots/04-promo-small.html", "webstore/screenshots/05-promo-marquee.html")
 foreach ($filePath in $filesToUpdate) {
     $content = Get-Content -Path $filePath -Raw -Encoding UTF8
     
@@ -39,7 +39,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host ""
 
 # フォント変換（TTFがある場合）
-if (Test-Path "fonts/*.ttf") {
+if (Test-Path "src/fonts/*.ttf") {
     Write-Host "🔄 フォントを変換中..." -ForegroundColor Cyan
     node scripts/convert-fonts.js
     if ($LASTEXITCODE -ne 0) {
@@ -76,14 +76,8 @@ New-Item -ItemType Directory -Path $tempDir | Out-Null
 Write-Host "📂 必要なファイルをコピー中..." -ForegroundColor Yellow
 
 Copy-Item "manifest.json" -Destination $tempDir
-Copy-Item "background.js" -Destination $tempDir
-Copy-Item "font-config.js" -Destination $tempDir
-Copy-Item "preload-fonts.js" -Destination $tempDir
-Copy-Item "inject.js" -Destination $tempDir
-Copy-Item "popup" -Destination $tempDir -Recurse
-Copy-Item "css" -Destination $tempDir -Recurse
-Copy-Item "fonts" -Destination $tempDir -Recurse
 Copy-Item "icons" -Destination $tempDir -Recurse
+Copy-Item "src" -Destination $tempDir -Recurse
 
 # 不要なファイルを除外
 Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~" | Remove-Item -Force

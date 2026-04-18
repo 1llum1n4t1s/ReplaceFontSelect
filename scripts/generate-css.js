@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { FONT_REGISTRY } = require('../font-config');
+const { FONT_REGISTRY } = require('../src/content/font-config');
 
 // ---------------------------------------------
 // 置換対象フォント
@@ -138,6 +138,187 @@ const OUTPUT_CONFIGS = [
   }
 ];
 
+// ---------------------------------------------
+// CSS変数・セレクタの単一の真実の源泉
+// variableOverrides と除外ゾーンの両方が参照するため、ここに追加するだけで
+// 両方のルールに自動反映される（重複定義不要）
+// ---------------------------------------------
+
+const BODY_CSS_VARS = [
+  '--font-sans', '--font-inter', '--font-geist-sans',
+  '--font-fk-grotesk', '--font-fkgrotesk',
+  '--font-fk-grotesk-neue', '--font-fkgrotesk-neue',
+  '--font-body', '--font-sans-brand', '--font-family-sans', '--tw-font-sans',
+  '--font-anthropic-serif', '--font-anthropic-sans',
+  '--font-ui', '--font-ui-serif',
+  '--font-user-message', '--font-claude-response',
+  '--font-sans-serif', '--font-serif',
+];
+
+const MONO_CSS_VARS = [
+  '--font-mono', '--font-berkeley-mono', '--font-geist-mono', '--font-code',
+  '--font-family-mono', '--font-family-code', '--tw-font-mono',
+  '--mono-font', '--code-font', '--monospace-font', '--pplx-font-mono',
+];
+
+// 編集可能領域として判定するDOMセレクタ（RTE / 入力フィールド / コードエディタ）
+const EDITABLE_SELECTORS = [
+  '[contenteditable="true"]',
+  '[contenteditable=""]',
+  '[contenteditable="plaintext-only"]',
+  'input',
+  'textarea',
+  '[role="textbox"]',
+  '.ProseMirror',
+  '.ql-editor',
+  '.mce-content-body',
+  '.cke_editable',
+  '.CodeMirror',
+  '.cm-editor',
+  '.monaco-editor',
+  '.ace_editor',
+];
+
+// variableOverrides で CSS 変数を直接宣言する prose / markdown / dark 系クラス。
+// editable 配下に出現すると直接宣言が継承より強く当たるため、除外ゾーンでも reset 必要。
+// '.prose' は '[class*="prose"]' が exact match もカバーするため省略
+const VAR_OVERRIDE_CLASS_SELECTORS = [
+  '[class*="prose"]', '[class*="markdown"]',
+  '[class*="content"]', '[class*="answer"]',
+  '[class*="light"]', '[class*="dark"]',
+];
+
+// variableOverrides の対象セレクタ（:root 等のルート系 + クラス系の合成）
+const VAR_OVERRIDE_SELECTORS = [
+  ':root', ':host', 'html', 'body',
+  ...VAR_OVERRIDE_CLASS_SELECTORS,
+];
+
+// 強制mono指定の対象要素（pre/code系）。[style*="monospace"] / [style*="ui-monospace"]
+// はインライン指定用で別途扱う
+const MONO_FORCE_TARGETS = [
+  'pre', 'code', 'kbd', 'samp', '.mono',
+  '[class*="font-mono"]',
+  '[class*="codeblock"]',
+  '[class*="shiki"]',
+  '[class*="hljs"]',
+  '[class*="prism"]',
+  '[class*="language-"]',
+];
+
+/**
+ * editable 領域自身 + editable 配下を除外するためのセレクタ群を返す。
+ * ':not(:where(...))' 内で使用することで specificity を増やさずに除外できる。
+ */
+function buildEditableExclusionList() {
+  return [
+    ...EDITABLE_SELECTORS,
+    ...EDITABLE_SELECTORS.map(s => `${s} *`),
+  ].join(', ');
+}
+
+/**
+ * 拡張機能の CSS 変数上書きルール（variableOverrides）を構築する。
+ * BODY_CSS_VARS / MONO_CSS_VARS を単一の真実の源泉として参照し、除外ゾーンとの
+ * 同期ズレを防ぐ。
+ */
+function buildVariableOverrides() {
+  const selector = VAR_OVERRIDE_SELECTORS.join(', ');
+  const bodyVarsSet = BODY_CSS_VARS
+    .map(v => `  ${v}: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;`)
+    .join('\n');
+  const monoVarsSet = MONO_CSS_VARS
+    .map(v => `  ${v}: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;`)
+    .join('\n');
+  const monoForceCompound = MONO_FORCE_TARGETS.join(', ');
+  // :where() で包むことで :not() の specificity 寄与を 0 にし、元の (0,1,1) を維持
+  // → 除外ゾーンで編集領域を飛ばしつつ、非編集領域では既存の cascade 挙動を保つ
+  const editableExclusion = buildEditableExclusionList();
+
+  return `
+${selector} {
+  /* Sans-serif 系 CSS 変数 */
+${bodyVarsSet}
+
+  /* Monospace 系 CSS 変数 */
+${monoVarsSet}
+}
+
+/* 汎用的な等幅フォント要素に対する強制指定（CSS継承で子孫に伝播）。
+   editable 領域および editable 配下は ':not(:where(...))' で除外する。
+   ':where()' で specificity を 0 にすることで、非編集領域での specificity を
+   元の (0,1,1) のまま維持し、site の pre/code スタイルへの影響を最小化する。
+   editable 配下で我々の強制mono指定自体が発火しないため、site の author mono
+   宣言（!important の有無によらず）が正しく適用される（Codex レビュー指摘対応）。 */
+:root :is(${monoForceCompound}):not(:where(${editableExclusion})),
+:host :is(${monoForceCompound}):not(:where(${editableExclusion})),
+[style*="monospace"]:not(:where(${editableExclusion})),
+[style*="ui-monospace"]:not(:where(${editableExclusion})) {
+  font-family: "__MONO_FONT_NAME__", "Berkeley Mono", "IBM Plex Mono", "Geist Mono", "Cascadia Code", "Cascadia Mono", "Consolas", "Monaco", "Courier New", __MONO_FONT_FALLBACK__ !important;
+}
+`;
+}
+
+/**
+ * 編集可能領域（RTE / スプレッドシート / ブログエディタ等）でフォント置換を
+ * 無効化する除外ゾーンCSSを構築する。DOM構造で判別するためドメインリスト不要。
+ *
+ * 仕組み:
+ * - CSS変数（Layer 1）は inherited のため 'revert' は親継承してしまう。'initial'
+ *   で guaranteed-invalid value にすると子孫の var() は fallback または IACVT に落ちる
+ * - font-family は意図的に revert しない — 'revert' は author origin 全体の宣言を
+ *   落とすため、site/editor 自身のフォント指定まで壊す（Codex レビュー指摘）
+ * - mono 系要素への強制指定は buildVariableOverrides() 側で editable 配下を
+ *   ':not(:where(...))' で除外済みのため、除外ゾーン側では pre/code 向けルールは不要
+ * - @font-face 再定義（Layer 2）はドキュメントグローバルで要素スコープ化不可。
+ *   モダンRTEは主にCSS変数経由のため実用上これで大半をカバー
+ * - specificity: ':is(:root, :host) :is(editable)' で (0,2,0) を確保し、
+ *   variableOverrides の (0,1,0) に勝つ
+ */
+function buildExclusionZone() {
+  const editableList = EDITABLE_SELECTORS.map(s => `  ${s}`).join(',\n');
+  const bodyVarsReset = BODY_CSS_VARS.map(v => `  ${v}: initial !important;`).join('\n');
+  const monoVarsReset = MONO_CSS_VARS.map(v => `  ${v}: initial !important;`).join('\n');
+  const overrideClassTargets = VAR_OVERRIDE_CLASS_SELECTORS.join(', ');
+
+  return `
+/* ============================================================================
+   編集可能領域（RTE / 入力フィールド / コードエディタ）の除外ゾーン
+   ブラウザ上でフォントを選択して編集するアプリと、ブログエディタのリッチテキスト
+   入力エリアで拡張機能のフォント置換を無効化する。DOM構造で判別するためドメイン
+   リストのメンテナンス不要。詳細は buildExclusionZone() のJSDoc参照
+   ============================================================================ */
+
+/* Block 1: editable 要素自身の CSS 変数を無効化。
+   font-family は意図的に revert しない — author-origin の 'revert' は site/editor
+   自身の宣言も同じ origin として落とすため、WYSIWYG エディタが JS で inline style
+   を適用するフォント選択 (<span style="font-family:Arial">) や、site CSS の
+   'input { font-family: ... }' が壊れる (Codex レビュー指摘)。
+   CSS 変数を initial (guaranteed-invalid) に reset するだけで、モダンRTEの
+   フレームワーク（Tailwind/Next.js 等）が CSS 変数経由で指定するフォントは
+   無効化でき、同時に inline style / site 直接指定は保持される。
+   specificity (0,2,0): variableOverrides (0,1,0) に勝つ */
+:is(:root, :host) :is(
+${editableList}
+) {
+${bodyVarsReset}
+
+${monoVarsReset}
+}
+
+/* Block 2: editable 配下に出現する prose / markdown / content / dark 系クラスへ
+   の直接宣言（variableOverrides の '[class*="content"]' 等への !important 指定）は
+   継承より強く当たるため、ここで再度 initial に reset する */
+:is(:root, :host) :is(
+${editableList}
+) :is(${overrideClassTargets}) {
+${bodyVarsReset}
+
+${monoVarsReset}
+}
+`;
+}
+
 /**
  * @font-face ルールを生成（プレースホルダー版）
  */
@@ -147,7 +328,7 @@ function generateFontFace(fontFamily, config) {
   // localFonts がプレースホルダー文字列の場合はそのまま使用
   const localSources = config.localFonts;
   // 拡張機能IDが動的なため、プレースホルダーを使用し、Content Script側で置換する
-  const webFontUrl = `url('__REPLACE_FONT_BASE__fonts/${config.webFont}') format('woff2')`;
+  const webFontUrl = `url('__REPLACE_FONT_BASE__src/fonts/${config.webFont}') format('woff2')`;
   const srcParts = [localSources, webFontUrl];
 
   let rule = `@font-face {
@@ -173,51 +354,9 @@ function generateCSS(outputConfig) {
   /** @type {string} CSSファイルのヘッダー */
   const header = `@charset "UTF-8";`;
 
-  /** @type {string} 共通のCSS変数によるフォント指定を上書きするスタイル定義（プレースホルダー版） */
-  const variableOverrides = `
-:root, :host, html, body, .prose, [class*="prose"], [class*="markdown"], [class*="content"], [class*="answer"], [class*="light"], [class*="dark"] {
-  /* Sans-serif 系 CSS 変数 */
-  --font-sans: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-inter: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-geist-sans: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-fk-grotesk: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-fkgrotesk: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-fk-grotesk-neue: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-fkgrotesk-neue: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-body: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-sans-brand: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-family-sans: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --tw-font-sans: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-anthropic-serif: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-anthropic-sans: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-ui: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-ui-serif: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-user-message: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-claude-response: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-sans-serif: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-  --font-serif: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
-
-  /* Monospace 系 CSS 変数 */
-  --font-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --font-berkeley-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --font-geist-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --font-code: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --font-family-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --font-family-code: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --tw-font-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --mono-font: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --code-font: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --monospace-font: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-  --pplx-font-mono: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;
-}
-
-/* 汎用的な等幅フォント要素に対する強制指定（CSS継承で子孫に伝播） */
-:root :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]),
-:host :is(pre, code, kbd, samp, .mono, [class*="font-mono"], [class*="codeblock"], [class*="shiki"], [class*="hljs"], [class*="prism"], [class*="language-"]),
-[style*="monospace"], [style*="ui-monospace"] {
-  font-family: "__MONO_FONT_NAME__", "Berkeley Mono", "IBM Plex Mono", "Geist Mono", "Cascadia Code", "Cascadia Mono", "Consolas", "Monaco", "Courier New", __MONO_FONT_FALLBACK__ !important;
-}
-`;
+  // CSS変数上書き定義 (BODY_CSS_VARS / MONO_CSS_VARS から生成、除外ゾーンと同期)
+  const variableOverrides = buildVariableOverrides();
+  const exclusionZone = buildExclusionZone();
 
   /** @type {string} 置換フォント自体の @font-face 定義（これがないとフォント名から woff2 を解決できない） */
   // リダイレクトルールと同じ範囲指定にして、中間ウェイト（500等）もカバーする
@@ -226,28 +365,28 @@ function generateCSS(outputConfig) {
 @font-face {
   font-family: "__BODY_FONT_NAME__";
   src:  __BODY_LOCAL_REGULAR__,
-        url('__REPLACE_FONT_BASE__fonts/__BODY_WOFF2_REGULAR__') format('woff2');
+        url('__REPLACE_FONT_BASE__src/fonts/__BODY_WOFF2_REGULAR__') format('woff2');
   font-weight: 100 599;
   font-display: swap;
 }
 @font-face {
   font-family: "__BODY_FONT_NAME__";
   src:  __BODY_LOCAL_BOLD__,
-        url('__REPLACE_FONT_BASE__fonts/__BODY_WOFF2_BOLD__') format('woff2');
+        url('__REPLACE_FONT_BASE__src/fonts/__BODY_WOFF2_BOLD__') format('woff2');
   font-weight: 600 900;
   font-display: swap;
 }
 @font-face {
   font-family: "__MONO_FONT_NAME__";
   src:  __MONO_LOCAL_REGULAR__,
-        url('__REPLACE_FONT_BASE__fonts/__MONO_WOFF2_REGULAR__') format('woff2');
+        url('__REPLACE_FONT_BASE__src/fonts/__MONO_WOFF2_REGULAR__') format('woff2');
   font-weight: 100 599;
   font-display: swap;
 }
 @font-face {
   font-family: "__MONO_FONT_NAME__";
   src:  __MONO_LOCAL_BOLD__,
-        url('__REPLACE_FONT_BASE__fonts/__MONO_WOFF2_BOLD__') format('woff2');
+        url('__REPLACE_FONT_BASE__src/fonts/__MONO_WOFF2_BOLD__') format('woff2');
   font-weight: 600 900;
   font-display: swap;
 }
@@ -260,7 +399,7 @@ function generateCSS(outputConfig) {
     ).join('\n');
   });
 
-  return `${header}\n${variableOverrides}\n${replacementFontFaces}\n${sections.join('\n')}\n`;
+  return `${header}\n${variableOverrides}\n${exclusionZone}\n${replacementFontFaces}\n${sections.join('\n')}\n`;
 }
 
 // ---------------------------------------------
@@ -378,7 +517,7 @@ function generatePresets(templateCSS, cssDir) {
 function main() {
   console.log('🎨 CSS ファイル生成を開始します...\n');
 
-  const cssDir = path.join(__dirname, '../css');
+  const cssDir = path.join(__dirname, '../src/css');
   fs.mkdirSync(cssDir, { recursive: true });
 
   // 1. テンプレートCSS生成（プレースホルダー入り、Shadow DOM用フォールバック）

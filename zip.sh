@@ -7,7 +7,7 @@ echo "Version syncing..."
 PACKAGE_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
 
 # 更新対象ファイル
-FILES_TO_UPDATE=("manifest.json" "README.md" "docs/index.html" "popup/popup.html" "webstore/screenshots/01-popup-ui.html" "webstore/screenshots/03-hero-promo.html" "webstore/screenshots/04-promo-small.html" "webstore/screenshots/05-promo-marquee.html")
+FILES_TO_UPDATE=("manifest.json" "README.md" "docs/index.html" "src/popup/popup.html" "webstore/screenshots/01-popup-ui.html" "webstore/screenshots/03-hero-promo.html" "webstore/screenshots/04-promo-small.html" "webstore/screenshots/05-promo-marquee.html")
 
 for file in "${FILES_TO_UPDATE[@]}"; do
     if [ -f "$file" ]; then
@@ -48,7 +48,7 @@ fi
 echo ""
 
 # フォント変換（TTFがある場合）
-if ls fonts/*.ttf 1> /dev/null 2>&1; then
+if ls src/fonts/*.ttf 1> /dev/null 2>&1; then
   echo "🔄 フォントを変換中..."
   node scripts/convert-fonts.js
   if [ $? -ne 0 ]; then
@@ -75,29 +75,22 @@ if ! command -v zip &> /dev/null; then
 fi
 
 # 古いZIPファイルを削除
-rm -f ./replace-font-chrome.zip
+rm -f ./replace-font-select-chrome.zip
 
 echo "📦 Chrome Web Store用のZIPファイルを作成中..."
 
 # 必要なファイルのみをZIPに含める
-zip -r ./replace-font-chrome.zip \
+zip -r ./replace-font-select-chrome.zip \
   manifest.json \
-  preload-fonts.js \
-  inject.js \
-  popup/ \
-  css/ \
-  fonts/ \
   icons/ \
+  src/ \
   -x "*.DS_Store" "*.swp" "*~"
 
 if [ $? -eq 0 ]; then
-  echo "✅ ZIPファイルを作成しました: replace-font-chrome.zip"
+  echo "✅ ZIPファイルを作成しました: replace-font-select-chrome.zip"
   echo ""
   echo "📊 ファイルサイズ:"
-  ls -lh ./replace-font-chrome.zip
-  echo ""
-  echo "📋 含まれているファイル:"
-  unzip -l ./replace-font-chrome.zip
+  ls -lh ./replace-font-select-chrome.zip
 else
   echo "❌ ZIPファイルの作成に失敗しました"
   exit 1

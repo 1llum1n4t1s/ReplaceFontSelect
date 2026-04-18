@@ -48,7 +48,7 @@ jobs:
 
       - name: フォント変換（TTFがある場合）
         run: |
-          if ls fonts/*.ttf >/dev/null 2>&1; then
+          if ls src/fonts/*.ttf >/dev/null 2>&1; then
             node scripts/convert-fonts.js
           else
             echo "TTFファイルなし、スキップ"
@@ -59,7 +59,7 @@ jobs:
 
       - name: zip パッケージを作成
         run: |
-          zip -r replace-font-select-chrome.zip manifest.json background.js font-config.js preload-fonts.js inject.js popup css fonts icons \
+          zip -r replace-font-select-chrome.zip manifest.json icons src \
             -x "*.DS_Store" "*.swp" "*~"
           ls -lh replace-font-select-chrome.zip
 
