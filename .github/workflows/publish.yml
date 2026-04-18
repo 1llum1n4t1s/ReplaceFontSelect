@@ -48,7 +48,7 @@ jobs:
 
       - name: フォント変換（TTFがある場合）
         run: |
-          if ls fonts/*.ttf >/dev/null 2>&1; then
+          if ls src/fonts/*.ttf >/dev/null 2>&1; then
             node scripts/convert-fonts.js
           else
             echo "TTFファイルなし、スキップ"
