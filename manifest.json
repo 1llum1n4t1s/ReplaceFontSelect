@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "目に優しいフォント置換",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "description": "読みづらいフォントを好みの日本語フォントに自動置換。フォント選択機能付き。",
   "browser_specific_settings": {
     "gecko": {
