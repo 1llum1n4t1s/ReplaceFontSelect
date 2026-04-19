@@ -29,9 +29,10 @@ done
 echo "Version synced: $PACKAGE_VERSION"
 echo ""
 
-# 依存関係のインストール（package-lock.jsonのバージョン同期も行われる）
-echo "📦 依存関係をインストール中..."
-npm install
+# 依存関係のインストール（package-lock.json の整合性チェック付き）
+# npm ci: lockfile に厳密に従い、差分があれば失敗する。サプライチェーン攻撃対策
+echo "📦 依存関係をインストール中（npm ci）..."
+npm ci
 if [ $? -ne 0 ]; then
   echo "❌ 依存関係のインストールに失敗しました"
   exit 1

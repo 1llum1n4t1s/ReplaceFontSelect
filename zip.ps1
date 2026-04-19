@@ -20,9 +20,10 @@ foreach ($filePath in $filesToUpdate) {
 Write-Host "Version synced: $version" -ForegroundColor Green
 Write-Host ""
 
-# 依存関係のインストール（package-lock.jsonのバージョン同期も行われる）
-Write-Host "📦 依存関係をインストール中..." -ForegroundColor Cyan
-npm install
+# 依存関係のインストール（package-lock.json の整合性チェック付き）
+# npm ci: lockfile に厳密に従い、差分があれば失敗する。サプライチェーン攻撃対策
+Write-Host "📦 依存関係をインストール中（npm ci）..." -ForegroundColor Cyan
+npm ci
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ 依存関係のインストールに失敗しました" -ForegroundColor Red
     exit 1

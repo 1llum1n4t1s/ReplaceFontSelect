@@ -73,10 +73,11 @@ jobs:
           CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
           CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
-        # chrome-webstore-upload-cli は exact version で pin (major レンジ @3 は
-        # 予期せぬ機能変更・供給チェーン攻撃のリスクがあるため避ける)
+        # chrome-webstore-upload-cli は devDependencies に固定し、npm ci で
+        # package-lock.json の integrity hash 検証済みのローカル版を --no で呼ぶ
+        # （npx --yes はネットワーク取得でハッシュ未検証になるため避ける）
         run: |
-          npx --yes chrome-webstore-upload-cli@3.5.0 upload \
+          npx --no chrome-webstore-upload upload \
             --source replace-font-select-chrome.zip \
             --extension-id "$CWS_EXTENSION_ID" \
             --client-id "$CWS_CLIENT_ID" \

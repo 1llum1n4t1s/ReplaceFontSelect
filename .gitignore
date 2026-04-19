@@ -26,3 +26,9 @@ debug/
 # Chrome extension reserved
 _metadata/
 temp/
+
+# Claude Code local settings (personal, may contain machine-specific permissions)
+.claude/settings.local.json
+
+# Serena MCP working files
+.serena/

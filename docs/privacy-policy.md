@@ -8,7 +8,7 @@
 
 ### 概要
 
-「目に優しいフォント置換」（以下「本拡張機能」）は、ウェブページ上の読みづらいフォントをユーザーが選択したフォントに自動置換するブラウザ拡張機能です。本文用 6 種類・等幅用 3 種類のフォントから選択できます。日本語サイト・英語サイトの両方で動作し、CJK（漢字・かな・記号）だけを置換する Unicode-range スコープにより、Latin テキストは元サイトのデザインを尊重します。
+「目に優しいフォント置換」（以下「本拡張機能」）は、ウェブページ上の読みづらいフォントをユーザーが選択したフォントに自動置換するブラウザ拡張機能です。本文用 6 種類・等幅用 3 種類のフォントから選択できます。置換はユーザーが選んだフォントが持つグリフ範囲に従い、そのフォントに含まれない文字（アラビア文字・タイ文字など一部言語）は CSS font fallback によって元サイト指定のフォントへ自動的に戻ります。
 
 > **重要:** この拡張機能は**個人データを一切収集・送信しません**。フォント選択設定のみをブラウザのローカルストレージに保存し、全ての処理はブラウザ内で完結します。
 
@@ -51,7 +51,7 @@
 
 ### Overview
 
-"目に優しいフォント置換" (Eye-Friendly Font Replacer) is a browser extension that automatically replaces hard-to-read fonts on web pages with user-selected fonts. Users can choose from **6 body fonts and 3 monospace fonts**. The extension works on both Japanese and English websites: CJK characters (kanji, kana, punctuation) are replaced while Latin text is left untouched thanks to Unicode-range scoped `@font-face` rules, preserving the original look of English-language sites.
+"目に優しいフォント置換" (Eye-Friendly Font Replacer) is a browser extension that automatically replaces hard-to-read fonts on web pages with user-selected fonts. Users can choose from **6 body fonts and 3 monospace fonts**. Replacement follows the glyph coverage of the user-selected font; characters outside that coverage (e.g., Arabic, Thai) automatically fall back to the site's original font via the standard CSS font cascade.
 
 > **Important:** This extension **does not collect or transmit any personal data**. Only font selection preferences are saved locally in the browser.
 

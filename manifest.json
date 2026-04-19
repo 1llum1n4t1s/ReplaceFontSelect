@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "目に優しいフォント置換",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "読みづらいフォントを好みの日本語フォントに自動置換。フォント選択機能付き。",
   "browser_specific_settings": {
     "gecko": {
@@ -16,6 +16,9 @@
     "storage",
     "scripting"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "background": {
     "service_worker": "src/background/background.js"
   },
@@ -58,7 +61,7 @@
     {
       "resources": [
         "src/fonts/*.woff2",
-        "src/css/*.css"
+        "src/css/replacefont-extension.css"
       ],
       "matches": [
         "<all_urls>"

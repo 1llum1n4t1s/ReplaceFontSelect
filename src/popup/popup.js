@@ -42,45 +42,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     settingsSection.classList.toggle('disabled', !enabled);
   }
 
-  // デフォルト値を適用するヘルパー
-  function applyDefaults() {
-    updateToggleUI(defaults.enabled);
-    bodyFontSelect.value = defaults.bodyFont;
-    bodyWeightSelect.value = defaults.bodyFontWeight;
-    monoFontSelect.value = defaults.monoFont;
+  function applySettingsToUI(settings) {
+    updateToggleUI(settings.enabled);
+    bodyFontSelect.value = settings.bodyFont;
+    bodyWeightSelect.value = settings.bodyFontWeight;
+    monoFontSelect.value = settings.monoFont;
   }
 
   // 現在の設定を読み込んでUIに反映
+  // mergeFontSettings が単一の真実の源泉として validator による白リスト検証を実行
   try {
     const result = await chrome.storage.local.get(storageKey);
-    const settings = result[storageKey] || {};
-    // 空文字・undefined はデフォルトにフォールバック（background.js, preload-fonts.js と同一ポリシー）
-    const v = (val, def) => (val !== undefined && val !== '') ? val : def;
-    updateToggleUI(v(settings.enabled, defaults.enabled));
-    bodyFontSelect.value = v(settings.bodyFont, defaults.bodyFont);
-    bodyWeightSelect.value = v(settings.bodyFontWeight, defaults.bodyFontWeight);
-    monoFontSelect.value = v(settings.monoFont, defaults.monoFont);
+    applySettingsToUI(mergeFontSettings(result[storageKey] || {}));
   } catch (e) {
-    applyDefaults();
+    applySettingsToUI(Object.assign({}, defaults));
   }
 
   // 保存通知のタイマーID（連打時に前の通知を即キャンセルして更新）
   let noticeTimer = 0;
 
-  function saveSettings() {
-    // バリデーション: FONT_REGISTRY に存在しない値 / 不正なウェイトの保存を防止
-    if (!(bodyFontSelect.value in FONT_REGISTRY.body)) bodyFontSelect.value = defaults.bodyFont;
-    if (!(monoFontSelect.value in FONT_REGISTRY.mono)) monoFontSelect.value = defaults.monoFont;
-    if (bodyWeightSelect.value !== '400' && bodyWeightSelect.value !== '500') {
-      bodyWeightSelect.value = defaults.bodyFontWeight;
-    }
+  // 直前に保存した設定（同一内容の storage.set を抑止して onChanged の無駄発火を回避）
+  let _lastSaved = null;
 
-    const settings = {
+  function saveSettings() {
+    // FONT_SETTINGS_VALIDATORS で個別に妥当性を確認、不正値は defaults に戻す
+    const raw = {
       enabled: enabledToggle.checked,
       bodyFont: bodyFontSelect.value,
       bodyFontWeight: bodyWeightSelect.value,
       monoFont: monoFontSelect.value
     };
+    const settings = mergeFontSettings(raw);
+    // UI 表示と乖離していたら反映（validator ではじかれたケース）
+    applySettingsToUI(settings);
+
+    // 差分なしなら早期リターン（onChanged 連鎖を避ける）
+    if (_lastSaved &&
+        _lastSaved.enabled === settings.enabled &&
+        _lastSaved.bodyFont === settings.bodyFont &&
+        _lastSaved.bodyFontWeight === settings.bodyFontWeight &&
+        _lastSaved.monoFont === settings.monoFont) {
+      return;
+    }
 
     chrome.storage.local.set({ [storageKey]: settings }, () => {
       // 失敗時 (quota, corrupt storage 等) はユーザに明示 (自動で消さない)
@@ -91,6 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         noticeTimer = 0;
         return;
       }
+      _lastSaved = settings;
       saveNotice.textContent = 'ページを再読み込みすると反映されます';
       saveNotice.classList.add('visible');
       clearTimeout(noticeTimer);

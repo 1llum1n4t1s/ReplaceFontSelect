@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **目に優しいフォント置換** — A Chrome/Firefox Extension (Manifest V3) that replaces hard-to-read fonts on all websites with user-selected fonts. Users choose from 6 body fonts (Noto Sans JP, IBM Plex Sans JP, M PLUS 2, Murecho, Zen Kaku Gothic New, LINE Seed JP) and 3 monospace fonts (UDEV Gothic JPDOC, PlemolJP, Moralerspace Neon JPDOC) via a popup dropdown. Body font weight is selectable (Regular 400 / Medium 500); monospace fonts are fixed at Regular 400. Settings persist in `chrome.storage.local`. Single codebase supports both Chrome and Firefox (140+).
 
-**多言語対応 (Multilingual)**: すべての `@font-face` ルールに `unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF` を指定することで、**CJK 文字（漢字・かな・記号・全角文字）のみ**を対象フォントから置換する。Latin 文字はブラウザの cascade により元サイトの指定（Arial, Helvetica, system-ui 等）に自然にフォールバックするため、英語サイトやバイリンガルサイトでも元のデザインを崩さない。`CJK_UNICODE_RANGE` 定数は `scripts/generate-css.js` に単一定義。
+**多言語対応 (Multilingual)**: `@font-face` には `unicode-range` を指定しない。置換フォントが持つ全グリフ範囲（ラテン・CJK・フォントによってはキリル/ギリシャ/ハングル等）が置換対象となり、フォントに含まれない文字は CSS font fallback によって次の candidate（元サイトの指定 / システム標準フォント）に自然に落ちる。フォントのカバレッジに任せるシンプル方針で、余計な文字範囲制限は行わない。
 
 ## Build Commands
 
@@ -94,7 +94,7 @@ src/
 ├── background/       Service Worker (preset JS 登録、storage.onChanged 監視)
 ├── content/          Content scripts (font-config, preload-fonts, inject)
 ├── css/              生成物: replacefont-extension.css + 36 preset-*.js（手編集禁止）
-├── fonts/            woff2 フォントファイル（CJK unicode-range スコープ）
+├── fonts/            woff2 フォントファイル（フォントのカバー範囲に置換を任せる方針）
 └── popup/            popup.html / popup.js / style.css (フォント選択 UI)
 
 scripts/              ビルドスクリプト（Node.js、手動実行）

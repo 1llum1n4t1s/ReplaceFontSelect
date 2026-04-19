@@ -126,7 +126,47 @@ function getPresetFileName(bodyKey, monoKey, weight) {
   return `preset-${bodyKey}-${monoKey}-w${weight}.js`;
 }
 
+// body weight ('500' = Medium) に応じて woff2 を選ぶ（Medium 未提供なら Regular で代替）
+// eslint-disable-next-line no-unused-vars
+function getBodyWoff2(fontInfo, weight) {
+  return weight === '500' ? (fontInfo.woff2Medium || fontInfo.woff2Regular) : fontInfo.woff2Regular;
+}
+
+// CSS プレースホルダー置換用のマップを構築する（fallback 経路とビルド経路で共有）
+// CSS 構造破壊を防ぐため、family 名内の " は除去する
+// eslint-disable-next-line no-unused-vars
+function buildPlaceholderMap(bodyFont, monoFont, weight, baseUrl) {
+  const safeLocal = (list) => list.map(f => `local("${String(f).replace(/"/g, '')}")`).join(', ');
+  const bodyWoff2 = getBodyWoff2(bodyFont, weight);
+  return {
+    '__REPLACE_FONT_BASE__': baseUrl,
+    '__BODY_FONT_NAME__': bodyFont.name,
+    '__BODY_FONT_FALLBACK__': bodyFont.fallback,
+    '__BODY_LOCAL_REGULAR__': safeLocal(bodyFont.localFontsRegular),
+    '__BODY_LOCAL_BOLD__': safeLocal(bodyFont.localFontsBold),
+    '__BODY_WOFF2_REGULAR__': bodyWoff2,
+    '__BODY_WOFF2_BOLD__': bodyFont.woff2Bold,
+    '__MONO_FONT_NAME__': monoFont.name,
+    '__MONO_FONT_FALLBACK__': monoFont.fallback,
+    '__MONO_LOCAL_REGULAR__': safeLocal(monoFont.localFontsRegular),
+    '__MONO_LOCAL_BOLD__': safeLocal(monoFont.localFontsBold),
+    '__MONO_WOFF2_REGULAR__': monoFont.woff2Regular,
+    '__MONO_WOFF2_BOLD__': monoFont.woff2Bold
+  };
+}
+
+// プレースホルダー検出用の正規表現（数字を含むキーにも対応）
+const PLACEHOLDER_REGEX_SOURCE = '__[A-Z0-9_]+__';
+
 // Node.js（ビルドスクリプト）からも require() で使用可能にする
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { FONT_REGISTRY, mergeFontSettings, getPresetFileName, FONT_SETTINGS_VALIDATORS };
+  module.exports = {
+    FONT_REGISTRY,
+    mergeFontSettings,
+    getPresetFileName,
+    FONT_SETTINGS_VALIDATORS,
+    getBodyWoff2,
+    buildPlaceholderMap,
+    PLACEHOLDER_REGEX_SOURCE
+  };
 }
