@@ -1,11 +1,10 @@
 name: Publish to Chrome Web Store
 
 # ブランチ命名規約:
-#   release/default-X.Y.Z   → CWS_EXTENSION_ID_DEFAULT へ公開
-#   release/notosans-X.Y.Z  → CWS_EXTENSION_ID_NOTOSANS へ公開
+#   release/X.Y.Z (例: release/3.0.0)
 #
+# 全 variant が同じ version を共有し、matrix strategy で並列公開する。
 # variants/<name>.json の version とブランチ末尾の X.Y.Z が一致する必要がある。
-# 不一致時は整合性チェックで失敗する。
 
 on:
   push:
@@ -17,43 +16,41 @@ permissions:
 
 jobs:
   publish:
-    name: Chrome Web Store 公開
+    name: Publish ${{ matrix.variant }}
     runs-on: ubuntu-latest
+    # matrix で全 variant を並列実行。1 variant が失敗しても他は続行。
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [default, notosans]
     steps:
       - name: リポジトリをチェックアウト
         # actions/checkout v5.0.0 (SHA pinned for supply chain security)
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
 
-      - name: ブランチ名から variant / version を抽出
+      - name: ブランチ名から version を抽出
         id: parse
         env:
           BRANCH: ${{ github.ref_name }}
         run: |
-          # 期待形式: release/<variant>-<X.Y.Z>
-          if [[ ! "$BRANCH" =~ ^release/([a-z][a-z0-9_-]*)-([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-            echo "::error::ブランチ名がフォーマット release/<variant>-<X.Y.Z> に一致しません: $BRANCH"
+          # 期待形式: release/<X.Y.Z>
+          if [[ ! "$BRANCH" =~ ^release/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "::error::ブランチ名がフォーマット release/<X.Y.Z> に一致しません: $BRANCH"
             exit 1
           fi
-          variant="${BASH_REMATCH[1]}"
-          version="${BASH_REMATCH[2]}"
-          echo "variant=$variant" >> "$GITHUB_OUTPUT"
+          version="${BASH_REMATCH[1]}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "🎯 variant=$variant, version=$version"
+          echo "🎯 version=$version (variant=${{ matrix.variant }})"
 
-      - name: バリアント設定の存在を確認
+      - name: バリアントの version とブランチ version の整合性チェック
         env:
-          VARIANT: ${{ steps.parse.outputs.variant }}
+          VARIANT: ${{ matrix.variant }}
+          BRANCH_VERSION: ${{ steps.parse.outputs.version }}
         run: |
           if [ ! -f "variants/${VARIANT}.json" ]; then
             echo "::error::variants/${VARIANT}.json が見つかりません"
             exit 1
           fi
-
-      - name: バリアントの version とブランチ version の整合性チェック
-        env:
-          VARIANT: ${{ steps.parse.outputs.variant }}
-          BRANCH_VERSION: ${{ steps.parse.outputs.version }}
-        run: |
           variant_version=$(node -p "require('./variants/${VARIANT}.json').version")
           if [ "$variant_version" != "$BRANCH_VERSION" ]; then
             echo "::error::variants/${VARIANT}.json の version ($variant_version) とブランチ ($BRANCH_VERSION) が一致しません"
@@ -69,12 +66,11 @@ jobs:
           cache: 'npm'
 
       - name: 依存インストール
-        # npm ci のみ: lockfile との不整合 (例: 手動編集 / インジェクション) を検出して失敗させる
         run: npm ci
 
       - name: アイコン生成
         env:
-          VARIANT: ${{ steps.parse.outputs.variant }}
+          VARIANT: ${{ matrix.variant }}
         run: node scripts/generate-icons.js "$VARIANT"
 
       - name: フォント変換（TTFがある場合）
@@ -90,7 +86,7 @@ jobs:
 
       - name: variant manifest / variant.js を生成
         env:
-          VARIANT: ${{ steps.parse.outputs.variant }}
+          VARIANT: ${{ matrix.variant }}
         run: node scripts/build-variant.js "$VARIANT"
 
       - name: 生成された manifest の version を確認
@@ -106,7 +102,7 @@ jobs:
 
       - name: zip パッケージを作成
         env:
-          VARIANT: ${{ steps.parse.outputs.variant }}
+          VARIANT: ${{ matrix.variant }}
         run: |
           zip_base=$(node -p "require('./variants/${VARIANT}.json').zipBaseName")
           zip_path="${zip_base}-chrome.zip"
@@ -115,7 +111,6 @@ jobs:
             echo "::error::variant 用のアイコンディレクトリが見つかりません: $variant_icons_dir"
             exit 1
           fi
-          # icons は対象 variant のみ同梱、preview.html はストア配信物に不要なので除外
           zip -r "$zip_path" manifest.json "$variant_icons_dir" src \
             -x "*.DS_Store" "*.swp" "*~" "*/preview.html"
           ls -lh "$zip_path"
@@ -124,7 +119,7 @@ jobs:
       - name: variant に対応する EXTENSION_ID を決定
         id: ext
         env:
-          VARIANT: ${{ steps.parse.outputs.variant }}
+          VARIANT: ${{ matrix.variant }}
           ID_DEFAULT: ${{ secrets.CWS_EXTENSION_ID_DEFAULT }}
           ID_NOTOSANS: ${{ secrets.CWS_EXTENSION_ID_NOTOSANS }}
         run: |
@@ -136,7 +131,7 @@ jobs:
               extension_id="$ID_NOTOSANS"
               ;;
             *)
-              echo "::error::未対応の variant: $VARIANT (publish.yml にケースを追加してください)"
+              echo "::error::未対応の variant: $VARIANT (publish.yml の matrix と case を更新してください)"
               exit 1
               ;;
           esac
@@ -144,7 +139,6 @@ jobs:
             echo "::error::variant=$VARIANT に対応する CWS_EXTENSION_ID_* secret が空です"
             exit 1
           fi
-          # extension_id は機密扱い: ログには出さず、後続ステップへ env で渡す
           echo "extension_id=$extension_id" >> "$GITHUB_OUTPUT"
 
       - name: Chrome Web Store にアップロード & 公開
@@ -155,7 +149,6 @@ jobs:
           CWS_EXTENSION_ID: ${{ steps.ext.outputs.extension_id }}
         # chrome-webstore-upload-cli は devDependencies に固定し、npm ci で
         # package-lock.json の integrity hash 検証済みのローカル版を --no で呼ぶ
-        # （npx --yes はネットワーク取得でハッシュ未検証になるため避ける）
         run: |
           npx --no chrome-webstore-upload upload \
             --source "$ZIP_PATH" \
@@ -164,4 +157,4 @@ jobs:
             --client-secret "$CWS_CLIENT_SECRET" \
             --refresh-token "$CWS_REFRESH_TOKEN" \
             --auto-publish
-          echo "🎉 Chrome Web Store への公開リクエストを送信したよ〜"
+          echo "🎉 ${{ matrix.variant }} → Chrome Web Store への公開リクエスト送信完了"

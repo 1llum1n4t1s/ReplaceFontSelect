@@ -16,10 +16,7 @@
     "build:default": "node scripts/generate-icons.js default && npm run generate-css && node scripts/build-variant.js default",
     "build:notosans": "node scripts/generate-icons.js notosans && npm run generate-css && node scripts/build-variant.js notosans",
     "build": "npm run build:default",
-    "release": "node scripts/release.js",
-    "release:default": "node scripts/release.js default",
-    "release:notosans": "node scripts/release.js notosans",
-    "release:all": "node scripts/release.js all"
+    "release": "node scripts/release.js"
   },
   "devDependencies": {
     "chrome-webstore-upload-cli": "3.5.0",

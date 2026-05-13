@@ -92,8 +92,9 @@ changelog/<variant>.md   variant ごとのリリース履歴
 4. `docs/<name>/privacy-policy.md` / `privacy.html` / `index.html` を variant ブランドで用意
 5. `changelog/<name>.md` を作成（履歴を残す箱）
 6. `package.json` の `scripts` に `"build:<name>"` と `"generate-icons:<name>"` / `"generate-screenshots:<name>"` を追加
-7. `.github/workflows/publish.yml` の `variant に対応する EXTENSION_ID を決定` ステップの `case` 文に新 variant を追加
+7. `.github/workflows/publish.yml` の `strategy.matrix.variant` 配列と `variant に対応する EXTENSION_ID を決定` ステップの `case` 文の両方に新 variant を追加
 8. GitHub Secrets に `CWS_EXTENSION_ID_<UPPER>` を登録
+9. `variants/<新>.json` の `version` を他 variant と同じ値に揃える（リリース時 release.js が unique version チェックする）
 9. **新変数を `variant.json` に追加した場合は `scripts/build-variant.js` の `REQUIRED_KEYS` 配列も更新**（バリデーション漏れ防止）
 
 ## Architecture
@@ -184,57 +185,53 @@ CORS で `cssRules` 読めない stylesheet については、拡張機能の `<
 
 ## Release Automation
 
-### Release Kick-off (`scripts/release.js`)
+### Release Kick-off (`scripts/release.js`) — 単一 version 体制
 
-`variants/<name>.json` の version を **patch +1** して `release/<variant>-X.Y.Z` ブランチを作り origin へ push する。push が CI のトリガーになり、GitHub Actions が当該 variant 用 Chrome Web Store に自動公開する。`/vava` スキルと同じく「patch のみ」のメンタルモデル。
+**全 variant が同じ version を共有**する設計 (v3.0.0 から)。`scripts/release.js` は `variants/*.json` の version を patch +1 し、`release/<X.Y.Z>` ブランチを作って push する。push が CI のトリガーになり、GitHub Actions の matrix strategy が **2 variant を並列公開**する。
 
 ```bash
-# 単一 variant
-npm run release:default                         # variants/default.json を 1.0.27 → 1.0.28
-npm run release:notosans                        # variants/notosans.json を 2.0.54 → 2.0.55
-node scripts/release.js default --yes           # 直接呼び (Claude Code / CI から)
-
-# 両 variant 同時リリース
-npm run release:all                             # 両 variant を patch +1、release ブランチを 2 つ並列 push
-node scripts/release.js all --yes               # 同上、確認プロンプトをスキップ
+npm run release                  # 全 variant patch +1 → release/<X.Y.Z> ブランチ
+node scripts/release.js --yes    # 直接呼び (確認プロンプト省略、CI / Claude Code から)
 
 # フラグ
 --dry-run / -n  計画だけ表示。書き込み・push しない
---yes / -y      対話確認をスキップ（CI / Claude Code から呼ぶ場合）
---prune-old     同 variant の古い release/<variant>-* ブランチをリモートから削除
+--yes / -y      対話確認をスキップ
+--prune-old     既存の release/* ブランチをリモートから削除（旧形式の release/<variant>-X.Y.Z も含む）
 ```
 
 #### minor / major bump の運用
 
-このスクリプトは **patch +1 専用**（`/vava` と一貫）。新フォント追加や新 variant 追加など minor bump 相当の変更は、**release.js を使わず手作業**で:
+このスクリプトは **patch +1 専用**（`/vava` と一貫）。minor / major bump は **手作業**で:
 
 ```bash
-# 例: notosans を 2.0.54 → 2.1.0 に minor bump する場合
-# 1. variants/notosans.json の "version" を 2.1.0 に手で書き換える
-git add variants/notosans.json
-git commit -m "release: notosans v2.1.0"
+# 例: 3.0.5 から 3.1.0 に minor bump する場合
+# 1. variants/default.json と variants/notosans.json の "version" を 3.1.0 に手で書き換える（両方）
+git add variants/
+git commit -m "release: v3.1.0"
 git push origin main
-git checkout -b release/notosans-2.1.0
-git push -u origin release/notosans-2.1.0
+git checkout -b release/3.1.0
+git push -u origin release/3.1.0
 git checkout main
 ```
 
-publish.yml はブランチ末尾 `2.1.0` と `variants/notosans.json` の `version` が一致するか検証するだけなので、bump レベルは問わない。
+publish.yml はブランチ末尾 `X.Y.Z` と全 variant の `version` が一致するか matrix の各 job で検証する。
 
 #### 前提条件と挙動
 - 実行は **clean な main ブランチ** から (リモートと同期済みであること)。違反時は abort
-- リモートに同名 `release/<variant>-X.Y.Z` が既存なら abort（force push しない）
-- `all` 指定時は `variants/*.json` を自動検出して全 variant を順番に処理 (1 コミットで 2 variant の version を bump、2 つの release ブランチを連続 push)
-- Two-Path 注入の preset JS や `manifest.json` はビルド時に CI 側で生成されるため、ローカルでの再生成は不要 (variants/*.json だけが真実の源泉)
+- **全 variant の version が一致**していなければ abort（事前に手作業で揃える必要あり）
+- リモートに同名 `release/<X.Y.Z>` が既存なら abort（force push しない）
+- preset JS や `manifest.json` はビルド時に CI 側で生成されるため、ローカルでの再生成は不要 (variants/*.json だけが真実の源泉)
 
 ### Local Packaging（手動 Web Store アップロード用）
 - `.\zip.ps1 [-Variant <name>]` (Windows): `npm ci` → アイコン / CSS 生成 → variant 適用 → `<zipBaseName>-chrome.zip` + `<zipBaseName>-firefox.xpi` 生成。引数省略時は `default`。
 - `./zip.sh [<name>]` (Linux/Mac): Chrome ZIP のみ。Firefox XPI を含むフルリリースは `zip.ps1` 必須。
 
-### CI 自動公開 (`.github/workflows/publish.yml`)
-- **トリガー**: `release/<variant>-<X.Y.Z>` 形式のブランチへの push (例: `release/default-1.0.28`, `release/notosans-2.0.54`)
-- **整合性チェック**: ブランチ末尾の `X.Y.Z` と `variants/<variant>.json` の `version` と生成された `manifest.json` の `version` が一致しないと失敗
-- **拡張機能 ID の動的選択**: variant 名から `CWS_EXTENSION_ID_<UPPER>` シークレットを動的に選ぶ (`default` → `CWS_EXTENSION_ID_DEFAULT`, `notosans` → `CWS_EXTENSION_ID_NOTOSANS`)
+### CI 自動公開 (`.github/workflows/publish.yml`) — matrix strategy
+
+- **トリガー**: `release/<X.Y.Z>` 形式のブランチへの push (例: `release/3.0.0`, `release/3.1.0`)
+- **matrix strategy**: `variant: [default, notosans]` で全 variant を **並列実行**。`fail-fast: false` なので 1 つ失敗しても他は続行
+- **整合性チェック**: ブランチ末尾の `X.Y.Z` と各 variant の `variants/<variant>.json` の `version` と生成された `manifest.json` の `version` が一致しないと該当 variant のジョブが失敗
+- **拡張機能 ID の選択**: matrix の variant 値から `case` 文で `CWS_EXTENSION_ID_<UPPER>` シークレットを選ぶ (`default` → `CWS_EXTENSION_ID_DEFAULT`, `notosans` → `CWS_EXTENSION_ID_NOTOSANS`)
 - **共通シークレット**: `CWS_CLIENT_ID` / `CWS_CLIENT_SECRET` / `CWS_REFRESH_TOKEN` は全 variant 共有 (同一 Google アカウントの OAuth 認証情報)
 - Actions は SHA pin、`npm ci` 固定、`chrome-webstore-upload-cli` exact pin でサプライチェーン攻撃対策
 
