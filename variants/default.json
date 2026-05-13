@@ -10,7 +10,10 @@
   "excludeMatches": [
     "https://*.onenote.com/*",
     "https://*.officeapps.live.com/*",
-    "https://docs.google.com/*"
+    "https://docs.google.com/*",
+    "https://*.figma.com/*",
+    "https://www.canva.com/*",
+    "https://express.adobe.com/*"
   ],
   "zipBaseName": "replace-font-select",
   "secretsKey": "DEFAULT"
