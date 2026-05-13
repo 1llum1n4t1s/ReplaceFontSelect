@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **目に優しいフォント置換** — Chrome / Firefox (140+) 拡張機能 (Manifest V3) で、ウェブサイト上の読みづらいフォントを、ユーザーが選んだ日本語フォントへ自動置換する。本文 6 種 × 等幅 3 種 × Weight (400/500) = 36 通りのプリセットを `document_start` で同期注入することでちらつきゼロを実現している。
 
-このリポジトリは **単一コードベース** から複数の派生版（variant）を別々の拡張機能として公開できる「バリアント方式」を採用している。現在 `default` (フォント選択 UI 付き) と `notosans` (Noto Sans JP + UDEV Gothic JPDOC 固定の旧 `replace-font` リポジトリ互換版) の 2 variant が定義されており、それぞれ独立した拡張機能 ID として Chrome Web Store / Firefox AMO に並行リリースできる。
+このリポジトリは **単一コードベース** から複数の派生版（variant）を別々の拡張機能として公開できる「バリアント方式」を採用している。現在 `default` (フォント選択 UI 付き) と `notosans` (Noto Sans JP + UDEV Gothic JPDOC 固定版) の 2 variant が定義されており、それぞれ独立した拡張機能 ID として Chrome Web Store / Firefox AMO に並行リリースできる。
 
 両 variant 共通で **OneNote / Office Online / Google Docs** の 3 ドメインを `exclude_matches` で除外している（リッチエディタの編集体験保護のため）。
 
@@ -15,16 +15,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build Commands
 
 ```bash
-npm run build:default        # icons + CSS + preset JS + variant=default のフルビルド
-npm run build:notosans       # icons + CSS + preset JS + variant=notosans のフルビルド
-npm run build                # = build:default
-npm run build-variant <name> # manifest.json + src/content/variant.js だけ再生成（CSS/icons は維持）
+npm run build:default               # icons + CSS + preset JS + variant=default のフルビルド
+npm run build:notosans              # icons + CSS + preset JS + variant=notosans のフルビルド
+npm run build                       # = build:default
+npm run build-variant <name>        # manifest.json + src/content/variant.js だけ再生成（CSS/icons は維持）
 
-npm run generate-css         # src/css/replacefont-extension.css + 36 個の preset-*.js を再生成
-npm run convert-fonts        # src/fonts/*.ttf → *.woff2 変換（フォント追加時のみ手動実行）
-npm run generate-icons       # icons/icon.svg から PNG (16/48/128) を再生成
-npm run generate-screenshots # Web Store 用プロモ画像を生成（要 puppeteer）
+npm run generate-css                # src/css/replacefont-extension.css + 36 個の preset-*.js を再生成（variant 非依存）
+npm run convert-fonts               # src/fonts/*.ttf → *.woff2 変換（フォント追加時のみ手動実行、variant 非依存）
+npm run generate-icons:<variant>    # icons/<variant>/icon.svg から PNG (16/48/128) を再生成
+npm run generate-screenshots:<variant>  # webstore/screenshots/<variant>/*.html → webstore/images/<variant>/*.png（要 puppeteer）
 ```
+
+> `generate-icons` / `generate-screenshots` は variant 引数が必須。`:default` / `:notosans` のエイリアスを使うか、直接 `node scripts/generate-icons.js <variant>` を呼ぶこと。引数なしのベース版 (`npm run generate-icons`) は usage 表示で abort する。
 
 `manifest.json` と `src/content/variant.js` は **ビルド生成物 (.gitignore 済)**。"Load unpacked" やテスト実行の前に必ず `build:<variant>` を 1 回走らせる必要がある。Node.js 20 系を推奨（CI が `node-version: '20'` で固定）。テストスイートや linter は無く、UI 検証は実機ブラウザで行う。
 
@@ -48,7 +50,7 @@ npm run generate-screenshots # Web Store 用プロモ画像を生成（要 puppe
 | Variant | フォント | gecko id 末尾 | 用途 |
 |---|---|---|---|
 | `default` | ユーザー選択 (6×3×2=36プリセット) | `...323f` | 通常版 |
-| `notosans` | Noto Sans JP + UDEV Gothic JPDOC 固定 | `...323e` | 旧 `replace-font` リポジトリ互換版 |
+| `notosans` | Noto Sans JP + UDEV Gothic JPDOC 固定 | `...323e` | フォント選択 UI なしの固定版 |
 
 ### Variant が動作に影響する 2 つの経路
 

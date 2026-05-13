@@ -25,6 +25,6 @@
 このリポジトリは 1 ソースから複数の派生版 (variant) をビルドできる方式に移行しました。
 
 - `default` variant: 本ファイルが対象（フォント選択 UI 付きの通常版）
-- `notosans` variant: [`changelog/notosans.md`](./notosans.md) 参照（旧 `replace-font` リポジトリ互換版）
+- `notosans` variant: [`changelog/notosans.md`](./notosans.md) 参照（Noto Sans JP + UDEV Gothic JPDOC 固定版）
 
 各 variant の version は `variants/<name>.json` の `version` フィールドが真実の源泉です。
