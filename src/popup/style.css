@@ -1,236 +1,527 @@
-/* ライトテーマ（デフォルト） */
-:root {
-  --bg-primary: #f8f9fa;
-  --bg-card: #ffffff;
-  --bg-input: #f1f3f5;
-  --bg-input-hover: #e9ecef;
-  --bg-notice: rgba(34, 197, 94, 0.08);
-  --border-card: #e2e5e9;
-  --border-input: #d1d5db;
-  --border-input-hover: #9ca3af;
-  --border-input-focus: #6366f1;
-  --border-notice: rgba(34, 197, 94, 0.25);
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b7280;
-  --text-label: #374151;
-  --accent: #6366f1;
-  --accent-green: #22c55e;
-  --accent-green-glow: rgba(34, 197, 94, 0.35);
-  --toggle-off-bg: #d1d5db;
-  --toggle-knob: #ffffff;
-  --toggle-knob-shadow: rgba(0, 0, 0, 0.12);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-input-focus: 0 0 0 3px rgba(99, 102, 241, 0.15);
-  --chevron-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  --option-bg: #ffffff;
-  --option-text: #1a1a1a;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 14px;
-  --transition: 0.2s ease;
+/* ============================================================
+   Popup Theme — Two Variants × Two Color Schemes (Light/Dark)
+   ─ default-light : Editorial Day   (紙のクリーム + 墨 + 朱)
+   ─ default-dark  : Editorial Night (革表紙の書斎 + 温かい銅)
+   ─ notosans-light: Lab Day         (青写真 + 落ち着いたシアン/マゼンタ)
+   ─ notosans-dark : Cyber Night     (夜空 + ネオンシアン/マゼンタ)
+   prefers-color-scheme で自動切り替え。
+   ============================================================ */
+
+/* --- Self-hosted Web Fonts (拡張機能同梱の woff2 を相対パスで) --- */
+@font-face {
+  font-family: 'ZenKakuGothic';
+  src: url('../fonts/ZenKakuGothicNew-Regular.woff2') format('woff2');
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: 'ZenKakuGothic';
+  src: url('../fonts/ZenKakuGothicNew-Medium.woff2') format('woff2');
+  font-weight: 500; font-display: swap;
+}
+@font-face {
+  font-family: 'ZenKakuGothic';
+  src: url('../fonts/ZenKakuGothicNew-Bold.woff2') format('woff2');
+  font-weight: 700; font-display: swap;
+}
+@font-face {
+  font-family: 'IBMPlexSansJP';
+  src: url('../fonts/IBMPlexSansJP-Regular.woff2') format('woff2');
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: 'IBMPlexSansJP';
+  src: url('../fonts/IBMPlexSansJP-Medium.woff2') format('woff2');
+  font-weight: 500; font-display: swap;
+}
+@font-face {
+  font-family: 'UDEVGothicJPDOC';
+  src: url('../fonts/UDEVGothicJPDOC-Regular.woff2') format('woff2');
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: 'UDEVGothicJPDOC';
+  src: url('../fonts/UDEVGothicJPDOC-Bold.woff2') format('woff2');
+  font-weight: 700; font-display: swap;
 }
 
-/* ダークテーマ */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary: #1a1b1e;
-    --bg-card: #25262b;
-    --bg-input: #2c2e33;
-    --bg-input-hover: #373a40;
-    --bg-notice: rgba(34, 197, 94, 0.1);
-    --border-card: #373a40;
-    --border-input: #4a4d54;
-    --border-input-hover: #6b7280;
-    --border-input-focus: #818cf8;
-    --border-notice: rgba(34, 197, 94, 0.3);
-    --text-primary: #e4e5e7;
-    --text-secondary: #909296;
-    --text-label: #c1c2c5;
-    --accent: #818cf8;
-    --accent-green: #4ade80;
-    --accent-green-glow: rgba(74, 222, 128, 0.3);
-    --toggle-off-bg: #4a4d54;
-    --toggle-knob: #ffffff;
-    --toggle-knob-shadow: rgba(0, 0, 0, 0.3);
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
-    --shadow-input-focus: 0 0 0 3px rgba(129, 140, 248, 0.2);
-    --chevron-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23909296' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-    --option-bg: #2c2e33;
-    --option-text: #e4e5e7;
-  }
-}
-
-* {
+/* ============================================================
+   Reset
+   ============================================================ */
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-@font-face {
-  font-family: 'Noto Font';
-  src: local('Noto Sans JP'),
-       local('Noto Sans CJK Variable'),
-       local('Noto Sans CJK JP'),
-       url('../fonts/NotoSansJP-Regular.woff2') format('woff2');
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Noto Font';
-  src: local('Noto Sans JP Bold'),
-       local('Noto Sans CJK Variable'),
-       local('Noto Sans CJK JP'),
-       url('../fonts/NotoSansJP-Bold.woff2') format('woff2');
-  font-weight: bold;
-  font-display: swap;
-}
-
+/* ============================================================
+   Base body
+   ============================================================ */
 body {
-  width: 340px;
-  font-family: 'Noto Font', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  width: 360px;
+  position: relative;
+  overflow: hidden;
+  font-feature-settings: 'palt' 1, 'liga' 1;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
+/* ============================================================
+   🌸 DEFAULT VARIANT — Light (Editorial Day)
+   ============================================================ */
+body[data-variant="default"] {
+  /* Paper-toned palette */
+  --bg: #F4EFE6;
+  --bg-alt: #FAF6EE;
+  --surface: #FFFFFF;
+  --ink: #1B1410;
+  --ink-soft: #4A3D33;
+  --ink-mute: #8B7A6A;
+  --accent: #C04A2E;         /* 印章の朱 */
+  --accent-soft: rgba(192, 74, 46, 0.12);
+  --accent-2: #2A8C5F;       /* status green */
+  --rule: #D9CFC0;
+  --rule-strong: #2A1F18;
+  --shadow: 0 1px 0 rgba(27, 20, 16, 0.06), 0 4px 12px rgba(27, 20, 16, 0.04);
+  --shadow-press: 0 0 0 3px rgba(192, 74, 46, 0.15);
+
+  --text: var(--ink);
+  --text-soft: var(--ink-soft);
+  --text-mute: var(--ink-mute);
+
+  /* Typography */
+  --font-body: 'IBMPlexSansJP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic Medium', sans-serif;
+  --font-display: 'ZenKakuGothic', 'Yu Mincho', serif;
+  --font-mono: 'IBMPlexSansJP', 'SF Mono', Menlo, monospace;
+
+  /* Variant-specific tokens (toggle, dropdown caret) */
+  --toggle-on: #2A8C5F;
+  --caret-color: '%238B7A6A';
+}
+
+/* ============================================================
+   ⚡ NOTOSANS VARIANT — Light (Lab Day / Blueprint)
+   ============================================================ */
+body[data-variant="notosans"] {
+  /* Blueprint / lab palette */
+  --bg: #F2F4FA;
+  --bg-alt: #E6EBF5;
+  --surface: #FFFFFF;
+  --ink: #0A1130;
+  --ink-soft: #344066;
+  --ink-mute: #6E7A95;
+  --accent: #007A99;         /* deep cyan (light でコントラスト確保) */
+  --accent-soft: rgba(0, 122, 153, 0.12);
+  --accent-2: #B30070;       /* deep magenta */
+  --rule: #C8D2E8;
+  --rule-strong: #007A99;
+  --shadow: 0 1px 0 rgba(10, 17, 48, 0.04), 0 2px 8px rgba(10, 17, 48, 0.06);
+  --shadow-press: 0 0 0 2px rgba(0, 122, 153, 0.25);
+  --glow: none;
+
+  --text: var(--ink);
+  --text-soft: var(--ink-soft);
+  --text-mute: var(--ink-mute);
+
+  /* Typography — monospace everywhere */
+  --font-body: 'UDEVGothicJPDOC', 'SF Mono', Menlo, monospace;
+  --font-display: 'UDEVGothicJPDOC', 'SF Mono', Menlo, monospace;
+  --font-mono: 'UDEVGothicJPDOC', 'SF Mono', Menlo, monospace;
+
+  --toggle-on: #007A99;
+  --caret-color: '%23007A99';
+}
+
+/* ============================================================
+   🌒 DARK MODE — prefers-color-scheme: dark で上書き
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+
+  /* --- DEFAULT DARK : Editorial Night (革表紙 + 銅色) --- */
+  body[data-variant="default"] {
+    --bg: #1B140F;
+    --bg-alt: #261C14;
+    --surface: #2A2017;
+    --ink: #F4EFE6;
+    --ink-soft: #C5B59E;
+    --ink-mute: #8B7A6A;
+    --accent: #E89B5C;       /* warm copper (朱を温色寄りに) */
+    --accent-soft: rgba(232, 155, 92, 0.16);
+    --accent-2: #6BB89A;     /* muted green */
+    --rule: #4A3D33;
+    --rule-strong: #E89B5C;
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-press: 0 0 0 3px rgba(232, 155, 92, 0.2);
+
+    --toggle-on: #B57F5A;
+    --caret-color: '%23C5B59E';
+  }
+
+  /* --- NOTOSANS DARK : Cyber Night (夜空 + ネオン) --- */
+  body[data-variant="notosans"] {
+    --bg: #0A0E27;
+    --bg-alt: #11172F;
+    --surface: #161D3D;
+    --ink: #E8EEFF;
+    --ink-soft: #A8B5D8;
+    --ink-mute: #5E6A8E;
+    --accent: #00F0FF;
+    --accent-soft: rgba(0, 240, 255, 0.18);
+    --accent-2: #FF00FF;
+    --rule: rgba(0, 240, 255, 0.22);
+    --rule-strong: #00F0FF;
+    --shadow: 0 0 0 1px rgba(0, 240, 255, 0.08);
+    --shadow-press: 0 0 0 1px var(--accent), 0 0 16px rgba(0, 240, 255, 0.4);
+    --glow: 0 0 8px rgba(0, 240, 255, 0.55);
+
+    --toggle-on: #00F0FF;
+    --caret-color: '%2300F0FF';
+  }
+}
+
+/* ============================================================
+   Background Effects — variant × scheme で見え方が変わる
+   ============================================================ */
+.bg-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-fx__grid,
+.bg-fx__scanline,
+.bg-fx__grain {
+  position: absolute;
+  inset: 0;
+}
+
+/* --- default-light : paper grain (subtle radial) --- */
+body[data-variant="default"] .bg-fx__grain {
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(192, 74, 46, 0.05) 0%, transparent 32%),
+    radial-gradient(circle at 82% 78%, rgba(139, 122, 106, 0.07) 0%, transparent 38%);
+}
+body[data-variant="default"] .bg-fx__grid,
+body[data-variant="default"] .bg-fx__scanline {
+  display: none;
+}
+
+/* --- default-dark : ember glow + leather texture --- */
+@media (prefers-color-scheme: dark) {
+  body[data-variant="default"] .bg-fx__grain {
+    background-image:
+      radial-gradient(circle at 20% 18%, rgba(232, 155, 92, 0.10) 0%, transparent 38%),
+      radial-gradient(circle at 80% 82%, rgba(232, 155, 92, 0.06) 0%, transparent 42%),
+      repeating-linear-gradient(
+        45deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(232, 155, 92, 0.012) 3px,
+        rgba(232, 155, 92, 0.012) 4px
+      );
+  }
+}
+
+/* --- notosans-light : blueprint grid (薄い青グリッド) --- */
+body[data-variant="notosans"] .bg-fx__grid {
+  background-image:
+    linear-gradient(to right, rgba(0, 122, 153, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 122, 153, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 95%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 95%);
+}
+body[data-variant="notosans"] .bg-fx__scanline {
+  display: none; /* light モードではスキャンラインなし */
+}
+body[data-variant="notosans"] .bg-fx__grain {
+  background:
+    radial-gradient(circle at 15% 12%, rgba(179, 0, 112, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 85% 88%, rgba(0, 122, 153, 0.05) 0%, transparent 40%);
+}
+
+/* --- notosans-dark : neon grid + scanline + glow --- */
+@media (prefers-color-scheme: dark) {
+  body[data-variant="notosans"] .bg-fx__grid {
+    background-image:
+      linear-gradient(to right, rgba(0, 240, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 240, 255, 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse at center, black 40%, transparent 90%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 90%);
+  }
+  body[data-variant="notosans"] .bg-fx__scanline {
+    display: block;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 240, 255, 0.025) 2px,
+      rgba(0, 240, 255, 0.025) 3px
+    );
+  }
+  body[data-variant="notosans"] .bg-fx__grain {
+    background:
+      radial-gradient(circle at 20% 10%, rgba(255, 0, 255, 0.12) 0%, transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(0, 240, 255, 0.1) 0%, transparent 40%);
+  }
+}
+
+/* ============================================================
+   Container & page-load animation
+   ============================================================ */
 .container {
-  padding: 20px;
+  position: relative;
+  z-index: 1;
+  padding: 22px 20px 18px;
+  animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ヘッダー */
-.header {
+/* ============================================================
+   Header
+   ============================================================ */
+.header { margin-bottom: 16px; }
+.header__brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.header__text { min-width: 0; flex: 1; }
+
+/* Brand Mark — “Aa” タイポと variant 別の枠 */
+.brand-mark {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  font-family: var(--font-display);
+  font-weight: 700;
+  transition: background 0.3s ease;
+}
+.brand-mark__glyph {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -1px;
+}
+.brand-mark__corner {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+}
+
+/* Default: bookish double-frame */
+body[data-variant="default"] .brand-mark {
+  border: 1px solid var(--rule-strong);
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 0 1px var(--bg),
+    inset 0 0 0 2px var(--rule-strong);
+}
+body[data-variant="default"] .brand-mark__glyph { color: var(--ink); }
+body[data-variant="default"] .brand-mark__corner { display: none; }
+@media (prefers-color-scheme: dark) {
+  /* default-dark: 銅色の二重枠 */
+  body[data-variant="default"] .brand-mark {
+    box-shadow:
+      inset 0 0 0 1px var(--bg),
+      inset 0 0 0 2px var(--accent);
+    border-color: var(--accent);
+  }
+  body[data-variant="default"] .brand-mark__glyph {
+    color: var(--accent);
+    text-shadow: 0 0 12px rgba(232, 155, 92, 0.3);
+  }
+}
+
+/* Notosans: terminal corner brackets */
+body[data-variant="notosans"] .brand-mark {
+  background: transparent;
+  border-radius: 0;
+}
+body[data-variant="notosans"] .brand-mark__glyph {
+  color: var(--accent);
+  font-weight: 700;
+}
+body[data-variant="notosans"] .brand-mark__corner {
+  display: block;
+  border-color: var(--accent);
+  border-style: solid;
+  border-width: 0;
+}
+body[data-variant="notosans"] .brand-mark__corner--tl { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; }
+body[data-variant="notosans"] .brand-mark__corner--tr { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; }
+body[data-variant="notosans"] .brand-mark__corner--bl { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; }
+body[data-variant="notosans"] .brand-mark__corner--br { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; }
+@media (prefers-color-scheme: dark) {
+  body[data-variant="notosans"] .brand-mark__glyph {
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.55);
+  }
+}
+
+/* Title group */
+.title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-variant="notosans"] .title {
+  letter-spacing: 0.04em;
+}
+@media (prefers-color-scheme: dark) {
+  body[data-variant="notosans"] .title {
+    text-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+  }
+}
+
+.title-sub {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-mute);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+body[data-variant="notosans"] .title-sub {
+  color: var(--accent-2);
+  letter-spacing: 0.18em;
+}
+
+/* ============================================================
+   Divider
+   ============================================================ */
+.divider {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 16px;
+  margin: 12px 0 16px;
 }
-
-.icon {
-  font-size: 24px;
-  line-height: 1;
+.divider__line {
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
 }
-
-.title {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  white-space: nowrap;
+.divider__mark {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--text-mute);
 }
+body[data-variant="default"] .divider__mark::before { content: '§'; }
+body[data-variant="notosans"] .divider__mark { color: var(--accent); letter-spacing: 0.1em; }
+body[data-variant="notosans"] .divider__mark::before { content: '⌐ ¬'; font-weight: 700; }
 
-/* ステータスカード */
-.status-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  padding: 14px 16px;
-  margin-bottom: 12px;
-  border: 1px solid var(--border-card);
-  box-shadow: var(--shadow-card);
-}
-
-.status-row {
+/* ============================================================
+   Section meta (I. STATUS / II. TYPOGRAPHY)
+   ============================================================ */
+.section-meta {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
+  margin-bottom: 12px;
 }
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--text-secondary);
-  flex-shrink: 0;
+.section-meta__num {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--accent);
 }
-
-.dot.active {
-  background: var(--accent-green);
-  box-shadow: 0 0 8px var(--accent-green-glow);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.dot.inactive {
-  background: var(--text-secondary);
-  box-shadow: none;
-  animation: none;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.status-text {
-  font-size: 13px;
+.section-meta__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
   font-weight: 600;
-  color: var(--text-primary);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+body[data-variant="notosans"] .section-meta__num::before { content: '['; margin-right: 2px; }
+body[data-variant="notosans"] .section-meta__num::after { content: ']'; margin-left: 2px; }
+@media (prefers-color-scheme: dark) {
+  body[data-variant="notosans"] .section-meta__num {
+    text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+  }
 }
 
-.description {
-  font-size: 11.5px;
-  line-height: 1.5;
-  color: var(--text-secondary);
-  margin-top: 8px;
-}
-
-/* トグルスイッチ */
-.toggle-switch {
+/* ============================================================
+   Status card & Settings section — 共通カード
+   ============================================================ */
+.status-card,
+.settings-section {
   position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 22px;
-  flex-shrink: 0;
-  cursor: pointer;
+  background: var(--surface);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+  transition: opacity 0.25s ease, background 0.3s ease, box-shadow 0.3s ease;
 }
 
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+/* Default: editorial card */
+body[data-variant="default"] .status-card,
+body[data-variant="default"] .settings-section {
+  border-radius: 2px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--rule-strong);
+}
+@media (prefers-color-scheme: dark) {
+  body[data-variant="default"] .status-card,
+  body[data-variant="default"] .settings-section {
+    border-left-color: var(--accent); /* 銅色のスパイン */
+  }
 }
 
-.toggle-slider {
-  position: absolute;
-  inset: 0;
-  background: var(--toggle-off-bg);
-  border-radius: 11px;
-  transition: background var(--transition);
+/* Notosans: terminal panel */
+body[data-variant="notosans"] .status-card,
+body[data-variant="notosans"] .settings-section {
+  background: var(--surface);
+  border-radius: 0;
+  border: 1px solid var(--rule);
 }
-
-.toggle-slider::before {
+body[data-variant="notosans"] .status-card::before,
+body[data-variant="notosans"] .settings-section::before {
   content: '';
   position: absolute;
-  width: 16px;
-  height: 16px;
-  left: 3px;
-  top: 3px;
-  background: var(--toggle-knob);
-  border-radius: 50%;
-  transition: transform var(--transition);
-  box-shadow: 0 1px 2px var(--toggle-knob-shadow);
+  top: -1px;
+  left: -1px;
+  width: 14px;
+  height: 14px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+  pointer-events: none;
 }
-
-.toggle-switch input:checked + .toggle-slider {
-  background: var(--accent-green);
+body[data-variant="notosans"] .status-card::after,
+body[data-variant="notosans"] .settings-section::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 14px;
+  height: 14px;
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+  pointer-events: none;
 }
-
-.toggle-switch input:checked + .toggle-slider::before {
-  transform: translateX(18px);
-}
-
-/* フォント設定セクション */
-.settings-section {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  margin-bottom: 12px;
-  border: 1px solid var(--border-card);
-  box-shadow: var(--shadow-card);
-  transition: opacity var(--transition);
+@media (prefers-color-scheme: dark) {
+  body[data-variant="notosans"] .status-card,
+  body[data-variant="notosans"] .settings-section {
+    box-shadow: var(--shadow), inset 0 0 0 1px rgba(0, 240, 255, 0.03);
+  }
 }
 
 .settings-section.disabled {
@@ -238,37 +529,197 @@ body {
   pointer-events: none;
 }
 
-.section-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 12px;
+/* Status row */
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-mute);
+  flex-shrink: 0;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+.dot.active {
+  background: var(--accent-2);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+body[data-variant="default"] .dot.active {
+  background: var(--accent-2);
+  box-shadow: 0 0 6px rgba(42, 140, 95, 0.35);
+}
+body[data-variant="notosans"] .dot.active {
+  background: var(--accent);
+}
+@media (prefers-color-scheme: dark) {
+  body[data-variant="notosans"] .dot.active {
+    box-shadow: 0 0 10px var(--accent), 0 0 2px var(--accent);
+  }
+  body[data-variant="default"] .dot.active {
+    background: var(--accent-2);
+    box-shadow: 0 0 6px rgba(107, 184, 154, 0.5);
+  }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.65; transform: scale(0.92); }
 }
 
-.setting-row {
-  margin-bottom: 12px;
+.status-text {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+body[data-variant="notosans"] .status-text::before {
+  content: '> ';
+  color: var(--accent);
+  opacity: 0.7;
 }
 
-.setting-row:last-of-type {
-  margin-bottom: 0;
+.description {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-soft);
+  margin-top: 10px;
 }
+body[data-variant="default"] .description {
+  font-family: var(--font-body);
+  font-style: italic;
+  border-top: 1px dashed var(--rule);
+  padding-top: 10px;
+}
+body[data-variant="notosans"] .description {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border-top: 1px solid var(--rule);
+  padding-top: 10px;
+}
+body[data-variant="notosans"] .description::before {
+  content: '// ';
+  color: var(--accent-2);
+}
+
+/* ============================================================
+   Toggle Switch
+   ============================================================ */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--rule);
+  transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  cursor: pointer;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 3px;
+  top: 3px;
+  background: var(--surface);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.25s ease;
+}
+
+/* Default: pill toggle */
+body[data-variant="default"] .toggle-slider { border-radius: 11px; }
+body[data-variant="default"] .toggle-slider::before { border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+body[data-variant="default"] .toggle-switch input:checked + .toggle-slider {
+  background: var(--toggle-on);
+}
+body[data-variant="default"] .toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+/* Notosans: square switch */
+body[data-variant="notosans"] .toggle-slider {
+  border-radius: 0;
+  border: 1px solid var(--accent-soft);
+  background: var(--bg-alt);
+}
+body[data-variant="notosans"] .toggle-slider::before {
+  border-radius: 0;
+  background: var(--ink-mute);
+  width: 14px;
+  height: 14px;
+  left: 3px;
+  top: 3px;
+}
+body[data-variant="notosans"] .toggle-switch input:checked + .toggle-slider {
+  background: rgba(0, 122, 153, 0.12);
+  border-color: var(--accent);
+}
+body[data-variant="notosans"] .toggle-switch input:checked + .toggle-slider::before {
+  background: var(--accent);
+  transform: translateX(20px);
+}
+@media (prefers-color-scheme: dark) {
+  body[data-variant="notosans"] .toggle-switch input:checked + .toggle-slider {
+    background: rgba(0, 240, 255, 0.12);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.4), inset 0 0 8px rgba(0, 240, 255, 0.15);
+  }
+  body[data-variant="notosans"] .toggle-switch input:checked + .toggle-slider::before {
+    box-shadow: 0 0 8px var(--accent);
+  }
+}
+
+/* ============================================================
+   Settings Form
+   ============================================================ */
+.setting-row { margin-bottom: 14px; }
+.setting-row:last-of-type { margin-bottom: 0; }
 
 .setting-label {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--font-display);
   font-size: 12px;
-  font-weight: 500;
-  color: var(--text-label);
-  margin-bottom: 5px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 7px;
+  letter-spacing: 0.02em;
+}
+.setting-label__en {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-mute);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+body[data-variant="notosans"] .setting-label__en {
+  color: var(--accent-2);
 }
 
 .setting-controls {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
 }
-
 .setting-controls .font-select {
   flex: 1;
   min-width: 0;
@@ -276,83 +727,189 @@ body {
 
 .font-select,
 .weight-select {
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-input);
-  background-color: var(--bg-input);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-family: inherit;
+  width: 100%;
+  padding: 9px 28px 9px 11px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--text);
+  background-color: var(--bg-alt);
+  border: 1px solid var(--rule);
   cursor: pointer;
   outline: none;
-  transition: border-color var(--transition), background-color var(--transition), box-shadow var(--transition);
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   appearance: none;
   -webkit-appearance: none;
-  background-image: var(--chevron-svg);
   background-repeat: no-repeat;
+  background-position: right 10px center;
 }
 
-.font-select:hover,
-.weight-select:hover {
-  background-color: var(--bg-input-hover);
-  border-color: var(--border-input-hover);
+/* Default: rounded input + warm caret */
+body[data-variant="default"] .font-select,
+body[data-variant="default"] .weight-select {
+  border-radius: 2px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238B7A6A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+body[data-variant="default"] .font-select:hover,
+body[data-variant="default"] .weight-select:hover {
+  border-color: var(--rule-strong);
+  background-color: var(--surface);
+}
+body[data-variant="default"] .font-select:focus,
+body[data-variant="default"] .weight-select:focus {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-press);
+}
+@media (prefers-color-scheme: dark) {
+  /* default-dark: caret も銅色 */
+  body[data-variant="default"] .font-select,
+  body[data-variant="default"] .weight-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23C5B59E' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  }
 }
 
-.font-select:focus,
-.weight-select:focus {
-  border-color: var(--border-input-focus);
-  box-shadow: var(--shadow-input-focus);
+/* Notosans: sharp terminal input */
+body[data-variant="notosans"] .font-select,
+body[data-variant="notosans"] .weight-select {
+  border-radius: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23007A99' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+body[data-variant="notosans"] .font-select:hover,
+body[data-variant="notosans"] .weight-select:hover {
+  border-color: var(--accent);
+}
+body[data-variant="notosans"] .font-select:focus,
+body[data-variant="notosans"] .weight-select:focus {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-press);
+}
+@media (prefers-color-scheme: dark) {
+  /* notosans-dark: caret はネオンシアン */
+  body[data-variant="notosans"] .font-select,
+  body[data-variant="notosans"] .weight-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2300F0FF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  }
+  body[data-variant="notosans"] .font-select:hover,
+  body[data-variant="notosans"] .weight-select:hover {
+    background-color: rgba(0, 240, 255, 0.05);
+  }
 }
 
 .font-select option,
 .weight-select option {
-  background: var(--option-bg);
-  color: var(--option-text);
-}
-
-.font-select {
-  width: 100%;
-  background-position: right 10px center;
-  padding-right: 28px;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .weight-select {
-  width: 90px;
+  width: 96px;
   flex-shrink: 0;
-  background-position: right 8px center;
   padding-right: 24px;
+  background-position: right 8px center;
 }
 
-/* 保存通知 */
+/* ============================================================
+   Save Notice
+   ============================================================ */
 .save-notice {
-  margin-top: 10px;
-  padding: 7px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-notice);
-  border: 1px solid var(--border-notice);
-  font-size: 11px;
-  text-align: center;
-  color: var(--accent-green);
+  margin-top: 12px;
+  padding: 8px 11px;
+  font-size: 10.5px;
+  text-align: left;
   font-weight: 500;
+  font-family: var(--font-mono);
   opacity: 0;
   transform: translateY(-4px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
   pointer-events: none;
 }
-
 .save-notice.visible {
   opacity: 1;
   transform: translateY(0);
 }
-
-/* フッター */
-.footer {
-  text-align: center;
-  padding-top: 8px;
+body[data-variant="default"] .save-notice {
+  background: var(--accent-soft);
+  border-left: 2px solid var(--accent);
+  color: var(--accent);
+  font-style: italic;
+  font-family: var(--font-body);
+}
+body[data-variant="notosans"] .save-notice {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+body[data-variant="notosans"] .save-notice::before {
+  content: '$ ';
+  color: var(--accent-2);
 }
 
+/* ============================================================
+   Footer
+   ============================================================ */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+.footer__mark {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+body[data-variant="default"] .footer__mark {
+  border-radius: 50%;
+  background: var(--rule-strong);
+}
+@media (prefers-color-scheme: dark) {
+  body[data-variant="default"] .footer__mark {
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(232, 155, 92, 0.4);
+  }
+}
+body[data-variant="notosans"] .footer__mark {
+  border-radius: 0;
+  animation: blink 1.4s steps(2, end) infinite;
+}
+@media (prefers-color-scheme: dark) {
+  body[data-variant="notosans"] .footer__mark {
+    box-shadow: 0 0 6px var(--accent);
+  }
+}
+@keyframes blink {
+  50% { opacity: 0.25; }
+}
 .version {
-  font-size: 11px;
-  color: var(--text-secondary);
-  opacity: 0.7;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-mute);
+  letter-spacing: 0.1em;
+}
+body[data-variant="notosans"] .version { color: var(--accent-2); }
+
+/* ============================================================
+   Motion preference
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   Focus visible — accessibility
+   ============================================================ */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.toggle-switch input:focus-visible + .toggle-slider {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }

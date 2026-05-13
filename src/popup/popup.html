@@ -10,36 +10,72 @@
   <script src="popup.js"></script>
 </head>
 
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="icon">Aa</div>
-      <h1 class="title" id="popup-title">目に優しいフォント置換</h1>
+<body data-variant="default">
+  <!-- 装飾レイヤー: variant ごとに見え方が変わる背景効果 -->
+  <div class="bg-fx" aria-hidden="true">
+    <div class="bg-fx__grid"></div>
+    <div class="bg-fx__scanline"></div>
+    <div class="bg-fx__grain"></div>
+  </div>
+
+  <main class="container">
+    <!-- ヘッダー -->
+    <header class="header">
+      <div class="header__brand">
+        <div class="brand-mark" aria-hidden="true">
+          <span class="brand-mark__glyph">Aa</span>
+          <span class="brand-mark__corner brand-mark__corner--tl"></span>
+          <span class="brand-mark__corner brand-mark__corner--tr"></span>
+          <span class="brand-mark__corner brand-mark__corner--bl"></span>
+          <span class="brand-mark__corner brand-mark__corner--br"></span>
+        </div>
+        <div class="header__text">
+          <h1 class="title" id="popup-title">目に優しいフォント置換</h1>
+          <p class="title-sub" id="popup-subtitle">Font Replacement Studio</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- 区切り: variant ごとに見え方が変わる -->
+    <div class="divider" aria-hidden="true">
+      <span class="divider__line"></span>
+      <span class="divider__mark"></span>
+      <span class="divider__line"></span>
     </div>
 
-    <div class="status-card">
+    <!-- セクション I: ステータス -->
+    <section class="status-card">
+      <div class="section-meta">
+        <span class="section-meta__num">I</span>
+        <span class="section-meta__label">Status</span>
+      </div>
+
       <div class="status-row">
         <div class="status-indicator">
-          <span class="dot active" id="status-dot"></span>
+          <span class="dot active" id="status-dot" aria-hidden="true"></span>
           <span class="status-text" id="status-text">動作中</span>
         </div>
-        <label class="toggle-switch">
+        <label class="toggle-switch" aria-label="拡張機能の有効・無効を切り替え">
           <input type="checkbox" id="enabled-toggle" checked>
           <span class="toggle-slider"></span>
         </label>
       </div>
-      <p class="description" id="popup-description">読みづらいフォントを好みの日本語フォントに自動置換します</p>
-    </div>
 
-    <div class="settings-section" id="settings-section">
-      <h2 class="section-title">フォント設定</h2>
+      <p class="description" id="popup-description">読みづらいフォントを好みの日本語フォントに自動置換します</p>
+    </section>
+
+    <!-- セクション II: フォント設定（lockedFonts variant では非表示） -->
+    <section class="settings-section" id="settings-section">
+      <div class="section-meta">
+        <span class="section-meta__num">II</span>
+        <span class="section-meta__label">Typography</span>
+      </div>
 
       <div class="setting-row">
-        <label class="setting-label" for="body-font">本文フォント</label>
+        <label class="setting-label" for="body-font">本文フォント<span class="setting-label__en">Body</span></label>
         <div class="setting-controls">
-          <select id="body-font" class="font-select">
-          </select>
-          <select id="body-weight" class="weight-select">
+          <select id="body-font" class="font-select" aria-label="本文フォント"></select>
+          <select id="body-weight" class="weight-select" aria-label="本文ウェイト">
             <option value="400">Regular</option>
             <option value="500">Medium</option>
           </select>
@@ -47,20 +83,21 @@
       </div>
 
       <div class="setting-row">
-        <label class="setting-label" for="mono-font">等幅フォント</label>
-        <select id="mono-font" class="font-select">
-        </select>
+        <label class="setting-label" for="mono-font">等幅フォント<span class="setting-label__en">Mono</span></label>
+        <select id="mono-font" class="font-select" aria-label="等幅フォント"></select>
       </div>
 
-      <div class="save-notice" id="save-notice">
+      <div class="save-notice" id="save-notice" role="status" aria-live="polite">
         ページを再読み込みすると反映されます
       </div>
-    </div>
+    </section>
 
-    <div class="footer">
+    <!-- フッター -->
+    <footer class="footer">
+      <span class="footer__mark" aria-hidden="true"></span>
       <p class="version" id="version">v-.-.-</p>
-    </div>
-  </div>
+    </footer>
+  </main>
 </body>
 
 </html>

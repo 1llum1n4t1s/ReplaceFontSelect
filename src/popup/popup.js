@@ -7,18 +7,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  const manifest = chrome.runtime.getManifest();
+  // ローカルプレビュー（拡張機能コンテキスト外）でも見た目を確認できるよう例外を握る
+  let manifest = { version: 'preview' };
+  try { manifest = chrome.runtime.getManifest(); } catch (_) {}
   const versionElement = document.getElementById('version');
   if (versionElement && manifest.version) {
     versionElement.textContent = `v${manifest.version}`;
   }
 
   // バリアント設定でタイトル・説明文を上書き（notosans variant では別ブランド名で表示）
+  // body[data-variant] にも variant 名を反映し、style.css 側で別テーマを適用する。
   if (typeof VARIANT !== 'undefined' && VARIANT) {
+    document.body.dataset.variant = VARIANT.name || 'default';
     const titleEl = document.getElementById('popup-title');
+    const subtitleEl = document.getElementById('popup-subtitle');
     const descEl = document.getElementById('popup-description');
     if (titleEl && VARIANT.popupTitle) titleEl.textContent = VARIANT.popupTitle;
     if (descEl && VARIANT.popupDescription) descEl.textContent = VARIANT.popupDescription;
+    // variant ごとのサブタイトル（英字キャッチ）
+    if (subtitleEl) {
+      subtitleEl.textContent = VARIANT.name === 'notosans'
+        ? '// NOTO SANS · UDEV GOTHIC'
+        : 'Font Replacement Studio';
+    }
+  } else {
+    document.body.dataset.variant = 'default';
   }
 
   const enabledToggle = document.getElementById('enabled-toggle');
