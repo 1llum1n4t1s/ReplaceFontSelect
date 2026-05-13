@@ -182,10 +182,28 @@ async function main() {
     console.log(`✏️  variants/${v.name}.json: ${oldVersion} → ${newVersion}`);
   }
 
+  // 2-2. package.json の version も同期 (リポジトリ内の version 文字列を一貫させる)
+  //      build パイプラインからは参照されないが、/vava スキルなど外部ツールが
+  //      package.json を真実の源泉として扱うケースに備えた整合性維持。
+  const pkgPath = path.join(ROOT, 'package.json');
+  let pkgUpdated = false;
+  if (fs.existsSync(pkgPath)) {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    if (pkg.version !== newVersion) {
+      pkg.version = newVersion;
+      if (!DRY_RUN) fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+      console.log(`✏️  package.json: → ${newVersion} (同期)`);
+      pkgUpdated = true;
+    }
+  }
+
   // 3. main に commit + push
-  const variantPaths = variants.map(v => `variants/${v.name}.json`).join(' ');
+  const stagedFiles = [
+    ...variants.map(v => `variants/${v.name}.json`),
+    ...(pkgUpdated ? ['package.json'] : [])
+  ].join(' ');
   const commitMsg = `release: v${newVersion}`;
-  run(`git add ${variantPaths}`, { modifyState: true });
+  run(`git add ${stagedFiles}`, { modifyState: true });
   run(`git commit -m "${commitMsg}"`, { modifyState: true });
   run('git push origin main', { modifyState: true });
 

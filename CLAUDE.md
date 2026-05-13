@@ -95,7 +95,7 @@ changelog/<variant>.md   variant ごとのリリース履歴
 7. `.github/workflows/publish.yml` の `strategy.matrix.variant` 配列と `variant に対応する EXTENSION_ID を決定` ステップの `case` 文の両方に新 variant を追加
 8. GitHub Secrets に `CWS_EXTENSION_ID_<UPPER>` を登録
 9. `variants/<新>.json` の `version` を他 variant と同じ値に揃える（リリース時 release.js が unique version チェックする）
-9. **新変数を `variant.json` に追加した場合は `scripts/build-variant.js` の `REQUIRED_KEYS` 配列も更新**（バリデーション漏れ防止）
+10. **新変数を `variant.json` に追加した場合は `scripts/build-variant.js` の `REQUIRED_KEYS` 配列も更新**（バリデーション漏れ防止）
 
 ## Architecture
 
@@ -147,6 +147,24 @@ changelog/<variant>.md   variant ごとのリリース履歴
 | 設定マージ (`mergeFontSettings`) | `src/content/font-config.js` — validator 経由の白リスト検証 + lockedFonts override を一元化 |
 | バリアント設定 (`VARIANT`) | `src/content/variant.js` (ビルド生成物) |
 | マニフェスト | `manifest.template.json` + `variants/<name>.json` → `manifest.json` (ビルド生成物) |
+
+### Popup Theme System — 4 テーマ体制
+
+popup (`src/popup/`) は **variant × prefers-color-scheme** の組み合わせで 4 つの完全に異なる世界観を持つ:
+
+| variant | light | dark |
+|---|---|---|
+| `default` | **Editorial Day** (紙のクリーム + 墨色 + 印章の朱) | **Editorial Night** (革表紙 + 銅色アクセント) |
+| `notosans` | **Lab Day** (青写真風 + 深いシアン/マゼンタ) | **Cyber Night** (夜空 + ネオンシアン/マゼンタ) |
+
+実装の中核:
+- **`body[data-variant="..."]`**: `popup.js` が `VARIANT.name` から設定。CSS 変数のスコープがこのセレクタで variant 別に切り替わる
+- **`@media (prefers-color-scheme: dark)`**: OS の light/dark テーマに自動追従。同じ variant 内で dark 用に CSS 変数を上書き
+- **Self-hosted woff2**: popup.html から拡張機能同梱の woff2 (`../fonts/...`) を `@font-face` で参照（Zen Kaku Gothic New / IBM Plex Sans JP / UDEV Gothic JPDOC）。外部 CDN 依存ゼロ
+- **アクセシビリティ**: `prefers-reduced-motion: reduce` で点滅・パルス停止、`:focus-visible` でキーボード操作時アウトライン
+- **`chrome.runtime.getManifest()` の防御**: ローカル file:// プレビュー時にも見た目を確認できるよう try/catch で囲んで例外を握る
+
+popup の構造変更は `style.css` の CSS 変数だけで完結し、`popup.html` / `popup.js` のロジックには手を入れずに新テーマを追加可能。
 
 ### Shadow DOM 戦略
 
@@ -225,6 +243,44 @@ publish.yml はブランチ末尾 `X.Y.Z` と全 variant の `version` が一致
 ### Local Packaging（手動 Web Store アップロード用）
 - `.\zip.ps1 [-Variant <name>]` (Windows): `npm ci` → アイコン / CSS 生成 → variant 適用 → `<zipBaseName>-chrome.zip` + `<zipBaseName>-firefox.xpi` 生成。引数省略時は `default`。
 - `./zip.sh [<name>]` (Linux/Mac): Chrome ZIP のみ。Firefox XPI を含むフルリリースは `zip.ps1` 必須。
+
+### `/vava` スキル経由の起動
+
+このプロジェクトに対して `/vava` スキルが起動された場合、Claude Code は **標準フローを使わず** `npm run release` (scripts/release.js) に委譲する。
+
+#### 整合性マッピング
+
+| `/vava` Step | このリポでの挙動 | 備考 |
+|---|---|---|
+| 0-1〜0-5: Git 前提チェック | ✅ そのまま使える | |
+| 0-6: 前リリースブランチのマージチェック | ✅ そのまま使える | `release/<X.Y.Z>` 形式想定が新体制と一致 |
+| 1: PROJECT_TYPE 判定 | ⚠️ `manifest.json` がビルド生成物 (gitignore) で見つからず、`package.json` 経由で `node` 誤判定される | |
+| 2: バージョンファイル検出 | ⚠️ `variants/*.json` が検出パターンになく、`package.json` (PRIMARY) と `variants/*.json` (SECONDARY: version 文字列 grep でヒット) で代用 | `package.json` の version も release.js が自動同期するため Secondary が機能する |
+| 3: 次バージョン計算 | ✅ patch +1 一致 | |
+| 4: バージョン更新 | ✅ PRIMARY + SECONDARY 同期で `variants/*.json` まで届く | |
+| 5-7: README/CHANGELOG/staging | ⚠️ CHANGELOG はルートになく `changelog/<variant>.md` 別管理。staging で `variants/` 明示が必要 | |
+| 8: `release/<X.Y.Z>` ブランチ作成 | ✅ そのまま使える | |
+| 9: 古いリリースブランチ削除 | ✅ そのまま使える | semver 比較が新体制と一致 |
+
+#### 推奨フロー
+
+`/vava` を呼ばれた場合、Claude Code は **`npm run release` (release.js) を直接呼ぶ**。release.js は:
+- `variants/*.json` の version 一致チェック → patch +1 → 全 variant 同期書き換え
+- `package.json` の version も自動同期（リポジトリ内 version 文字列の一貫性維持）
+- main に 1 commit → push
+- `release/<X.Y.Z>` ブランチ作成 → push
+- (`--prune-old` で) 古い release ブランチ削除
+
+minor / major bump は手作業:
+```bash
+# variants/{default,notosans}.json と package.json の "version" を手で書き換え
+git add variants/ package.json
+git commit -m "release: v3.1.0"
+git push origin main
+git checkout -b release/3.1.0
+git push -u origin release/3.1.0
+git checkout main
+```
 
 ### CI 自動公開 (`.github/workflows/publish.yml`) — matrix strategy
 
