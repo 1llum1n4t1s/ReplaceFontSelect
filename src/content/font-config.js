@@ -117,6 +117,19 @@ function mergeFontSettings(stored) {
       }
     }
   }
+  // バリアントが lockedFonts を持つ場合 (例: notosans variant) はユーザー設定より優先する。
+  // VARIANT は scripts/build-variant.js が生成し、content_scripts / popup / background のいずれの
+  // コンテキストでも variant.js が先に読まれている前提。未定義時 (Node テスト等) は何もしない。
+  // 各 lockedFonts キーは念のため FONT_SETTINGS_VALIDATORS で再検証し、不正値はサイレントに無視する。
+  if (typeof VARIANT !== 'undefined' && VARIANT && VARIANT.lockedFonts) {
+    for (const key of Object.keys(VARIANT.lockedFonts)) {
+      const validator = FONT_SETTINGS_VALIDATORS[key];
+      const value = VARIANT.lockedFonts[key];
+      if (validator && validator(value)) {
+        merged[key] = value;
+      }
+    }
+  }
   return merged;
 }
 

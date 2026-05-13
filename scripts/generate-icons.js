@@ -1,11 +1,26 @@
+// バリアントごとのアイコン PNG を icons/<variant>/icon.svg から生成する。
+// 使い方: node scripts/generate-icons.js <variant>
+//   例:   node scripts/generate-icons.js default
+//         node scripts/generate-icons.js notosans
+
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 
+const variantName = process.argv[2];
+if (!variantName) {
+  console.error('使い方: node scripts/generate-icons.js <variant>');
+  process.exit(1);
+}
+if (!/^[a-z][a-z0-9_-]*$/.test(variantName)) {
+  console.error(`❌ バリアント名は [a-z][a-z0-9_-]* の形式: "${variantName}"`);
+  process.exit(1);
+}
+
 const sizes = [16, 48, 128];
-const svgPath = path.join(__dirname, '../icons/icon.svg');
+const iconsDir = path.join(__dirname, '..', 'icons', variantName);
+const svgPath = path.join(iconsDir, 'icon.svg');
 const fontPath = path.join(__dirname, '../src/fonts/NotoSansJP-Bold.woff2');
-const iconsDir = path.join(__dirname, '../icons');
 
 // font-family を NotoSansJP に統一 (data URI で埋め込む名前と一致させる)
 function normalizeSvgFontFamily(svgText) {
@@ -36,10 +51,10 @@ function buildHtml(svgText, fontBase64, size) {
 }
 
 async function generateIcons() {
-  console.log('🎨 アイコン生成を開始します (puppeteer + 埋め込み font)...\n');
+  console.log(`🎨 アイコン生成を開始します (variant=${variantName}, puppeteer + 埋め込み font)...\n`);
 
   if (!fs.existsSync(svgPath)) {
-    console.error('❌ エラー: icons/icon.svg が見つかりません');
+    console.error(`❌ エラー: ${path.relative(path.join(__dirname, '..'), svgPath)} が見つかりません`);
     process.exit(1);
   }
   if (!fs.existsSync(fontPath)) {

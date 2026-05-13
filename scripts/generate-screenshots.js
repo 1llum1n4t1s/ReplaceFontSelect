@@ -1,48 +1,65 @@
 // Chrome Web Store用のスクリーンショット画像を自動生成するスクリプト
+// バリアントごとの HTML テンプレートから対応する PNG を出力する。
+// 使い方: node scripts/generate-screenshots.js <variant>
+//   例:   node scripts/generate-screenshots.js default
+//         node scripts/generate-screenshots.js notosans
+
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 
-// 出力ディレクトリのパス
-const OUTPUT_DIR = './webstore/images';
+const variantName = process.argv[2];
+if (!variantName) {
+  console.error('使い方: node scripts/generate-screenshots.js <variant>');
+  process.exit(1);
+}
+if (!/^[a-z][a-z0-9_-]*$/.test(variantName)) {
+  console.error(`❌ バリアント名は [a-z][a-z0-9_-]* の形式: "${variantName}"`);
+  process.exit(1);
+}
+
+// 入力テンプレート: webstore/screenshots/<variant>/*.html
+// 出力 PNG:        webstore/images/<variant>/*.png
+const INPUT_DIR = `webstore/screenshots/${variantName}`;
+const OUTPUT_DIR = `webstore/images/${variantName}`;
 
 // 生成する画像の各設定項目（入力パス、出力名、サイズ、タイプ）
 const IMAGE_CONFIGS = [
   // スクリーンショット：1280x800
   {
-    input: 'webstore/screenshots/01-popup-ui.html',
+    input: `${INPUT_DIR}/01-popup-ui.html`,
     output: '01-popup-ui-1280x800.png',
     width: 1280,
     height: 800,
     type: 'screenshot'
   },
   {
-    input: 'webstore/screenshots/02-before-after.html',
+    input: `${INPUT_DIR}/02-before-after.html`,
     output: '02-before-after-1280x800.png',
     width: 1280,
     height: 800,
     type: 'screenshot'
   },
   {
-    input: 'webstore/screenshots/03-hero-promo.html',
+    input: `${INPUT_DIR}/03-hero-promo.html`,
     output: '03-hero-promo-1280x800.png',
     width: 1280,
     height: 800,
     type: 'screenshot'
   },
-  
+
   // プロモーション タイル（小）：440x280
   {
-    input: 'webstore/screenshots/04-promo-small.html',
+    input: `${INPUT_DIR}/04-promo-small.html`,
     output: 'promo-small-440x280.png',
     width: 440,
     height: 280,
     type: 'promo-small'
   },
-  
+
   // マーキー プロモーション タイル：1400x560
   {
-    input: 'webstore/screenshots/05-promo-marquee.html',
+    input: `${INPUT_DIR}/05-promo-marquee.html`,
     output: 'promo-marquee-1400x560.png',
     width: 1400,
     height: 560,
@@ -106,7 +123,14 @@ async function generateScreenshot(browser, htmlPath, outputPath, width, height) 
  * メイン処理：出力ディレクトリの準備と各画像の並列生成
  */
 async function main() {
-  console.log('🎨 Chrome Web Store用スクリーンショットを生成中...\n');
+  console.log(`🎨 Chrome Web Store用スクリーンショットを生成中 (variant=${variantName})...\n`);
+
+  // 入力ディレクトリの存在確認
+  if (!fs.existsSync(INPUT_DIR)) {
+    console.error(`❌ 入力ディレクトリが見つかりません: ${INPUT_DIR}`);
+    console.error(`   variants/${variantName}.json があるなら ${INPUT_DIR}/ にスクショ HTML を配置してください。`);
+    process.exit(1);
+  }
 
   // 出力ディレクトリが存在しない場合は再帰的に作成
   if (!fs.existsSync(OUTPUT_DIR)) {

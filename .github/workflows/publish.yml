@@ -1,5 +1,12 @@
 name: Publish to Chrome Web Store
 
+# ブランチ命名規約:
+#   release/default-X.Y.Z   → CWS_EXTENSION_ID_DEFAULT へ公開
+#   release/notosans-X.Y.Z  → CWS_EXTENSION_ID_NOTOSANS へ公開
+#
+# variants/<name>.json の version とブランチ末尾の X.Y.Z が一致する必要がある。
+# 不一致時は整合性チェックで失敗する。
+
 on:
   push:
     branches:
@@ -17,24 +24,42 @@ jobs:
         # actions/checkout v5.0.0 (SHA pinned for supply chain security)
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
 
-      - name: バージョンを取得
-        id: version
-        run: |
-          version=$(grep -oP '(?<="version": ")[^"]+' manifest.json)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "📦 公開対象バージョン: $version"
-
-      - name: ブランチ名とバージョンの整合性を確認
+      - name: ブランチ名から variant / version を抽出
+        id: parse
         env:
-          BRANCH_VERSION: ${{ github.ref_name }}
-          MANIFEST_VERSION: ${{ steps.version.outputs.version }}
+          BRANCH: ${{ github.ref_name }}
         run: |
-          expected="release/${MANIFEST_VERSION}"
-          if [ "$BRANCH_VERSION" != "$expected" ]; then
-            echo "::error::ブランチ名 ($BRANCH_VERSION) と manifest.json のバージョン ($MANIFEST_VERSION) が一致しません。期待値: $expected"
+          # 期待形式: release/<variant>-<X.Y.Z>
+          if [[ ! "$BRANCH" =~ ^release/([a-z][a-z0-9_-]*)-([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "::error::ブランチ名がフォーマット release/<variant>-<X.Y.Z> に一致しません: $BRANCH"
             exit 1
           fi
-          echo "✅ ブランチ名と manifest バージョン一致: $expected"
+          variant="${BASH_REMATCH[1]}"
+          version="${BASH_REMATCH[2]}"
+          echo "variant=$variant" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "🎯 variant=$variant, version=$version"
+
+      - name: バリアント設定の存在を確認
+        env:
+          VARIANT: ${{ steps.parse.outputs.variant }}
+        run: |
+          if [ ! -f "variants/${VARIANT}.json" ]; then
+            echo "::error::variants/${VARIANT}.json が見つかりません"
+            exit 1
+          fi
+
+      - name: バリアントの version とブランチ version の整合性チェック
+        env:
+          VARIANT: ${{ steps.parse.outputs.variant }}
+          BRANCH_VERSION: ${{ steps.parse.outputs.version }}
+        run: |
+          variant_version=$(node -p "require('./variants/${VARIANT}.json').version")
+          if [ "$variant_version" != "$BRANCH_VERSION" ]; then
+            echo "::error::variants/${VARIANT}.json の version ($variant_version) とブランチ ($BRANCH_VERSION) が一致しません"
+            exit 1
+          fi
+          echo "✅ variants/${VARIANT}.json の version とブランチ一致: $variant_version"
 
       - name: Node セットアップ
         # actions/setup-node v5.0.0 (SHA pinned)
@@ -48,7 +73,9 @@ jobs:
         run: npm ci
 
       - name: アイコン生成
-        run: node scripts/generate-icons.js
+        env:
+          VARIANT: ${{ steps.parse.outputs.variant }}
+        run: node scripts/generate-icons.js "$VARIANT"
 
       - name: フォント変換（TTFがある場合）
         run: |
@@ -61,24 +88,77 @@ jobs:
       - name: CSS生成
         run: node scripts/generate-css.js
 
-      - name: zip パッケージを作成
+      - name: variant manifest / variant.js を生成
+        env:
+          VARIANT: ${{ steps.parse.outputs.variant }}
+        run: node scripts/build-variant.js "$VARIANT"
+
+      - name: 生成された manifest の version を確認
+        env:
+          BRANCH_VERSION: ${{ steps.parse.outputs.version }}
         run: |
-          zip -r replace-font-select-chrome.zip manifest.json icons src \
-            -x "*.DS_Store" "*.swp" "*~"
-          ls -lh replace-font-select-chrome.zip
+          manifest_version=$(node -p "require('./manifest.json').version")
+          if [ "$manifest_version" != "$BRANCH_VERSION" ]; then
+            echo "::error::manifest.json の version ($manifest_version) とブランチ ($BRANCH_VERSION) が一致しません"
+            exit 1
+          fi
+          echo "✅ manifest.json の version: $manifest_version"
+
+      - name: zip パッケージを作成
+        env:
+          VARIANT: ${{ steps.parse.outputs.variant }}
+        run: |
+          zip_base=$(node -p "require('./variants/${VARIANT}.json').zipBaseName")
+          zip_path="${zip_base}-chrome.zip"
+          variant_icons_dir="icons/${VARIANT}"
+          if [ ! -d "$variant_icons_dir" ]; then
+            echo "::error::variant 用のアイコンディレクトリが見つかりません: $variant_icons_dir"
+            exit 1
+          fi
+          # icons は対象 variant のみ同梱、preview.html はストア配信物に不要なので除外
+          zip -r "$zip_path" manifest.json "$variant_icons_dir" src \
+            -x "*.DS_Store" "*.swp" "*~" "*/preview.html"
+          ls -lh "$zip_path"
+          echo "ZIP_PATH=$zip_path" >> "$GITHUB_ENV"
+
+      - name: variant に対応する EXTENSION_ID を決定
+        id: ext
+        env:
+          VARIANT: ${{ steps.parse.outputs.variant }}
+          ID_DEFAULT: ${{ secrets.CWS_EXTENSION_ID_DEFAULT }}
+          ID_NOTOSANS: ${{ secrets.CWS_EXTENSION_ID_NOTOSANS }}
+        run: |
+          case "$VARIANT" in
+            default)
+              extension_id="$ID_DEFAULT"
+              ;;
+            notosans)
+              extension_id="$ID_NOTOSANS"
+              ;;
+            *)
+              echo "::error::未対応の variant: $VARIANT (publish.yml にケースを追加してください)"
+              exit 1
+              ;;
+          esac
+          if [ -z "$extension_id" ]; then
+            echo "::error::variant=$VARIANT に対応する CWS_EXTENSION_ID_* secret が空です"
+            exit 1
+          fi
+          # extension_id は機密扱い: ログには出さず、後続ステップへ env で渡す
+          echo "extension_id=$extension_id" >> "$GITHUB_OUTPUT"
 
       - name: Chrome Web Store にアップロード & 公開
         env:
           CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
           CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
           CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
-          CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CWS_EXTENSION_ID: ${{ steps.ext.outputs.extension_id }}
         # chrome-webstore-upload-cli は devDependencies に固定し、npm ci で
         # package-lock.json の integrity hash 検証済みのローカル版を --no で呼ぶ
         # （npx --yes はネットワーク取得でハッシュ未検証になるため避ける）
         run: |
           npx --no chrome-webstore-upload upload \
-            --source replace-font-select-chrome.zip \
+            --source "$ZIP_PATH" \
             --extension-id "$CWS_EXTENSION_ID" \
             --client-id "$CWS_CLIENT_ID" \
             --client-secret "$CWS_CLIENT_SECRET" \

@@ -1,23 +1,27 @@
 # Chrome Web Store / Firefox AMO 用のパッケージを作成するスクリプト (Windows PowerShell版)
+#
+# 使い方:
+#   .\zip.ps1                  # default variant をビルド
+#   .\zip.ps1 -Variant notosans   # notosans variant をビルド
+#
+# variants/<name>.json の version / zipBaseName を真実の源として使用する。
 
-# バージョン同期: package.json から全ファイルにバージョンを自動同期
-$packageJson = Get-Content -Path "./package.json" -Raw -Encoding UTF8 | ConvertFrom-Json
-$version = $packageJson.version
+param(
+    [string]$Variant = "default"
+)
 
-$filesToUpdate = @("manifest.json", "README.md", "src/popup/popup.html", "webstore/screenshots/01-popup-ui.html", "webstore/screenshots/03-hero-promo.html", "webstore/screenshots/04-promo-small.html", "webstore/screenshots/05-promo-marquee.html")
-foreach ($filePath in $filesToUpdate) {
-    $content = Get-Content -Path $filePath -Raw -Encoding UTF8
-    
-    # バージョン番号の置換
-    $content = [regex]::Replace($content, 'v[0-9]+\.[0-9]+\.[0-9]+', "v$version")
-    $content = [regex]::Replace($content, 'Version [0-9]+\.[0-9]+\.[0-9]+', "Version $version")
-    $content = [regex]::Replace($content, '"version": "[^"]+"', "`"version`": `"$version`"")
-    $content = [regex]::Replace($content, 'version-[0-9]+\.[0-9]+\.[0-9]+-', "version-$version-")
-    
-    # ファイルに書き戻す
-    $content | Out-File -FilePath $filePath -Encoding UTF8 -NoNewline
+$ErrorActionPreference = "Stop"
+
+# バリアント設定を読み込む
+$variantPath = "./variants/$Variant.json"
+if (-not (Test-Path $variantPath)) {
+    Write-Host "❌ バリアント設定が見つかりません: $variantPath" -ForegroundColor Red
+    exit 1
 }
-Write-Host "Version synced: $version" -ForegroundColor Green
+$variantConfig = Get-Content -Path $variantPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$version = $variantConfig.version
+$zipBase = $variantConfig.zipBaseName
+Write-Host "🎯 Variant: $Variant (version=$version, zipBase=$zipBase)" -ForegroundColor Cyan
 Write-Host ""
 
 # 依存関係のインストール（package-lock.json の整合性チェック付き）
@@ -59,65 +63,72 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host ""
 
-Write-Host "📦 Chrome Web Store用のZIPファイルを作成中..." -ForegroundColor Cyan
+# variant manifest / variant.js を生成
+Write-Host "🧬 バリアント設定を適用中..." -ForegroundColor Cyan
+node scripts/build-variant.js $Variant
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ バリアントビルドに失敗しました" -ForegroundColor Red
+    exit 1
+}
+Write-Host ""
+
+# 出力パッケージ名は variant ごと
+$zipPath = "./$zipBase-chrome.zip"
+$xpiPath = "./$zipBase-firefox.xpi"
 
 # 古いZIPファイルを削除
-if (Test-Path "./replace-font-select-chrome.zip") {
-    Remove-Item "./replace-font-select-chrome.zip" -Force
-}
+if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
 # 一時ディレクトリを作成
 $tempDir = "./temp-build"
-if (Test-Path $tempDir) {
-    Remove-Item $tempDir -Recurse -Force
-}
+if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
 New-Item -ItemType Directory -Path $tempDir | Out-Null
 
-# 必要なファイルをコピー
+# 必要なファイルをコピー (icons は対象 variant のみ同梱して別ブランドのアイコンが混入しないようにする)
 Write-Host "📂 必要なファイルをコピー中..." -ForegroundColor Yellow
-
 Copy-Item "manifest.json" -Destination $tempDir
-Copy-Item "icons" -Destination $tempDir -Recurse
+$variantIconsSrc = "icons/$Variant"
+if (-not (Test-Path $variantIconsSrc)) {
+    Write-Host "❌ variant 用のアイコンディレクトリが見つかりません: $variantIconsSrc" -ForegroundColor Red
+    exit 1
+}
+New-Item -ItemType Directory -Path "$tempDir/icons/$Variant" -Force | Out-Null
+Copy-Item "$variantIconsSrc/*" -Destination "$tempDir/icons/$Variant/" -Recurse
 Copy-Item "src" -Destination $tempDir -Recurse
 
-# 不要なファイルを除外
-Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~" | Remove-Item -Force
+# 不要なファイルを除外 (preview.html はストア配信に不要、SVG はインストール時不要だが残してもOK)
+Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html" | Remove-Item -Force
 
 # ZIPファイルを作成
-Compress-Archive -Path "$tempDir/*" -DestinationPath "./replace-font-select-chrome.zip" -Force
-
-# 一時ディレクトリを削除
+Compress-Archive -Path "$tempDir/*" -DestinationPath $zipPath -Force
 Remove-Item $tempDir -Recurse -Force
 
-if (Test-Path "./replace-font-select-chrome.zip") {
-    Write-Host "✅ ZIPファイルを作成しました: replace-font-select-chrome.zip" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "📊 ファイルサイズ:" -ForegroundColor Cyan
-    $fileSize = (Get-Item "./replace-font-select-chrome.zip").Length
-    $fileSizeMB = [math]::Round($fileSize / 1MB, 2)
-    Write-Host "   $fileSizeMB MB" -ForegroundColor White
-    Write-Host ""
-    Write-Host "✨ Chrome Web Store Developer Dashboardにアップロードできます！" -ForegroundColor Green
-    Write-Host "   https://chrome.google.com/webstore/devconsole" -ForegroundColor Blue
-
-    # Firefox AMO用のXPIファイルを作成（コードベースは同一）
-    Write-Host ""
-    Write-Host "🦊 Firefox AMO用のXPIファイルを作成中..." -ForegroundColor Cyan
-
-    if (Test-Path "./replace-font-select-firefox.xpi") {
-        Remove-Item "./replace-font-select-firefox.xpi" -Force
-    }
-    Copy-Item "./replace-font-select-chrome.zip" "./replace-font-select-firefox.xpi" -Force
-
-    if (Test-Path "./replace-font-select-firefox.xpi") {
-        Write-Host "✅ XPIファイルを作成しました: replace-font-select-firefox.xpi" -ForegroundColor Green
-        Write-Host "✨ Firefox AMO Developer Hubにアップロードできます！" -ForegroundColor Green
-        Write-Host "   https://addons.mozilla.org/developers/" -ForegroundColor Blue
-    } else {
-        Write-Host "❌ XPIファイルの作成に失敗しました" -ForegroundColor Red
-        exit 1
-    }
-} else {
+if (-not (Test-Path $zipPath)) {
     Write-Host "❌ ZIPファイルの作成に失敗しました" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "✅ ZIPファイルを作成しました: $zipPath" -ForegroundColor Green
+Write-Host ""
+Write-Host "📊 ファイルサイズ:" -ForegroundColor Cyan
+$fileSize = (Get-Item $zipPath).Length
+$fileSizeMB = [math]::Round($fileSize / 1MB, 2)
+Write-Host "   $fileSizeMB MB" -ForegroundColor White
+Write-Host ""
+Write-Host "✨ Chrome Web Store Developer Dashboardにアップロードできます！" -ForegroundColor Green
+Write-Host "   https://chrome.google.com/webstore/devconsole" -ForegroundColor Blue
+
+# Firefox AMO用のXPIファイルを作成（コードベースは同一）
+Write-Host ""
+Write-Host "🦊 Firefox AMO用のXPIファイルを作成中..." -ForegroundColor Cyan
+if (Test-Path $xpiPath) { Remove-Item $xpiPath -Force }
+Copy-Item $zipPath $xpiPath -Force
+
+if (Test-Path $xpiPath) {
+    Write-Host "✅ XPIファイルを作成しました: $xpiPath" -ForegroundColor Green
+    Write-Host "✨ Firefox AMO Developer Hubにアップロードできます！" -ForegroundColor Green
+    Write-Host "   https://addons.mozilla.org/developers/" -ForegroundColor Blue
+} else {
+    Write-Host "❌ XPIファイルの作成に失敗しました" -ForegroundColor Red
     exit 1
 }

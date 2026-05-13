@@ -60,6 +60,22 @@
 `ＭＳ ゴシック` や `Consolas`、`JetBrains Mono` などの等幅フォントを、選択した等幅フォントに置換します。
 GitHub のコード表示や、技術ブログのコードブロック、入力フォームなども圧倒的に読みやすくなります。
 
+## 🔧 ローカル開発・派生版ビルド
+
+このリポジトリは「**バリアント方式**」で複数の派生版を 1 つのソースから生成できます。`variants/<name>.json` に各ブランドの設定（拡張機能名、gecko id、固定フォント、除外サイトなど）が入っています。
+
+```bash
+npm run build:default       # 通常版（ユーザーがフォントを選択できる版）
+npm run build:notosans      # Noto Sans JP + UDEV Gothic JPDOC 固定の派生版
+
+# Chrome 拡張のローカル読み込み（要事前ビルド）
+# chrome://extensions → Developer mode ON → "Load unpacked" でリポジトリルートを選択
+```
+
+`manifest.json` と `src/content/variant.js` はビルド生成物（`.gitignore` 済）です。「Load unpacked」する前に必ず `npm run build:default` か `npm run build:notosans` を実行してください。
+
+詳細は [CLAUDE.md](CLAUDE.md) の "Variant System" セクションを参照。
+
 ## 📄 ライセンス
 
 - **プロジェクト本体**: [MIT License](LICENSE)

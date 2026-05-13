@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" type="text/css" href="style.css">
+  <script src="../content/variant.js"></script>
   <script src="../content/font-config.js"></script>
   <script src="popup.js"></script>
 </head>
@@ -13,7 +14,7 @@
   <div class="container">
     <div class="header">
       <div class="icon">Aa</div>
-      <h1 class="title">目に優しいフォント置換</h1>
+      <h1 class="title" id="popup-title">目に優しいフォント置換</h1>
     </div>
 
     <div class="status-card">
@@ -27,10 +28,10 @@
           <span class="toggle-slider"></span>
         </label>
       </div>
-      <p class="description">読みづらいフォントを好みの日本語フォントに自動置換します</p>
+      <p class="description" id="popup-description">読みづらいフォントを好みの日本語フォントに自動置換します</p>
     </div>
 
-    <div class="settings-section">
+    <div class="settings-section" id="settings-section">
       <h2 class="section-title">フォント設定</h2>
 
       <div class="setting-row">

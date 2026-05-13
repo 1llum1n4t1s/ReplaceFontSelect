@@ -9,8 +9,17 @@ node_modules/
 webstore/images/
 temp-build/
 
+# Variant build outputs (生成: scripts/build-variant.js)
+# manifest.json は manifest.template.json + variants/<name>.json から生成される。
+# src/content/variant.js も同様。Git 管理せず、ビルド時に必ず生成する。
+manifest.json
+src/content/variant.js
+
 # Generated icons (from scripts/generate-icons.js)
+# 旧パス: icons/icon-*.png は variant 化前の生成物。
+# 新パス: icons/<variant>/icon-*.png （variant ごとに SVG から再生成される）
 icons/icon-*.png
+icons/*/icon-*.png
 
 # OS files
 .DS_Store

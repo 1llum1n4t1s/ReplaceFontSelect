@@ -13,15 +13,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     versionElement.textContent = `v${manifest.version}`;
   }
 
+  // バリアント設定でタイトル・説明文を上書き（notosans variant では別ブランド名で表示）
+  if (typeof VARIANT !== 'undefined' && VARIANT) {
+    const titleEl = document.getElementById('popup-title');
+    const descEl = document.getElementById('popup-description');
+    if (titleEl && VARIANT.popupTitle) titleEl.textContent = VARIANT.popupTitle;
+    if (descEl && VARIANT.popupDescription) descEl.textContent = VARIANT.popupDescription;
+  }
+
   const enabledToggle = document.getElementById('enabled-toggle');
   const statusDot = document.getElementById('status-dot');
   const statusText = document.getElementById('status-text');
-  const settingsSection = document.querySelector('.settings-section');
+  const settingsSection = document.getElementById('settings-section');
   const bodyFontSelect = document.getElementById('body-font');
   const bodyWeightSelect = document.getElementById('body-weight');
   const monoFontSelect = document.getElementById('mono-font');
   const saveNotice = document.getElementById('save-notice');
   const { defaults, storageKey } = FONT_REGISTRY;
+
+  // showFontSelector=false (notosans variant 等) ではフォント選択 UI を完全非表示にする。
+  // lockedFonts による上書きは mergeFontSettings 側で実施されるので、UI が無くても保存値は固定される。
+  const showFontSelector = (typeof VARIANT === 'undefined' || !VARIANT) ? true : VARIANT.showFontSelector !== false;
+  if (!showFontSelector && settingsSection) {
+    settingsSection.hidden = true;
+  }
 
   // ドロップダウンの選択肢を FONT_REGISTRY から動的生成
   function populateSelect(selectEl, registry) {

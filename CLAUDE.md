@@ -4,205 +4,285 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**目に優しいフォント置換** — A Chrome/Firefox Extension (Manifest V3) that replaces hard-to-read fonts on all websites with user-selected fonts. Users choose from 6 body fonts (Noto Sans JP, IBM Plex Sans JP, M PLUS 2, Murecho, Zen Kaku Gothic New, LINE Seed JP) and 3 monospace fonts (UDEV Gothic JPDOC, PlemolJP, Moralerspace Neon JPDOC) via a popup dropdown. Body font weight is selectable (Regular 400 / Medium 500); monospace fonts are fixed at Regular 400. Settings persist in `chrome.storage.local`. Single codebase supports both Chrome and Firefox (140+).
+**目に優しいフォント置換** — Chrome / Firefox (140+) 拡張機能 (Manifest V3) で、ウェブサイト上の読みづらいフォントを、ユーザーが選んだ日本語フォントへ自動置換する。本文 6 種 × 等幅 3 種 × Weight (400/500) = 36 通りのプリセットを `document_start` で同期注入することでちらつきゼロを実現している。
 
-**多言語対応 (Multilingual)**: `@font-face` には `unicode-range` を指定しない。置換フォントが持つ全グリフ範囲（ラテン・CJK・フォントによってはキリル/ギリシャ/ハングル等）が置換対象となり、フォントに含まれない文字は CSS font fallback によって次の candidate（元サイトの指定 / システム標準フォント）に自然に落ちる。フォントのカバレッジに任せるシンプル方針で、余計な文字範囲制限は行わない。
+このリポジトリは **単一コードベース** から複数の派生版（variant）を別々の拡張機能として公開できる「バリアント方式」を採用している。現在 `default` (フォント選択 UI 付き) と `notosans` (Noto Sans JP + UDEV Gothic JPDOC 固定の旧 `replace-font` リポジトリ互換版) の 2 variant が定義されており、それぞれ独立した拡張機能 ID として Chrome Web Store / Firefox AMO に並行リリースできる。
+
+両 variant 共通で **OneNote / Office Online / Google Docs** の 3 ドメインを `exclude_matches` で除外している（リッチエディタの編集体験保護のため）。
+
+**多言語対応**: `@font-face` に `unicode-range` を指定しない。置換フォントのグリフカバレッジ範囲が置換対象となり、それ以外の文字は CSS font fallback で元サイトの指定 / システムフォントに自然に落ちる。
 
 ## Build Commands
 
 ```bash
-npm run build                # Full build: icons + CSS + preset JS (does NOT include convert-fonts)
-npm run generate-css         # Regenerate src/css/replacefont-extension.css + 36 preset JS files
-npm run convert-fonts        # Convert all src/fonts/*.ttf → src/fonts/*.woff2 (run only when adding/updating TTF)
-npm run generate-icons       # Regenerate PNG icons from icons/icon.svg
-npm run generate-screenshots # Generate Chrome Web Store promotional images (requires puppeteer)
+npm run build:default        # icons + CSS + preset JS + variant=default のフルビルド
+npm run build:notosans       # icons + CSS + preset JS + variant=notosans のフルビルド
+npm run build                # = build:default
+npm run build-variant <name> # manifest.json + src/content/variant.js だけ再生成（CSS/icons は維持）
+
+npm run generate-css         # src/css/replacefont-extension.css + 36 個の preset-*.js を再生成
+npm run convert-fonts        # src/fonts/*.ttf → *.woff2 変換（フォント追加時のみ手動実行）
+npm run generate-icons       # icons/icon.svg から PNG (16/48/128) を再生成
+npm run generate-screenshots # Web Store 用プロモ画像を生成（要 puppeteer）
 ```
 
-> `npm run build` は `generate-icons + generate-css` のみを含む。woff2 は既存ファイルを使い回す前提のため、フォント追加・差し替え時のみ `npm run convert-fonts` を手動で実行してからビルドする。Node.js 20 系を推奨（CI が `node-version: '20'` で固定）。
+`manifest.json` と `src/content/variant.js` は **ビルド生成物 (.gitignore 済)**。"Load unpacked" やテスト実行の前に必ず `build:<variant>` を 1 回走らせる必要がある。Node.js 20 系を推奨（CI が `node-version: '20'` で固定）。テストスイートや linter は無く、UI 検証は実機ブラウザで行う。
 
 ### Local Testing
 
 - **Chrome**: `chrome://extensions` → Developer mode ON → "Load unpacked" でリポジトリルートを選択
 - **Firefox**: `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on..." で `manifest.json` を選択（Firefox 140+）
-- コード変更後は拡張機能リストで再読み込み＋対象ページをリロード（CSS は `document_start` で一度だけ取得・キャッシュされるため）
+- コード変更後は拡張機能リストで再読み込み＋対象ページをリロード（preset JS / CSS は `document_start` 時にキャッシュされるため）
 
-テストスイートや linting は設定されていない。UI 検証は実機ブラウザで行う。
+## Variant System (派生版リリース機構)
 
-### Release Automation
+「同じソースから別ブランドの拡張機能を出す仕組み」。バリアント方式の中核は次の 3 つのファイル:
 
-- **ローカルパッケージング**:
-  - `.\zip.ps1` (Windows) — フルリリースパイプライン: バージョン同期 → `npm install` → アイコン・フォント・スクリーンショット・CSS 生成 → `replace-font-select-chrome.zip` + `replace-font-select-firefox.xpi` を作成
-  - `./zip.sh` (Linux/Mac) — Chrome ZIP のみ生成（XPI 非対応）。Firefox XPI を含むフルリリースは `zip.ps1` 必須
-- **CI 自動公開** (`.github/workflows/publish.yml`): `release/**` ブランチへの push をトリガーに Chrome Web Store へ自動アップロード & 公開。ブランチ名 (`release/X.Y.Z`) と `manifest.json` の `version` が一致しないと失敗する整合性チェックあり。Actions は SHA pin、`npm ci` 固定、`chrome-webstore-upload-cli@3.5.0` exact pin でサプライチェーン攻撃対策
+| ファイル | 役割 |
+|---|---|
+| `variants/<name>.json` | name / description / version / geckoId / lockedFonts / showFontSelector / excludeMatches / zipBaseName を定義 |
+| `manifest.template.json` | プレースホルダー入りの manifest テンプレート |
+| `scripts/build-variant.js` | template に variant 設定を注入して `manifest.json` と `src/content/variant.js` を生成 |
+| `src/content/variant.js` | **ビルド生成物**。`const VARIANT = {...}` を定義し content scripts / popup / background から参照される |
+
+| Variant | フォント | gecko id 末尾 | 用途 |
+|---|---|---|---|
+| `default` | ユーザー選択 (6×3×2=36プリセット) | `...323f` | 通常版 |
+| `notosans` | Noto Sans JP + UDEV Gothic JPDOC 固定 | `...323e` | 旧 `replace-font` リポジトリ互換版 |
+
+### Variant が動作に影響する 2 つの経路
+
+1. **`mergeFontSettings()` の lockedFonts override** (`src/content/font-config.js`): `VARIANT.lockedFonts` が non-null の variant では、ユーザーがどんな設定を popup から保存しても `mergeFontSettings` が validator 経由で lockedFonts の値に上書きする。これにより popup で UI が無い variant でも保存値が固定される単一の真実の源泉になっている。
+2. **`showFontSelector` による UI 非表示** (`src/popup/popup.js`): `false` の variant では popup の `<div id="settings-section">` が `hidden = true` で完全非表示。トグルと説明文だけが残る。
+
+### ストア掲載リソースも variant 別に管理
+
+```
+icons/<variant>/
+├── icon.svg           ブランド別のアイコン SVG（Git 管理）
+├── icon-{16,48,128}.png   生成 PNG（.gitignore 済、generate-icons で再生成）
+└── preview.html       開発時のアイコンプレビュー（ストア配信物には不含）
+
+webstore/screenshots/<variant>/
+├── 01-popup-ui.html ～ 05-promo-marquee.html   variant ごとに popup タイトル等が違う
+└── README.md
+
+webstore/images/<variant>/
+└── *.png   ストア用 PNG（.gitignore 済、generate-screenshots で再生成）
+
+docs/<variant>/
+├── privacy-policy.md   Markdown 版プライバシーポリシー（GitHub 上で閲覧可能）
+├── privacy.html        HTML 版（GitHub Pages 公開、Web Store / AMO 申請の privacy URL に指定）
+└── index.html          GitHub Pages ランディングページ
+
+changelog/<variant>.md   variant ごとのリリース履歴
+```
+
+`manifest.json` の `icons` パスは `build-variant.js` が `icons/<variant>/icon-NN.png` に書き換える。ZIP/CI は対象 variant のディレクトリのみ同梱して別ブランドのアセットがストアに混入するのを防ぐ。`docs/<variant>/` と `changelog/<variant>.md` はストア配信物には含まれないが、ストア申請時の privacy URL や、ユーザー向け説明として variant ブランドごとに別 URL を持つ。
+
+### 新しい variant を追加する手順
+
+1. `variants/<name>.json` を作成（既存 default.json をコピーして編集が早い）
+2. `icons/<name>/icon.svg` を配置（ブランド別ロゴ）
+3. `webstore/screenshots/<name>/*.html` をコピー & 編集（ブランド名やタイトルを variant 用に変更）
+4. `docs/<name>/privacy-policy.md` / `privacy.html` / `index.html` を variant ブランドで用意
+5. `changelog/<name>.md` を作成（履歴を残す箱）
+6. `package.json` の `scripts` に `"build:<name>"` と `"generate-icons:<name>"` / `"generate-screenshots:<name>"` を追加
+7. `.github/workflows/publish.yml` の `variant に対応する EXTENSION_ID を決定` ステップの `case` 文に新 variant を追加
+8. GitHub Secrets に `CWS_EXTENSION_ID_<UPPER>` を登録
+9. **新変数を `variant.json` に追加した場合は `scripts/build-variant.js` の `REQUIRED_KEYS` 配列も更新**（バリデーション漏れ防止）
 
 ## Architecture
 
-### Runtime Data Flow — Two-Path System
+### Runtime — Two-Path Injection System
 
-The extension uses a two-path injection system for zero-flash font replacement:
+ちらつきゼロを実現するための 2 経路:
 
 ```
-┌─ Path A: Preset JS (同期注入、ちらつきゼロ) ─────────────────────────┐
-│ src/background/background.js (Service Worker)                        │
-│   chrome.scripting.registerContentScripts で preset JS を登録         │
-│   ↓                                                                  │
-│ src/css/preset-{body}-{mono}-w{weight}.js (document_start, ISOLATED) │
-│   chrome.runtime.getURL('') で絶対URL構築 → <style> 注入             │
-└──────────────────────────────────────────────────────────────────────┘
+┌─ Path A: Preset JS (同期注入、document_start 同期実行) ────────────────┐
+│ src/background/background.js (Service Worker)                          │
+│   chrome.scripting.registerContentScripts で preset JS を ISOLATED に登録│
+│   ↓                                                                    │
+│ src/css/preset-{body}-{mono}-w{weight}.js                              │
+│   chrome.runtime.getURL('') で __REPLACE_FONT_BASE__ を解決 → <style>注入│
+└────────────────────────────────────────────────────────────────────────┘
 
-┌─ Path B: Fallback (非同期注入、プリセット失敗時) ────────────────────┐
-│ src/content/font-config.js → FONT_REGISTRY (先に読み込み)             │
-│   ↓                                                                  │
-│ src/content/preload-fonts.js (content script, document_start)         │
-│   1. loadFontSettings() → chrome.storage.local から設定読み込み       │
-│   2. checkPresetCSSInDOM() → プリセット CSS が注入済みか確認          │
-│      → 注入済み: document.head 注入をスキップ                         │
-│      → 未注入: fetch + replaceFontPlaceholders() → <style> 注入      │
-│   3. setupStyleSheetMonitor() → サイトの競合 @font-face を無効化     │
-│   4. Shadow DOM へのCSS注入 + フォント preload                        │
-└──────────────────────────────────────────────────────────────────────┘
+┌─ Path B: Fallback (preset 未登録時の動的注入) ─────────────────────────┐
+│ src/content/variant.js → variant.js → font-config.js → preload-fonts.js │
+│ (manifest.json の content_scripts で document_start に同期ロード)        │
+│   1. loadFontSettings() → chrome.storage.local                          │
+│   2. checkPresetCSSInDOM() でプリセット注入済か判定（済なら skip）       │
+│   3. fetch + replaceFontPlaceholders() → <style> 注入                  │
+│   4. setupStyleSheetMonitor() でサイトの競合 @font-face を中和           │
+│   5. Shadow DOM へ CSS 注入 + フォント preload                          │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Preset JS System (事前ビルド方式)
+両経路の入口で `src/content/variant.js` が最初に読まれることで、`mergeFontSettings()` がどちらの経路でも `VARIANT.lockedFonts` を参照できる構造になっている。
 
-**Build time** (`generate-css.js`): 6 body × 3 mono × 2 weight = 36 preset JS files を生成。各ファイルは IIFE で、テンプレートリテラル内に解決済みCSS（`__REPLACE_FONT_BASE__` プレースホルダーのみ残す）を含む。生成ファイル先頭には `// DO NOT EDIT — auto-generated by scripts/generate-css.js` ヘッダが付与されるため、手編集せず必ずビルドスクリプトで再生成すること。
+### Two-Stage CSS — テンプレート + プレースホルダー
 
-**Install/Settings change** (`src/background/background.js`): `importScripts('/src/content/font-config.js')` で `FONT_REGISTRY` を参照し、`chrome.scripting.registerContentScripts` でユーザー選択に対応するプリセット JS を登録。`persistAcrossSessions: true` で永続化。
+`scripts/generate-css.js` が約 2300 行の CSS と 36 個の preset JS をビルド時に生成する。CSS は 100+ ゴシック × 2 weight + 20+ 等幅 × 2 weight = 240+ の `@font-face` 規則と、主要フレームワーク (Tailwind / Geist 等) の CSS 変数オーバーライドを含む。プレースホルダー (`__*__`) は preset JS では事前解決済みだが、Path B では `replaceFontPlaceholders()` がランタイムで置換する。
 
-**Page load** (preset JS): `chrome.runtime.getURL('')` (同期API) で `__REPLACE_FONT_BASE__` を拡張機能の絶対URLに置換し、`<style data-replace-font="preset">` を注入。`document_start` で実行されるためページ描画前に完了。
+代表的なプレースホルダー:
 
-### Two-Stage CSS System (テンプレート方式、フォールバック用)
-
-**Build time** (`generate-css.js`): Outputs ~2300 lines of CSS with placeholder tokens — 100+ gothic font families × 2 weights + 20+ mono font families × 2 weights = 240+ `@font-face` rules, plus CSS variable overrides for frameworks (Tailwind, Geist, etc.).
-
-**Runtime** (`src/content/preload-fonts.js`): `replaceFontPlaceholders()` does global string replacement of all `__*__` tokens with actual font names/paths based on user selection.
-
-| Placeholder | Example Replacement |
+| Placeholder | 例 |
 |---|---|
-| `__BODY_FONT_NAME__` | `Noto Sans JP` |
-| `__BODY_FONT_FALLBACK__` | `sans-serif` |
-| `__BODY_LOCAL_REGULAR__` | `local("Noto Sans JP"), local("Noto Sans CJK Variable")` |
-| `__BODY_WOFF2_REGULAR__` | `NotoSansJP-Regular.woff2` (weight=500 時は Medium バリアント) |
-| `__MONO_FONT_NAME__` | `UDEV Gothic JPDOC` |
-| `__MONO_LOCAL_BOLD__` | `local("UDEV Gothic JPDOC Bold")` |
 | `__REPLACE_FONT_BASE__` | `chrome-extension://<id>/` or `moz-extension://<uuid>/` |
+| `__BODY_FONT_NAME__` | `Noto Sans JP` |
+| `__BODY_LOCAL_REGULAR__` | `local("Noto Sans JP"), local("Noto Sans CJK Variable")` |
+| `__BODY_WOFF2_REGULAR__` | `NotoSansJP-Regular.woff2` (weight=500 時は Medium) |
+| `__MONO_FONT_NAME__` | `UDEV Gothic JPDOC` |
 
-### Directory Map
+### Single Source of Truth
 
-```
-src/
-├── background/       Service Worker (preset JS 登録、storage.onChanged 監視)
-├── content/          Content scripts (font-config, preload-fonts, inject)
-├── css/              生成物: replacefont-extension.css + 36 preset-*.js（手編集禁止）
-├── fonts/            woff2 フォントファイル（フォントのカバー範囲に置換を任せる方針）
-└── popup/            popup.html / popup.js / style.css (フォント選択 UI)
+| 概念 | 場所 |
+|---|---|
+| フォント定義 (`FONT_REGISTRY`) | `src/content/font-config.js` — content / popup / background / Node スクリプト全てから共有（CommonJS export 付き） |
+| 設定マージ (`mergeFontSettings`) | `src/content/font-config.js` — validator 経由の白リスト検証 + lockedFonts override を一元化 |
+| バリアント設定 (`VARIANT`) | `src/content/variant.js` (ビルド生成物) |
+| マニフェスト | `manifest.template.json` + `variants/<name>.json` → `manifest.json` (ビルド生成物) |
 
-scripts/              ビルドスクリプト（Node.js、手動実行）
-docs/                 privacy-policy.md (AMO / Web Store 申請用)
-icons/                icon.svg + 生成された PNG (16/48/128)
-webstore/             Chrome Web Store / AMO 用スクリーンショット・プロモ画像
-.github/workflows/    CI: release/** ブランチへの push で自動公開
-```
+### Shadow DOM 戦略
 
-### Key Files
+Closed Shadow DOM 含む 2 経路で CSS を届ける:
 
-- **`src/content/font-config.js`** — Single source of truth for all font metadata (`FONT_REGISTRY`), defaults, and storage key. Shared between content scripts (manifest injection), popup (`<script>` tag), background service worker (`importScripts`), and build script (`require`). Has conditional `module.exports` for Node.js compatibility.
-- **`src/background/background.js`** — Service Worker. Registers preset JS via `chrome.scripting.registerContentScripts`. Listens for `chrome.storage.onChanged` to update registration when settings change. Imports `src/content/font-config.js` via `importScripts`.
-- **`src/content/preload-fonts.js`** — Main content script (IIFE-wrapped). Detects preset CSS presence, falls back to dynamic injection, handles Shadow DOM, monitors competing `@font-face`, preloads fonts.
-- **`src/content/inject.js`** — Tiny page-context script that overrides `Element.prototype.attachShadow` to dispatch a custom event, enabling CSS injection into closed Shadow DOM. Removes itself from DOM after execution.
-- **`scripts/generate-css.js`** — Build-time script generating template CSS + 36 preset JS files. **Must run `npm run generate-css` after any modification** to regenerate both outputs.
-- **`src/popup/popup.js`** — Reads `FONT_REGISTRY` to dynamically populate dropdowns, saves selections to `chrome.storage.local`. Supports dark/light theme via `prefers-color-scheme`.
+1. **`src/content/inject.js`** (page context / MAIN world) — `Element.prototype.attachShadow` をフックし、host 要素に `data-rfs-shadow` 属性を `queueMicrotask` で遅延設定（カスタム要素コンストラクタとの互換性のため）。実行後に自己削除。
+2. **`setupShadowDOMObserver()`** (ISOLATED world) — MutationObserver + TreeWalker で open Shadow DOM を `requestIdleCallback` 200 要素チャンクでスキャン。
 
-### Shadow DOM Strategy
-
-Two mechanisms ensure CSS reaches Shadow DOM:
-1. **`src/content/inject.js`** (page context, MAIN world) — Intercepts `attachShadow()` calls, sets `data-rfs-shadow` attribute on host, dispatches event for newly created roots (including closed Shadow DOM). Uses `queueMicrotask` to defer `setAttribute` for custom element constructor compatibility.
-2. **`setupShadowDOMObserver()`** (content script, ISOLATED world) — MutationObserver + TreeWalker scans for open Shadow DOM roots. Uses chunked scanning (200 elements/batch via `requestIdleCallback`).
-
-CSS injection uses Constructable Stylesheets (`adoptedStyleSheets`) for ShadowRoot (single shared `CSSStyleSheet` instance across all roots for memory efficiency), falling back to `<style>` tags. Deduplication via `_replaceFontApplied` flag on each root prevents re-injection.
+CSS 注入は `adoptedStyleSheets` (Constructable Stylesheets) を使い、全 ShadowRoot で **単一の `CSSStyleSheet` インスタンスを共有** してメモリ効率化。`_replaceFontApplied` フラグで重複注入を防ぐ。MAIN → ISOLATED world 間の `CustomEvent.detail` は構造化クローンで `null` になるため、属性 (`data-rfs-shadow`) で通信する。
 
 ### Competing @font-face Neutralization
 
-`setupStyleSheetMonitor()` in `src/content/preload-fonts.js` handles sites that define their own `@font-face` for fonts we redirect (e.g., Google Fonts loading Noto Sans JP):
+`setupStyleSheetMonitor()` (`src/content/preload-fonts.js`) はサイトが独自に定義した `@font-face` (例: Google Fonts が Noto Sans JP をロード) を削除して、拡張機能の置換を優先させる。実装上の **2 つの落とし穴を回避** している:
 
-1. Collects target font families from the **extension's own CSS only** (not from all site stylesheets — doing so would break icon fonts like icomoon/Font Awesome)
-2. Excludes only the **currently selected** replacement font names (not all available fonts in `FONT_REGISTRY` — excluding all would prevent neutralization of non-selected fonts like Noto Sans JP when user chose LINE Seed JP)
-3. Deletes matching `@font-face` rules from site stylesheets
-4. For CORS-blocked stylesheets: repositions extension's `<style>` to end of `<head>` (last-defined `@font-face` wins in cascade)
-5. MutationObserver watches for newly added `<style>`/`<link>` elements
+- ターゲットフォント一覧の収集元は **拡張機能自身の CSS のみ**。サイト全 stylesheet から収集するとアイコンフォント (icomoon / Font Awesome / codicon 等) の定義まで巻き添えで削除されて UI が壊れる。
+- `replacementNames` (削除除外リスト) は **現在選択中の置換先フォント名のみ**。`FONT_REGISTRY` 全体を除外すると、未選択フォントの `@font-face` がサイト側に残り、選択中フォントへの置換が効かなくなる。
 
-### Adding a New Font
-
-1. Place TTF files in `src/fonts/` directory
-2. Run `npm run convert-fonts` to generate woff2
-3. Add entry to `FONT_REGISTRY` in `src/content/font-config.js` (under `body` or `mono`)
-4. Run `npm run generate-css` to regenerate template CSS + preset JS files
-5. No changes needed to other files — popup, content script, and service worker read from the registry dynamically
+CORS で `cssRules` 読めない stylesheet については、拡張機能の `<style>` を `<head>` 末尾へ再配置することで cascade 順序による上書きを狙う。
 
 ### Storage Schema
 
-Key: `fontSettings` in `chrome.storage.local`
+`chrome.storage.local` キー `fontSettings`:
 ```json
 { "enabled": true, "bodyFont": "noto-sans-jp", "monoFont": "udev-gothic-jpdoc", "bodyFontWeight": "400" }
 ```
-Values: `bodyFont`/`monoFont` are keys from `FONT_REGISTRY.body`/`FONT_REGISTRY.mono`. `bodyFontWeight` is `"400"` (Regular) or `"500"` (Medium). `enabled` controls the on/off toggle. Font changes require page reload.
+キー `prebuiltCSSRegistered` (boolean) — `src/background/background.js` がプリセット JS 登録の成否を `src/content/preload-fonts.js` へ伝えるシグナル。`mergeFontSettings()` で validate されない値はサイレントに defaults に戻る。
 
-Additional key: `prebuiltCSSRegistered` (boolean) — set by `src/background/background.js` to signal `src/content/preload-fonts.js` whether preset JS registration succeeded.
+### Adding a New Font
+
+1. `src/fonts/` に TTF を置き `npm run convert-fonts` で woff2 化
+2. `FONT_REGISTRY` (`src/content/font-config.js`) の `body` か `mono` にエントリ追加
+3. `npm run generate-css` で template CSS + 36 preset JS を再生成
+4. popup / content / background は `FONT_REGISTRY` を動的読みするので他ファイル変更不要
+
+⚠️ **既存フォントキー (`noto-sans-jp` / `udev-gothic-jpdoc`) のリネーム禁止** — `variants/notosans.json` の `lockedFonts` がそのキー名で参照しており、リネームすると notosans variant が破綻する。
+
+## Release Automation
+
+### Release Kick-off (`scripts/release.js`)
+
+`variants/<name>.json` の version を **patch +1** して `release/<variant>-X.Y.Z` ブランチを作り origin へ push する。push が CI のトリガーになり、GitHub Actions が当該 variant 用 Chrome Web Store に自動公開する。`/vava` スキルと同じく「patch のみ」のメンタルモデル。
+
+```bash
+# 単一 variant
+npm run release:default                         # variants/default.json を 1.0.27 → 1.0.28
+npm run release:notosans                        # variants/notosans.json を 2.0.54 → 2.0.55
+node scripts/release.js default --yes           # 直接呼び (Claude Code / CI から)
+
+# 両 variant 同時リリース
+npm run release:all                             # 両 variant を patch +1、release ブランチを 2 つ並列 push
+node scripts/release.js all --yes               # 同上、確認プロンプトをスキップ
+
+# フラグ
+--dry-run / -n  計画だけ表示。書き込み・push しない
+--yes / -y      対話確認をスキップ（CI / Claude Code から呼ぶ場合）
+--prune-old     同 variant の古い release/<variant>-* ブランチをリモートから削除
+```
+
+#### minor / major bump の運用
+
+このスクリプトは **patch +1 専用**（`/vava` と一貫）。新フォント追加や新 variant 追加など minor bump 相当の変更は、**release.js を使わず手作業**で:
+
+```bash
+# 例: notosans を 2.0.54 → 2.1.0 に minor bump する場合
+# 1. variants/notosans.json の "version" を 2.1.0 に手で書き換える
+git add variants/notosans.json
+git commit -m "release: notosans v2.1.0"
+git push origin main
+git checkout -b release/notosans-2.1.0
+git push -u origin release/notosans-2.1.0
+git checkout main
+```
+
+publish.yml はブランチ末尾 `2.1.0` と `variants/notosans.json` の `version` が一致するか検証するだけなので、bump レベルは問わない。
+
+#### 前提条件と挙動
+- 実行は **clean な main ブランチ** から (リモートと同期済みであること)。違反時は abort
+- リモートに同名 `release/<variant>-X.Y.Z` が既存なら abort（force push しない）
+- `all` 指定時は `variants/*.json` を自動検出して全 variant を順番に処理 (1 コミットで 2 variant の version を bump、2 つの release ブランチを連続 push)
+- Two-Path 注入の preset JS や `manifest.json` はビルド時に CI 側で生成されるため、ローカルでの再生成は不要 (variants/*.json だけが真実の源泉)
+
+### Local Packaging（手動 Web Store アップロード用）
+- `.\zip.ps1 [-Variant <name>]` (Windows): `npm ci` → アイコン / CSS 生成 → variant 適用 → `<zipBaseName>-chrome.zip` + `<zipBaseName>-firefox.xpi` 生成。引数省略時は `default`。
+- `./zip.sh [<name>]` (Linux/Mac): Chrome ZIP のみ。Firefox XPI を含むフルリリースは `zip.ps1` 必須。
+
+### CI 自動公開 (`.github/workflows/publish.yml`)
+- **トリガー**: `release/<variant>-<X.Y.Z>` 形式のブランチへの push (例: `release/default-1.0.28`, `release/notosans-2.0.54`)
+- **整合性チェック**: ブランチ末尾の `X.Y.Z` と `variants/<variant>.json` の `version` と生成された `manifest.json` の `version` が一致しないと失敗
+- **拡張機能 ID の動的選択**: variant 名から `CWS_EXTENSION_ID_<UPPER>` シークレットを動的に選ぶ (`default` → `CWS_EXTENSION_ID_DEFAULT`, `notosans` → `CWS_EXTENSION_ID_NOTOSANS`)
+- **共通シークレット**: `CWS_CLIENT_ID` / `CWS_CLIENT_SECRET` / `CWS_REFRESH_TOKEN` は全 variant 共有 (同一 Google アカウントの OAuth 認証情報)
+- Actions は SHA pin、`npm ci` 固定、`chrome-webstore-upload-cli` exact pin でサプライチェーン攻撃対策
 
 ## Critical Constraints
 
-### CSS Selector Rules — No Universal Selectors
+### Manifest content_scripts のロード順 (絶対)
 
-**ユニバーサルセレクタ (`*`) や暗黙的にユニバーサルセレクタとして機能するセレクタは絶対に使用しないこと。** Font Awesome、Material Icons、codicon 等のアイコンフォントの `font-family` を上書きして表示が崩壊する。
+`manifest.template.json` で定義され、`build-variant.js` が exclude_matches を注入する:
 
-禁止パターン:
-- `* { font-family: ... }` — 明示的なユニバーサルセレクタ
-- `:is(pre, code) :not(i, .icon)` — `:not()` 単独の子孫セレクタは `*:not(...)` と同義
-- あらゆる形で「全子孫要素にマッチ」するセレクタ
+```
+src/content/inject.js         — MAIN world      (Shadow DOM intercept は最優先)
+src/content/variant.js        — ISOLATED world  (VARIANT を font-config 前に定義)
+src/content/font-config.js    — ISOLATED world  (mergeFontSettings は VARIANT に依存)
+src/content/preload-fonts.js  — ISOLATED world  (main script)
+```
 
-許可パターン:
-- `:root :is(pre, code, kbd, samp, ...)` — コンテナ要素自体にマッチ（CSS継承で子孫に伝播）
-- `[style*="monospace"]` — インラインスタイルを持つ特定要素のみ
+Service Worker (`background.js`) も同様の順序で `importScripts('/src/content/variant.js', '/src/content/font-config.js')` を呼ぶ。
 
-### setupStyleSheetMonitor — Icon Font Protection
+### CSS — ユニバーサルセレクタ禁止
 
-`setupStyleSheetMonitor()` でサイトの競合 `@font-face` を無効化する際、ターゲットフォント一覧は**拡張機能自身のCSS**からのみ収集すること。サイトの全 `@font-face` から収集すると icomoon、Font Awesome 等のアイコンフォントの定義まで削除してしまい表示が崩壊する。
+`*` や暗黙的なユニバーサル相当のセレクタは絶対禁止。Font Awesome / Material Icons / codicon のアイコンフォントの `font-family` を破壊する。
 
-また、除外対象（`replacementNames`）は**現在選択中の置換先フォント名のみ**にすること。`FONT_REGISTRY` 内の全フォント名を除外すると、例えばユーザーが LINE Seed JP を選択中に Noto Sans JP（FONT_REGISTRY に含まれるが未選択）がターゲットから外れ、サイトの Noto Sans JP @font-face が残って置換が効かなくなる。
+- ❌ `* { font-family: ... }`
+- ❌ `:is(pre, code) :not(i, .icon)` — `:not()` 単独の子孫セレクタは `*:not(...)` と同義
+- ✅ `:root :is(pre, code, kbd, samp, ...)` — コンテナ要素自体にマッチ (継承で子孫へ伝播)
+- ✅ `[style*="monospace"]` — インラインスタイルを持つ要素のみ
 
-### Performance — Content Script Hot Path
+### Performance — preload-fonts.js は Hot Path
 
-`src/content/preload-fonts.js` は全ページの `document_start` で全フレームにて実行される。以下を遵守:
+全ページ全フレームで `document_start` 実行されるため:
 - `document_start` 時点の同期処理を最小限に保つ
 - DOM が空の状態での無意味な `querySelector` を避ける
-- `MutationObserver` コールバック内で重い処理を行わない（`_replaceFontApplied` フラグで早期リターン）
-- デバッグ用の `chrome.runtime.sendMessage` 等の IPC を本番コードに残さない
-
-### Manifest Load Order
-
-`manifest.json` content_scripts load order is critical:
-- `src/content/inject.js` — MAIN world, `document_start` (Shadow DOM intercept must be first)
-- `src/content/font-config.js` → `src/content/preload-fonts.js` — ISOLATED world, `document_start` (config must load before main script)
-- Preset JS — ISOLATED world, `document_start` (registered dynamically by `src/background/background.js`)
+- `MutationObserver` コールバックは `_replaceFontApplied` フラグで早期 return
+- デバッグ用 `chrome.runtime.sendMessage` を本番に残さない
 
 ### CSP Limitations
 
-Sites with strict Content Security Policy (`font-src` or `default-src 'none'`) will block `url()` font loading from `chrome-extension://` / `moz-extension://` origins. In such cases, only `local()` sources work (user must have the replacement font installed on their system). This is a browser-level limitation that cannot be circumvented by the extension.
+`font-src` / `default-src 'none'` の厳格 CSP サイトでは `chrome-extension://` / `moz-extension://` からの `url()` ロードがブロックされる。`local()` フォールバックのみ動作する（ユーザーがフォントをシステムインストールしていれば置換成功）。ブラウザ仕様による制約で拡張側では回避不可能。
 
-### Cross-Browser Compatibility (Chrome / Firefox)
+### Cross-Browser Compatibility
 
-Single codebase supports both Chrome and Firefox (140+). Key points:
-- All `chrome.*` APIs used by this extension are supported in Firefox's `chrome.*` namespace (no `browser.*` rewrite needed).
-- `chrome.scripting.registerContentScripts()` with `persistAcrossSessions` and `world` — supported in Firefox 140+.
-- `manifest.json` contains `browser_specific_settings.gecko` — Chrome ignores this field silently.
-- `src/content/preload-fonts.js` の `getExtensionBaseURL()` フォールバックは Chrome 専用（`chrome-extension://${runtime.id}`）。Firefox では `moz-extension://` のホストがランダム UUID のため `runtime.id` からURL構築不可だが、`chrome.runtime.getURL('')` が両ブラウザで正常動作するためフォールバックには到達しない。
-- `src/popup/style.css` のフォントURLは相対パス（`../fonts/...`）を使用。拡張機能オリジン内で動作するため両ブラウザで解決される。
+Chrome / Firefox 140+ を単一コードで対応:
+- 使用している `chrome.*` API は全て Firefox の `chrome.*` 名前空間でも動作 (`browser.*` リライト不要)
+- `chrome.scripting.registerContentScripts` の `persistAcrossSessions` / `world` は Firefox 140+ で対応
+- gecko id は variant ごとに `variants/<name>.json` の `geckoId` から注入される (Chrome は `browser_specific_settings` を silently ignore)
+- `chrome.runtime.getURL('')` は両ブラウザで正常動作するため、`getExtensionBaseURL()` の Chrome 固有フォールバック (`chrome-extension://${runtime.id}`) には到達しない
+- `src/popup/style.css` のフォントは相対パス (`../fonts/...`) を使い、拡張機能オリジン内で両ブラウザが解決する
 
-### Other Constraints
+### その他の制約
 
-- `web_accessible_resources` must include `src/fonts/*.woff2` and `src/css/*.css`. `src/content/inject.js` はマニフェスト `content_scripts` で MAIN world に直接注入されるため WAR に含めない（ページ側から `fetch` されることはなく、含めると攻撃対象面が広がる）。
-- M PLUS 2 and Murecho are **variable fonts** — single woff2 file serves both Regular and Bold weights.
-- Extension uses `"run_at": "document_start"` and `"all_frames": true` for earliest possible font injection across all frames.
-- Font changes in popup require page reload — CSS is fetched once at `document_start` and cached.
-- MAIN → ISOLATED world 間の `CustomEvent.detail` は構造化クローンで `null` になるため、`data-rfs-shadow` 属性方式で通信する。
-- `chrome.scripting.registerContentScripts` の CSS ファイル内の相対URL はページオリジンに解決される（拡張機能オリジンではない）。そのため CSS ではなく JS ファイルを登録し、`chrome.runtime.getURL()` で絶対URLを構築する。
+- `web_accessible_resources` に `src/fonts/*.woff2` と `src/css/replacefont-extension.css` を含める。`src/content/inject.js` は manifest の `content_scripts` で MAIN world に直接注入されるため WAR に含めない (攻撃対象面の縮小)
+- M PLUS 2 / Murecho は variable font — Regular/Bold が同一 woff2 から取得される
+- `manifest.json` の `run_at: "document_start"` と `all_frames: true` で全フレーム最早期に注入
+- popup でのフォント変更は **ページリロードが必要** — CSS は `document_start` 時に一度キャッシュされる
+- `chrome.scripting.registerContentScripts` で CSS ファイル内の相対 URL はページオリジンに解決される (拡張オリジンではない)。そのため CSS ではなく JS を登録して `chrome.runtime.getURL()` で絶対 URL を構築する
