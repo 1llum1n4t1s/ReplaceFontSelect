@@ -10,6 +10,7 @@
   "excludeMatches": [
     "https://*.onenote.com/*",
     "https://*.officeapps.live.com/*",
+    "https://*.sharepoint.com/*",
     "https://docs.google.com/*",
     "https://*.figma.com/*",
     "https://www.canva.com/*",

@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 このリポジトリは **単一コードベース** から複数の派生版（variant）を別々の拡張機能として公開できる「バリアント方式」を採用している。現在 `default` (フォント選択 UI 付き) と `notosans` (Noto Sans JP + UDEV Gothic JPDOC 固定版) の 2 variant が定義されており、それぞれ独立した拡張機能 ID として Chrome Web Store / Firefox AMO に並行リリースできる。
 
 両 variant 共通で次のドメインを `exclude_matches` で除外している（フォントが作品/編集体験の一部となるサービス保護のため）:
-- **Microsoft / Google のリッチエディタ系**: `*.onenote.com` / `*.officeapps.live.com` (Excel/Word/PowerPoint Online) / `docs.google.com` (Docs / Sheets / Slides / Forms)
+- **Microsoft / Google のリッチエディタ系**: `*.onenote.com` / `*.officeapps.live.com` (Excel/Word/PowerPoint Online) / `*.sharepoint.com` (SharePoint Online — Excel/Word を開いた時のホストオリジン。`officeapps.live.com` には遷移せず SharePoint オリジン内の iframe で WAC = WebApps Components が動くため別途除外が必要) / `docs.google.com` (Docs / Sheets / Slides / Forms)
 - **デザインツール系**: `*.figma.com` / `www.canva.com` / `express.adobe.com`
 
 **多言語対応**: `@font-face` に `unicode-range` を指定しない。置換フォントのグリフカバレッジ範囲が置換対象となり、それ以外の文字は CSS font fallback で元サイトの指定 / システムフォントに自然に落ちる。
