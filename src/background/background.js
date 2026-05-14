@@ -4,7 +4,11 @@
 
 // variant.js を先に読み込み、mergeFontSettings の lockedFonts override が効くようにする。
 // font-config.js を単一の真実の源泉として使用。
-importScripts('/src/content/variant.js', '/src/content/font-config.js');
+// Chrome の Service Worker context では importScripts でロード。
+// Firefox の event page では manifest.background.scripts で既にロード済み (importScripts は worker 限定 API)。
+if (typeof importScripts === 'function') {
+  importScripts('/src/content/variant.js', '/src/content/font-config.js');
+}
 
 const SCRIPT_ID = 'replace-font-css';
 const STORAGE_DEBOUNCE_MS = 150;
