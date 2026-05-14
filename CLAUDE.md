@@ -240,6 +240,25 @@ publish.yml はブランチ末尾 `X.Y.Z` と全 variant の `version` が一致
 - リモートに同名 `release/<X.Y.Z>` が既存なら abort（force push しない）
 - preset JS や `manifest.json` はビルド時に CI 側で生成されるため、ローカルでの再生成は不要 (variants/*.json だけが真実の源泉)
 
+### リリース失敗時のリカバリー
+
+`release/<X.Y.Z>` push 後の CI で一部のストア publish が失敗した場合の対処。
+
+#### Chrome 成功 / Firefox AMO 失敗のケース (matrix 部分失敗)
+
+- **やってはいけない**: 同じ `release/<X.Y.Z>` ブランチに修正 commit を追加 push して CI を再実行
+  - Chrome Web Store 側は `--auto-publish` で **同バージョン再 upload が拒否される** (`Item is currently in review` / `Version already published`)
+  - Firefox AMO 側だけは初回 submit なので通るが、Chrome ジョブが「重複エラー」で再失敗してログが混乱する
+- **正攻法**: 修正を main に commit & push して、次の `/vava` で **v+1 (`release/<X.Y.Z+1>`) で再リリース**
+  - Chrome は新バージョン公開、Firefox は修正後の挙動で初公開、両方クリーン
+- **過去事例**: release/3.0.2 で web-ext 10 の `--use-submission-api` フラグ廃止に当たって Firefox 両 variant 失敗 → 修正を main に push → v3.0.3 で再リリース
+
+#### Build / 認証エラー等で全 job 失敗のケース
+
+- ストアへの upload が **一度も成功していない** ことを確認した上で、同じ `release/<X.Y.Z>` に修正 commit を追加 push して OK
+- `matrix.fail-fast: false` なので失敗した variant のみ再実行される
+- 判定基準: GitHub Actions ログで「Chrome Web Store にアップロード & 公開」「Firefox AMO に submission API でアップロード」ステップに到達せず、その前 (build / package step) で失敗していること
+
 ### Local Packaging（手動 Web Store アップロード用）
 - `.\zip.ps1 [-Variant <name>]` (Windows): `npm ci` → アイコン / CSS 生成 → variant 適用 → `<zipBaseName>-chrome.zip` + `<zipBaseName>-firefox.xpi` 生成。引数省略時は `default`。
 - `./zip.sh [<name>]` (Linux/Mac): Chrome ZIP のみ。Firefox XPI を含むフルリリースは `zip.ps1` 必須。
