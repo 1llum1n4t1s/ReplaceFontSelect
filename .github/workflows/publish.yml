@@ -1,10 +1,14 @@
-name: Publish to Chrome Web Store
+name: Publish to Chrome Web Store & Firefox AMO
 
 # ブランチ命名規約:
 #   release/X.Y.Z (例: release/3.0.0)
 #
 # 全 variant が同じ version を共有し、matrix strategy で並列公開する。
 # variants/<name>.json の version とブランチ末尾の X.Y.Z が一致する必要がある。
+#
+# 公開先:
+#   - Chrome Web Store (chrome-webstore-upload-cli 経由、--auto-publish)
+#   - Firefox AMO (web-ext sign --channel=listed --use-submission-api 経由)
 
 on:
   push:
@@ -158,3 +162,52 @@ jobs:
             --refresh-token "$CWS_REFRESH_TOKEN" \
             --auto-publish
           echo "🎉 ${{ matrix.variant }} → Chrome Web Store への公開リクエスト送信完了"
+
+      - name: Firefox 用ソースディレクトリを準備
+        env:
+          VARIANT: ${{ matrix.variant }}
+        # web-ext sign の --source-dir に渡すための、Chrome ZIP と同じ内容を持つ
+        # クリーンなディレクトリを構築する。manifest.json + icons/<variant> + src のみ。
+        run: |
+          firefox_dir="firefox-build"
+          variant_icons_dir="icons/${VARIANT}"
+          if [ ! -d "$variant_icons_dir" ]; then
+            echo "::error::variant 用のアイコンディレクトリが見つかりません: $variant_icons_dir"
+            exit 1
+          fi
+          rm -rf "$firefox_dir"
+          mkdir -p "$firefox_dir/icons"
+          cp manifest.json "$firefox_dir/"
+          cp -r "$variant_icons_dir" "$firefox_dir/icons/${VARIANT}"
+          cp -r src "$firefox_dir/src"
+          # ストア配信に不要なファイルを除外（Chrome ZIP と同じポリシー + TTF も除外）
+          find "$firefox_dir" \( \
+            -name "*.DS_Store" -o \
+            -name "*.swp" -o \
+            -name "*~" -o \
+            -name "preview.html" -o \
+            -name "*.ttf" \
+          \) -delete
+          echo "FIREFOX_SOURCE_DIR=$firefox_dir" >> "$GITHUB_ENV"
+          echo "📦 Firefox source dir contents:"
+          ls -la "$firefox_dir"
+
+      - name: Firefox AMO に submission API でアップロード
+        env:
+          # web-ext は WEB_EXT_API_KEY / WEB_EXT_API_SECRET を環境変数から読む
+          # AMO API キーは全 variant 共通（同一 Mozilla アカウントの JWT）
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        # web-ext は devDependencies に固定し、npm ci で integrity 検証済みの
+        # ローカル版を npx --no で呼ぶ（Chrome 側と同じサプライチェーン方針）
+        run: |
+          if [ -z "$WEB_EXT_API_KEY" ] || [ -z "$WEB_EXT_API_SECRET" ]; then
+            echo "::error::AMO_JWT_ISSUER / AMO_JWT_SECRET の GitHub Secrets が未設定です"
+            exit 1
+          fi
+          npx --no web-ext sign \
+            --source-dir="$FIREFOX_SOURCE_DIR" \
+            --artifacts-dir="web-ext-artifacts" \
+            --channel=listed \
+            --use-submission-api
+          echo "🦊 ${{ matrix.variant }} → Firefox AMO への submission 送信完了 (レビュー待ち)"

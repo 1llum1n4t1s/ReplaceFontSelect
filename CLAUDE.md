@@ -287,9 +287,23 @@ git checkout main
 - **トリガー**: `release/<X.Y.Z>` 形式のブランチへの push (例: `release/3.0.0`, `release/3.1.0`)
 - **matrix strategy**: `variant: [default, notosans]` で全 variant を **並列実行**。`fail-fast: false` なので 1 つ失敗しても他は続行
 - **整合性チェック**: ブランチ末尾の `X.Y.Z` と各 variant の `variants/<variant>.json` の `version` と生成された `manifest.json` の `version` が一致しないと該当 variant のジョブが失敗
+- **公開先**: 各 matrix job 内で Chrome Web Store と Firefox AMO の **両方** に並列公開
+
+#### Chrome Web Store
 - **拡張機能 ID の選択**: matrix の variant 値から `case` 文で `CWS_EXTENSION_ID_<UPPER>` シークレットを選ぶ (`default` → `CWS_EXTENSION_ID_DEFAULT`, `notosans` → `CWS_EXTENSION_ID_NOTOSANS`)
 - **共通シークレット**: `CWS_CLIENT_ID` / `CWS_CLIENT_SECRET` / `CWS_REFRESH_TOKEN` は全 variant 共有 (同一 Google アカウントの OAuth 認証情報)
-- Actions は SHA pin、`npm ci` 固定、`chrome-webstore-upload-cli` exact pin でサプライチェーン攻撃対策
+- アップロードツール: `chrome-webstore-upload-cli` exact pin、`--auto-publish` で即時公開
+
+#### Firefox AMO (addons.mozilla.org)
+- **アップロードツール**: `web-ext sign --channel=listed --use-submission-api`（exact pin、Node 20 要件）
+- **ソースディレクトリ**: `firefox-build/` を CI 内で構築（Chrome ZIP と同じ `manifest.json + icons/<variant> + src` 構成、TTF / preview.html / OS メタファイル除外）
+- **gecko id (extension 識別子)**: `variants/<variant>.json` の `geckoId` から `build-variant.js` 経由で `manifest.json` の `browser_specific_settings.gecko.id` に注入される。AMO 側はこの ID で variant 別 extension として登録
+- **共通シークレット**: `AMO_JWT_ISSUER` / `AMO_JWT_SECRET` は全 variant 共有 (同一 Mozilla アカウントの JWT credentials)
+- **レビュー**: `--channel=listed` は AMO の人間レビューが入る。submission API は受付完了で job 成功扱いとなり、実際のストア反映は別事象
+- **API キーの発行**: https://addons.mozilla.org/ja/developers/addon/api/key/ で JWT issuer / secret を生成し、`gh secret set AMO_JWT_ISSUER` / `gh secret set AMO_JWT_SECRET` で登録
+
+#### サプライチェーン対策
+- Actions は SHA pin、`npm ci` 固定、`chrome-webstore-upload-cli` / `web-ext` を devDependencies に exact pin して `npx --no` で integrity 検証済みのローカル版を呼ぶ
 
 ## Critical Constraints
 
