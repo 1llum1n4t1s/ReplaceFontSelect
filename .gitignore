@@ -41,3 +41,6 @@ temp/
 
 # Serena MCP working files
 .serena/
+
+# web-ext sign 用の一時ビルドディレクトリ
+firefox-build/
