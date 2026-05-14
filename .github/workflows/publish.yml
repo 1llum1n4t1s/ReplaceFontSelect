@@ -164,6 +164,10 @@ jobs:
           echo "🎉 ${{ matrix.variant }} → Chrome Web Store への公開リクエスト送信完了"
 
       - name: Firefox 用ソースディレクトリを準備
+        # Chrome step が失敗 (同 version 再 upload 等) しても Firefox AMO は独立して
+        # 実行する必要があるので、success() に加え failure() の場合も実行する
+        # (cancelled 時は skip)。
+        if: ${{ success() || failure() }}
         env:
           VARIANT: ${{ matrix.variant }}
         # web-ext sign の --source-dir に渡すための、Chrome ZIP と同じ内容を持つ
@@ -193,6 +197,8 @@ jobs:
           ls -la "$firefox_dir"
 
       - name: Firefox AMO に submission API でアップロード
+        # Chrome 失敗時も実行する (前 step の Firefox ディレクトリ準備が success なら OK)。
+        if: ${{ success() || failure() }}
         env:
           # web-ext は WEB_EXT_API_KEY / WEB_EXT_API_SECRET を環境変数から読む
           # AMO API キーは全 variant 共通（同一 Mozilla アカウントの JWT）
