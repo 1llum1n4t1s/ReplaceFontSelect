@@ -205,9 +205,10 @@ jobs:
             echo "::error::AMO_JWT_ISSUER / AMO_JWT_SECRET の GitHub Secrets が未設定です"
             exit 1
           fi
+          # web-ext 10+ では submission API がデフォルト動作。
+          # --use-submission-api フラグは廃止されたので渡さない。
           npx --no web-ext sign \
             --source-dir="$FIREFOX_SOURCE_DIR" \
             --artifacts-dir="web-ext-artifacts" \
-            --channel=listed \
-            --use-submission-api
+            --channel=listed
           echo "🦊 ${{ matrix.variant }} → Firefox AMO への submission 送信完了 (レビュー待ち)"

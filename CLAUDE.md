@@ -295,7 +295,7 @@ git checkout main
 - アップロードツール: `chrome-webstore-upload-cli` exact pin、`--auto-publish` で即時公開
 
 #### Firefox AMO (addons.mozilla.org)
-- **アップロードツール**: `web-ext sign --channel=listed --use-submission-api`（exact pin、Node 20 要件）
+- **アップロードツール**: `web-ext sign --channel=listed`（exact pin、Node 20 要件、web-ext 10+ では submission API がデフォルト動作で `--use-submission-api` フラグは渡さない）
 - **ソースディレクトリ**: `firefox-build/` を CI 内で構築（Chrome ZIP と同じ `manifest.json + icons/<variant> + src` 構成、TTF / preview.html / OS メタファイル除外）
 - **gecko id (extension 識別子)**: `variants/<variant>.json` の `geckoId` から `build-variant.js` 経由で `manifest.json` の `browser_specific_settings.gecko.id` に注入される。AMO 側はこの ID で variant 別 extension として登録
 - **共通シークレット**: `AMO_JWT_ISSUER` / `AMO_JWT_SECRET` は全 variant 共有 (同一 Mozilla アカウントの JWT credentials)
@@ -304,7 +304,7 @@ git checkout main
 
 #### AMO 初回登録 (CI 自動公開の前提条件)
 
-`web-ext sign --use-submission-api` は **既存 add-on への新バージョン提出のみ** 自動化できる。新 variant の初回登録 (リスティング情報・screenshots・カテゴリ・privacy URL 等) は AMO Developer Hub (https://addons.mozilla.org/ja/developers/) で **手動で submit** する必要がある。
+`web-ext sign --channel=listed` は **既存 add-on への新バージョン提出のみ** 自動化できる。新 variant の初回登録 (リスティング情報・screenshots・カテゴリ・privacy URL 等) は AMO Developer Hub (https://addons.mozilla.org/ja/developers/) で **手動で submit** する必要がある。
 
 - **default variant**: 登録済み (`{ee49eeb2-93a9-4062-ba75-06610054323f}`)
 - **notosans variant**: **未登録** — このまま `release/X.Y.Z` push しても CI の notosans ジョブは HTTP 404 で失敗する。新 variant 追加時は事前に AMO で手動 submit すること
