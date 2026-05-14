@@ -244,14 +244,38 @@ publish.yml はブランチ末尾 `X.Y.Z` と全 variant の `version` が一致
 
 `release/<X.Y.Z>` push 後の CI で一部のストア publish が失敗した場合の対処。
 
-#### Chrome 成功 / Firefox AMO 失敗のケース (matrix 部分失敗)
+#### Step 間の連鎖 skip 解除 (matrix.fail-fast: false の落とし穴) ⭐ 必読
 
-- **やってはいけない**: 同じ `release/<X.Y.Z>` ブランチに修正 commit を追加 push して CI を再実行
-  - Chrome Web Store 側は `--auto-publish` で **同バージョン再 upload が拒否される** (`Item is currently in review` / `Version already published`)
-  - Firefox AMO 側だけは初回 submit なので通るが、Chrome ジョブが「重複エラー」で再失敗してログが混乱する
-- **正攻法**: 修正を main に commit & push して、次の `/vava` で **v+1 (`release/<X.Y.Z+1>`) で再リリース**
-  - Chrome は新バージョン公開、Firefox は修正後の挙動で初公開、両方クリーン
-- **過去事例**: release/3.0.2 で web-ext 10 の `--use-submission-api` フラグ廃止に当たって Firefox 両 variant 失敗 → 修正を main に push → v3.0.3 で再リリース
+`matrix.fail-fast: false` は **matrix 間の job レベル** にのみ作用し、 **同一 job 内の step 間** では「前 step 失敗 → 後続 step 自動 skip」が GitHub Actions のデフォルト挙動になる。
+
+publish.yml では Chrome step が失敗 (例: 同 version 重複 upload) しても Firefox AMO step を独立実行したいので、 Firefox 関連 step に `if: ${{ success() || failure() }}` を明示する (`cancelled()` 時のみ skip)。これがないと「Chrome 失敗 → Firefox AMO 連鎖 skip」で**リカバリーフロー全体が機能しなく**なる。
+
+**過去事例**: release/3.0.3 retry #1 (manifest 修正の fast-forward push) で踏んだ。 Chrome 失敗 (v3.0.3 既公開済) → Firefox AMO step が `skipped` で意図せずスキップ → 「if 条件追加」で解決 → retry #2 で Firefox AMO default が submission 成功して AMO 上で v3.0.3 即時公開達成。
+
+#### 同 version 再 push でリカバリー (推奨)
+
+`if:` 条件が整っていれば、 同じ `release/<X.Y.Z>` ブランチに修正を fast-forward push するだけでバージョンを消費せずリカバリーできる:
+
+```bash
+# main で修正 commit & push
+rtk git commit -m "fix(ci): ..."
+rtk git push origin main
+
+# release/<X.Y.Z> に fast-forward (force push 不要)
+rtk git checkout release/<X.Y.Z>
+rtk git merge main --ff-only
+rtk git push origin release/<X.Y.Z>
+rtk git checkout main
+```
+
+- Chrome 側は同 version 再 upload で重複エラーになるが、 既公開分には影響なし (`if:` 条件で Firefox AMO は独立続行)
+- Firefox AMO 側は初回 submit or 修正後の挙動で再試行
+
+**過去事例**: release/3.0.3 で web-ext の `--use-submission-api` 廃止 → 修正で fast-forward retry → manifest validation エラー → さらに修正で fast-forward retry → step 連鎖 skip 発覚 → `if:` 追加で fast-forward retry → 成功。バージョン消費ゼロで連続リトライ可能。
+
+#### v+1 で再リリース (代替案)
+
+Chrome の重複エラーログを避けたい/履歴をクリーンに保ちたい場合は `/vava` で v+1 を発行。 Chrome は新バージョン公開、 Firefox は修正後の挙動で再試行。
 
 #### Build / 認証エラー等で全 job 失敗のケース
 
@@ -323,10 +347,57 @@ git checkout main
 
 #### AMO 初回登録 (CI 自動公開の前提条件)
 
-`web-ext sign --channel=listed` は **既存 add-on への新バージョン提出のみ** 自動化できる。新 variant の初回登録 (リスティング情報・screenshots・カテゴリ・privacy URL 等) は AMO Developer Hub (https://addons.mozilla.org/ja/developers/) で **手動で submit** する必要がある。
+新 variant の初回登録は CI からは自動化できない (CI の `web-ext sign` は **既存 add-on への新バージョン提出のみ**)。 次のいずれかで事前に初回 submission を済ませる:
 
 - **default variant**: 登録済み (`{ee49eeb2-93a9-4062-ba75-06610054323f}`)
-- **notosans variant**: **未登録** — このまま `release/X.Y.Z` push しても CI の notosans ジョブは HTTP 404 で失敗する。新 variant 追加時は事前に AMO で手動 submit すること
+- **notosans variant**: 登録済み (`{ee49eeb2-93a9-4062-ba75-06610054323e}`、 2026-05-15 にローカル `web-ext sign` 経由で初回登録)
+
+##### 方法 A: ローカル `web-ext sign` で API 経由初回登録 (推奨)
+
+`web-ext sign --channel=listed` は manifest の `gecko.id` が AMO 上に存在しない場合、 **新規 add-on として自動作成**する。 listed channel に必要な必須メタデータは `--amo-metadata=metadata.json` で渡す:
+
+```bash
+# 1. ローカルでビルド
+npm run build:<variant>
+
+# 2. firefox-build/ ディレクトリ構築 (CI と同じホワイトリスト)
+firefox_dir="firefox-build"
+variant_icons_dir="icons/<variant>"
+rm -rf "$firefox_dir" && mkdir -p "$firefox_dir/icons"
+cp manifest.json "$firefox_dir/"
+cp -r "$variant_icons_dir" "$firefox_dir/icons/<variant>"
+cp -r src "$firefox_dir/src"
+find "$firefox_dir" \( -name "*.DS_Store" -o -name "*.swp" -o -name "*~" -o -name "preview.html" -o -name "*.ttf" \) -delete
+
+# 3. .amo-metadata.json を作成
+cat > .amo-metadata.json <<'EOF'
+{
+  "categories": ["appearance", "language-support"],
+  "version": { "license": "MIT" }
+}
+EOF
+
+# 4. web-ext sign で AMO に初回登録
+WEB_EXT_API_KEY=$AMO_JWT_ISSUER WEB_EXT_API_SECRET=$AMO_JWT_SECRET \
+  npx --no web-ext sign \
+    --source-dir=firefox-build \
+    --artifacts-dir=web-ext-artifacts \
+    --channel=listed \
+    --amo-metadata=.amo-metadata.json
+```
+
+実装上の罠:
+- `license` は `version.license` (nested) で渡す。 top-level だと無効 ("This field, or custom_license, is required for listed versions." エラー)
+- `web-ext sign` が `Approval: timeout exceeded` と表示しても、 **submission 自体は AMO で受理されている** (ローカル待ち時間切れだけ)
+- リスティング情報 (summary / description / privacy_policy / default_locale) は別途 API で PATCH 可能 (default variant のパターンを再利用)
+- `default_locale` を `ja` に切り替える時は `name: {ja: "..."}` も同じ PATCH に含めないと "A value in the default locale of \"ja\" is required." HTTP 400
+- screenshots は API 不対応 — AMO Developer Hub から手動 upload (`webstore/images/<variant>/*.png`)
+
+初回登録後、 `status: nominated` (Mozilla 人間レビュー待ち、 通常数日) になる。 既存 add-on の新バージョン提出は通常オート承認で即時公開。
+
+##### 方法 B: AMO Developer Hub で手動 submit
+
+https://addons.mozilla.org/ja/developers/ で「Submit a New Add-on」から XPI を upload → リスティング情報を手動入力。 ブラウザ UI でリッチテキストエディタが使えるので、 description に `<ul>` 等の HTML タグを残したい場合はこちら。 ただし手作業ぶん時間がかかる。
 
 #### AMO リスティング情報の API 更新時の落とし穴
 
@@ -387,6 +458,41 @@ Chrome / Firefox 140+ を単一コードで対応:
 - gecko id は variant ごとに `variants/<name>.json` の `geckoId` から注入される (Chrome は `browser_specific_settings` を silently ignore)
 - `chrome.runtime.getURL('')` は両ブラウザで正常動作するため、`getExtensionBaseURL()` の Chrome 固有フォールバック (`chrome-extension://${runtime.id}`) には到達しない
 - `src/popup/style.css` のフォントは相対パス (`../fonts/...`) を使い、拡張機能オリジン内で両ブラウザが解決する
+
+### Firefox MV3 — background は service_worker と scripts の併記必須 🚨
+
+AMO validator は `background.service_worker` 単独を **reject** し、 `background.scripts` を Firefox-compatible fallback として要求する:
+
+```
+Error: Unsupported "/background/service_worker" manifest property used
+       without "/background/scripts" property as Firefox-compatible fallback.
+```
+
+[manifest.template.json](manifest.template.json) は両方併記する設計:
+
+```json
+"background": {
+  "service_worker": "src/background/background.js",
+  "scripts": [
+    "src/content/variant.js",
+    "src/content/font-config.js",
+    "src/background/background.js"
+  ]
+}
+```
+
+- **Chrome**: `service_worker` を見て SW として動作 ([background.js](src/background/background.js) が `importScripts('/src/content/variant.js', '/src/content/font-config.js')` で順次ロード)
+- **Firefox**: `scripts` を見て event page として動作 (3 ファイルが順次ロード、 `importScripts` は worker 限定 API なので使えない)
+
+そのため [src/background/background.js](src/background/background.js) では `importScripts` を `typeof` ガード:
+
+```js
+if (typeof importScripts === 'function') {
+  importScripts('/src/content/variant.js', '/src/content/font-config.js');
+}
+```
+
+これがないと Firefox の event page で `ReferenceError: importScripts is not defined` で background script 全体が落ちる。 過去に release/3.0.3 でハマって解消済み (manifest validation エラーで AMO submission が両 variant 失敗)。
 
 ### その他の制約
 
