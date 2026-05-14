@@ -302,6 +302,25 @@ git checkout main
 - **レビュー**: `--channel=listed` は AMO の人間レビューが入る。submission API は受付完了で job 成功扱いとなり、実際のストア反映は別事象
 - **API キーの発行**: https://addons.mozilla.org/ja/developers/addon/api/key/ で JWT issuer / secret を生成し、`gh secret set AMO_JWT_ISSUER` / `gh secret set AMO_JWT_SECRET` で登録
 
+#### AMO 初回登録 (CI 自動公開の前提条件)
+
+`web-ext sign --use-submission-api` は **既存 add-on への新バージョン提出のみ** 自動化できる。新 variant の初回登録 (リスティング情報・screenshots・カテゴリ・privacy URL 等) は AMO Developer Hub (https://addons.mozilla.org/ja/developers/) で **手動で submit** する必要がある。
+
+- **default variant**: 登録済み (`{ee49eeb2-93a9-4062-ba75-06610054323f}`)
+- **notosans variant**: **未登録** — このまま `release/X.Y.Z` push しても CI の notosans ジョブは HTTP 404 で失敗する。新 variant 追加時は事前に AMO で手動 submit すること
+
+#### AMO リスティング情報の API 更新時の落とし穴
+
+`PATCH /api/v5/addons/addon/{guid}/` で description / summary / privacy_policy 等を更新する運用 know-how:
+
+- **HTML タグは plain text 化される**: API 経由で送る `<ul>` 等は `&lt;ul&gt;` としてエスケープ保存される。リッチ HTML 表示は AMO Web UI のリッチテキストエディタ経由のみ可能。API 更新時は plain text (絵文字 + `・` 等で構造化) を前提に書く
+- **locale コードは BCP 47 厳密**: `en` 単独は HTTP 400 拒否、`en-US` を使う。送信時のキーは `{ja: "...", "en-US": "..."}` 形式
+- **license の格納先**: top-level `license` ではなく `current_version.license.slug` に格納される (PATCH 時は `{license: {slug: "MIT"}}` で OK)
+- **privacy_policy の取得**: GET 本文には含まれず `has_privacy_policy: true` boolean のみ。中身を確認するには AMO Developer Hub で見るしかない
+- **`?lang=all` クエリのバグ**: 一部 locale が省略される (例: ja が抜けて `_default: en-US` だけ表示)。確認時は `?lang=ja` 等のピンポイント指定が安全
+- **レート制限**: 短時間連投で HTTP 429。60 秒待機で解除
+- **JWT 認証**: `Authorization: JWT <token>` ヘッダー、HS256 で `{iss, jti, iat, exp}` を `AMO_JWT_SECRET` で署名 (`exp` は 60 秒程度の短命トークンが推奨)
+
 #### サプライチェーン対策
 - Actions は SHA pin、`npm ci` 固定、`chrome-webstore-upload-cli` / `web-ext` を devDependencies に exact pin して `npx --no` で integrity 検証済みのローカル版を呼ぶ
 
