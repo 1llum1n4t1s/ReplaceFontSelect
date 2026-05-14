@@ -1,6 +1,6 @@
 {
   "name": "eye-friendly-font-replacer",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "type": "commonjs",
   "description": "Chrome/Firefox extension that replaces hard-to-read fonts with Japanese fonts. Variant-based build produces both 'default' (user-selectable fonts) and 'notosans' (Noto Sans JP + UDEV Gothic JPDOC fixed) from a single source.",
   "scripts": {
