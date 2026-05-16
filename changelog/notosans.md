@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.0.5] - 2026-05-16
+
+default variant と同じ Two-Path Injection 戦略の復活 + cxcx 純性能改善 10 件適用。 notosans は lockedFonts=on の挙動が core 機能で、 v3.0.4 改修によるレグレッション (旧来型サイトでの置換失敗) を解消。
+
+### Fix
+- **旧来型サイト (x.com / Yahoo 等) で置換が効かない問題を解消**: `setupStyleSheetMonitor` + Path B fetch を v3.0.3 ベースで復活
+- **all_frames: true に復元**: iframe 内のフォントも置換対象
+
+### Performance (cxcx report の純性能改善 10 件)
+- scanDynamicFontFamilies size cache + early reject + idle debounce
+- Shadow DOM observer microtask coalescing
+- @font-face ASCII case-insensitive dedupe
+- preload tag top frame + Regular のみ
+- getFontFamilyName WeakMap キャッシュ
+- updateContentScripts 移行 (atomic 1 API)
+- setupStyleSheetMonitor 初回走査を DOMContentLoaded まで遅延 (2-tier)
+- earlyStyleBuffer cap 50
+- **lockedFonts variant 用 ZIP 最小化**: notosans は preset-noto-sans-jp-udev-gothic-jpdoc-w400.js のみ同梱 (-2.43 MB)
+
 ## [3.0.4] - 2026-05-16
 
 default variant と同じ大規模リファクタを notosans にも適用 (preload-fonts.js / generate-css.js / font-config.js は variant 非依存で共有)。 加えて exclude_matches を default と同じ 17 ドメインに同期。

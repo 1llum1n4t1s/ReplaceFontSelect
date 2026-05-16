@@ -3,6 +3,27 @@
 「目に優しいフォント置換」(Chrome / Firefox 拡張、 フォント選択 UI 付き) のリリース履歴。
 version の真実の源泉は `variants/default.json` の `version` フィールド。
 
+## [3.0.5] - 2026-05-16
+
+v3.0.4 で x.com / Yahoo 等の旧来型サイトでフォント置換が動かなくなる致命的レグレッションを解消。 Two-Path Injection (Path A 同期 + Path B fetch+monitor) 戦略を v3.0.3 ベースで復活させ、 cxcx の純性能改善 10 件を後乗せ。
+
+### Fix
+- **x.com / Yahoo 等で置換が効かない問題を解消**: v3.0.4 で削除された `setupStyleSheetMonitor` + `neutralizeCompetingFontFaces` を復活。 サイト固有の `@font-face` (例: x.com の `Chirp`) を `deleteRule` で削除 → ブラウザ fallback chain で拡張機能の Noto Sans JP に到達する戦略を再導入
+- **Path B (replacefont-extension.css の fetch + placeholder 解決) を復活**: 旧来型サイト向け置換戦略の核
+- **all_frames: true に復元**: iframe 内 (広告 / 埋め込みウィジェット) のフォントも置換対象に復活
+- **web_accessible_resources に replacefont-extension.css を再追加**: Path B fetch のため
+
+### Performance (cxcx report の純性能改善 10 件、 機能削除なし)
+- **scanDynamicFontFamilies の連続発火抑制**: document.fonts.size キャッシュ + '__' charCode 早期 reject + requestIdleCallback debounce (Next.js next/font 系で大幅高速化)
+- **Shadow DOM observer microtask coalescing**: 連続 mutation を 1 microtask に集約
+- **@font-face ASCII case-insensitive dedupe**: replacefont-extension.css 約 -2.6%
+- **preload tag を top frame + Regular のみに絞り**: iframe 重複 + Bold/Mono は font-display:swap 任せで起動コスト削減
+- **getFontFamilyName WeakMap キャッシュ**: hot path 高速化
+- **updateContentScripts 移行**: unregister + register の 2 round-trip を 1 atomic API call に統合 (race 解消)
+- **setupStyleSheetMonitor 初回 document.styleSheets 走査を DOMContentLoaded まで遅延**: 起動 CPU 削減 (targetFamilies 構築 + headObserver は document_start のまま 2-tier 戦略)
+- **earlyStyleBuffer に cap 50 を導入**: 長尺ページのメモリ膨張防止 (cap 超過分は headObserver で捕捉)
+- **lockedFonts variant (notosans) は必要な 1 preset のみ ZIP 同梱**: 配布サイズ約 -2.43 MB
+
 ## [3.0.4] - 2026-05-16
 
 v3.0.3 以降の継続改善 (パフォーマンス + アーキテクチャ + ドキュメント整合性)。 notosans variant も同 version で並行リリース継続。
