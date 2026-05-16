@@ -15,8 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     versionElement.textContent = `v${manifest.version}`;
   }
 
-  // バリアント設定でタイトル・説明文を上書き（notosans variant では別ブランド名で表示）
-  // body[data-variant] にも variant 名を反映し、style.css 側で別テーマを適用する。
+  // バリアント設定でタイトル・説明文を上書き
   if (typeof VARIANT !== 'undefined' && VARIANT) {
     document.body.dataset.variant = VARIANT.name || 'default';
     const titleEl = document.getElementById('popup-title');
@@ -24,17 +23,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const descEl = document.getElementById('popup-description');
     if (titleEl && VARIANT.popupTitle) titleEl.textContent = VARIANT.popupTitle;
     if (descEl && VARIANT.popupDescription) descEl.textContent = VARIANT.popupDescription;
-    // variant ごとのサブタイトル（英字キャッチ）
-    if (subtitleEl) {
-      subtitleEl.textContent = VARIANT.name === 'notosans'
-        ? '// NOTO SANS · UDEV GOTHIC'
-        : 'Font Replacement Studio';
-    }
+    if (subtitleEl) subtitleEl.textContent = 'Font Replacement Studio';
   } else {
     document.body.dataset.variant = 'default';
   }
 
   const enabledToggle = document.getElementById('enabled-toggle');
+  const simpleModeToggle = document.getElementById('simple-mode-toggle');
   const statusDot = document.getElementById('status-dot');
   const statusText = document.getElementById('status-text');
   const settingsSection = document.getElementById('settings-section');
@@ -44,11 +39,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const saveNotice = document.getElementById('save-notice');
   const { defaults, storageKey } = FONT_REGISTRY;
 
-  // showFontSelector=false (notosans variant 等) ではフォント選択 UI を完全非表示にする。
-  // lockedFonts による上書きは mergeFontSettings 側で実施されるので、UI が無くても保存値は固定される。
-  const showFontSelector = (typeof VARIANT === 'undefined' || !VARIANT) ? true : VARIANT.showFontSelector !== false;
-  if (!showFontSelector && settingsSection) {
-    settingsSection.hidden = true;
+  // VARIANT.showFontSelector=false の場合は Typography UI を完全非表示。
+  // それ以外は simpleMode (chrome.storage 設定) に応じて hidden を切り替える。
+  const variantShowsFontSelector = (typeof VARIANT === 'undefined' || !VARIANT) ? true : VARIANT.showFontSelector !== false;
+  function applyVisibility(simpleMode) {
+    if (!settingsSection) return;
+    settingsSection.hidden = !variantShowsFontSelector || simpleMode === true;
   }
 
   // ドロップダウンの選択肢を FONT_REGISTRY から動的生成
@@ -75,10 +71,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     bodyFontSelect.value = settings.bodyFont;
     bodyWeightSelect.value = settings.bodyFontWeight;
     monoFontSelect.value = settings.monoFont;
+    if (simpleModeToggle) simpleModeToggle.checked = settings.simpleMode === true;
+    applyVisibility(settings.simpleMode === true);
   }
 
   // 現在の設定を読み込んでUIに反映
-  // mergeFontSettings が単一の真実の源泉として validator による白リスト検証を実行
   try {
     const result = await chrome.storage.local.get(storageKey);
     applySettingsToUI(mergeFontSettings(result[storageKey] || {}));
@@ -86,35 +83,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     applySettingsToUI(Object.assign({}, defaults));
   }
 
-  // 保存通知のタイマーID（連打時に前の通知を即キャンセルして更新）
   let noticeTimer = 0;
-
-  // 直前に保存した設定（同一内容の storage.set を抑止して onChanged の無駄発火を回避）
   let _lastSaved = null;
 
   function saveSettings() {
-    // FONT_SETTINGS_VALIDATORS で個別に妥当性を確認、不正値は defaults に戻す
     const raw = {
       enabled: enabledToggle.checked,
       bodyFont: bodyFontSelect.value,
       bodyFontWeight: bodyWeightSelect.value,
-      monoFont: monoFontSelect.value
+      monoFont: monoFontSelect.value,
+      simpleMode: simpleModeToggle ? simpleModeToggle.checked : false
     };
     const settings = mergeFontSettings(raw);
-    // UI 表示と乖離していたら反映（validator ではじかれたケース）
     applySettingsToUI(settings);
 
-    // 差分なしなら早期リターン（onChanged 連鎖を避ける）
     if (_lastSaved &&
         _lastSaved.enabled === settings.enabled &&
         _lastSaved.bodyFont === settings.bodyFont &&
         _lastSaved.bodyFontWeight === settings.bodyFontWeight &&
-        _lastSaved.monoFont === settings.monoFont) {
+        _lastSaved.monoFont === settings.monoFont &&
+        _lastSaved.simpleMode === settings.simpleMode) {
       return;
     }
 
     chrome.storage.local.set({ [storageKey]: settings }, () => {
-      // 失敗時 (quota, corrupt storage 等) はユーザに明示 (自動で消さない)
       if (chrome.runtime.lastError) {
         saveNotice.textContent = `⚠️ 保存に失敗しました: ${chrome.runtime.lastError.message}`;
         saveNotice.classList.add('visible');
@@ -134,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateToggleUI(enabledToggle.checked);
     saveSettings();
   });
+  if (simpleModeToggle) simpleModeToggle.addEventListener('change', saveSettings);
   bodyFontSelect.addEventListener('change', saveSettings);
   bodyWeightSelect.addEventListener('change', saveSettings);
   monoFontSelect.addEventListener('change', saveSettings);

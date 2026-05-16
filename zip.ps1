@@ -2,7 +2,7 @@
 #
 # 使い方:
 #   .\zip.ps1                  # default variant をビルド
-#   .\zip.ps1 -Variant notosans   # notosans variant をビルド
+#   .\zip.ps1 -Variant <name>  # 将来追加される variant をビルド (default 以外は variants/*.json 必須)
 #
 # variants/<name>.json の version / zipBaseName を真実の源として使用する。
 
@@ -96,8 +96,11 @@ New-Item -ItemType Directory -Path "$tempDir/icons/$Variant" -Force | Out-Null
 Copy-Item "$variantIconsSrc/*" -Destination "$tempDir/icons/$Variant/" -Recurse
 Copy-Item "src" -Destination $tempDir -Recurse
 
-# 不要なファイルを除外 (preview.html はストア配信に不要、SVG はインストール時不要だが残してもOK)
-Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html" | Remove-Item -Force
+# 不要なファイルを除外
+# - preview.html はストア配信に不要 (SVG はインストール時不要だが残してもOK)
+# - replacefont-extension.css は preset JS 生成用のビルド時 input で
+#   ランタイムでは誰も参照しない (Path B 削除後) ため配布から除外
+Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html","replacefont-extension.css" | Remove-Item -Force
 
 # ZIPファイルを作成
 Compress-Archive -Path "$tempDir/*" -DestinationPath $zipPath -Force

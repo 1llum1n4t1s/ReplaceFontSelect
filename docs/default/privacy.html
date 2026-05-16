@@ -180,8 +180,9 @@
                 <p>本拡張機能は、以下の処理をローカルで実行します：</p>
                 <ul>
                     <li>ウェブページのフォント設定を検出</li>
-                    <li>特定の日本語フォント（MS Gothic、Meiryo、Yu Gothicなど）を検出した場合、Noto Sansフォントに置換</li>
-                    <li>動的に追加されるiframe内のフォントも同様に置換</li>
+                    <li>特定の日本語フォント（MS Gothic、Meiryo、Yu Gothicなど）を検出した場合、ユーザーが選択した日本語フォントに置換</li>
+                    <li>動的フォント検出（Next.js next/font 等のハッシュ付き family 名）も置換対象に組み込む</li>
+                    <li>シンプルモード ON のときは Noto Sans JP + UDEV Gothic JPDOC に固定</li>
                 </ul>
 
                 <h3>重要な点</h3>

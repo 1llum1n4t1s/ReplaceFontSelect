@@ -1,6 +1,6 @@
 # 目に優しいフォント置換
 
-[![Version](https://img.shields.io/badge/version-1.0.27-blue.svg)](https://github.com/1llum1n4t1s/ReplaceFontSelect)
+[![Version](https://img.shields.io/badge/version-3.0.3-blue.svg)](https://github.com/1llum1n4t1s/ReplaceFontSelect)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ウェブサイト上の読みづらいフォントを、好みのフォントに自動で置き換える Chrome / Firefox 拡張機能です。
@@ -60,21 +60,20 @@
 `ＭＳ ゴシック` や `Consolas`、`JetBrains Mono` などの等幅フォントを、選択した等幅フォントに置換します。
 GitHub のコード表示や、技術ブログのコードブロック、入力フォームなども圧倒的に読みやすくなります。
 
-## 🔧 ローカル開発・派生版ビルド
-
-このリポジトリは「**バリアント方式**」で複数の派生版を 1 つのソースから生成できます。`variants/<name>.json` に各ブランドの設定（拡張機能名、gecko id、固定フォント、除外サイトなど）が入っています。
+## 🔧 ローカル開発・ビルド
 
 ```bash
-npm run build:default       # 通常版（ユーザーがフォントを選択できる版）
-npm run build:notosans      # Noto Sans JP + UDEV Gothic JPDOC 固定の派生版
+npm run build:default       # default variant をビルド (現行リリース対象)
 
 # Chrome 拡張のローカル読み込み（要事前ビルド）
 # chrome://extensions → Developer mode ON → "Load unpacked" でリポジトリルートを選択
 ```
 
-`manifest.json` と `src/content/variant.js` はビルド生成物（`.gitignore` 済）です。「Load unpacked」する前に必ず `npm run build:default` か `npm run build:notosans` を実行してください。
+`manifest.json` と `src/content/variant.js` はビルド生成物（`.gitignore` 済）です。「Load unpacked」する前に必ず `npm run build:default` を実行してください。
 
-詳細は [CLAUDE.md](CLAUDE.md) の "Variant System" セクションを参照。
+> シンプルモード (popup のトグル) で旧 notosans variant 相当 (Noto Sans JP + UDEV Gothic JPDOC 固定) に切り替えられます。
+
+バリアント機構自体は将来別ブランドを出す自由度として残してあります。 詳細は [CLAUDE.md](CLAUDE.md) を参照。
 
 ## 📄 ライセンス
 

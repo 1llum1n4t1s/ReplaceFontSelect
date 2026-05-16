@@ -57,7 +57,6 @@ const FONT_REGISTRY = {
       localFontsBold: ['LINE Seed JP Bold'],
       woff2Regular: 'LINESeedJP-Regular.woff2',
       woff2Medium: 'LINESeedJP-Regular.woff2', // Medium 未提供のため Regular で代替
-
       woff2Bold: 'LINESeedJP-Bold.woff2'
     }
   },
@@ -91,10 +90,19 @@ const FONT_REGISTRY = {
     enabled: true,
     bodyFont: 'noto-sans-jp',
     monoFont: 'udev-gothic-jpdoc',
-    bodyFontWeight: '400'
+    bodyFontWeight: '400',
+    simpleMode: false
   },
   storageKey: 'fontSettings',
   presetRegisteredKey: 'prebuiltCSSRegistered'
+};
+
+// シンプルモード ON 時に強制適用される設定 (旧 notosans variant の lockedFonts 相当)
+// eslint-disable-next-line no-unused-vars
+const SIMPLE_MODE_LOCKED = {
+  bodyFont: 'noto-sans-jp',
+  monoFont: 'udev-gothic-jpdoc',
+  bodyFontWeight: '400'
 };
 
 // eslint-disable-next-line no-unused-vars
@@ -102,7 +110,8 @@ const FONT_SETTINGS_VALIDATORS = {
   enabled: (v) => typeof v === 'boolean',
   bodyFont: (v) => typeof v === 'string' && Object.prototype.hasOwnProperty.call(FONT_REGISTRY.body, v),
   monoFont: (v) => typeof v === 'string' && Object.prototype.hasOwnProperty.call(FONT_REGISTRY.mono, v),
-  bodyFontWeight: (v) => v === '400' || v === '500'
+  bodyFontWeight: (v) => v === '400' || v === '500',
+  simpleMode: (v) => typeof v === 'boolean'
 };
 
 // 保存済み設定をデフォルトとマージし、無効値はデフォルトに戻す
@@ -117,10 +126,17 @@ function mergeFontSettings(stored) {
       }
     }
   }
-  // バリアントが lockedFonts を持つ場合 (例: notosans variant) はユーザー設定より優先する。
-  // VARIANT は scripts/build-variant.js が生成し、content_scripts / popup / background のいずれの
-  // コンテキストでも variant.js が先に読まれている前提。未定義時 (Node テスト等) は何もしない。
-  // 各 lockedFonts キーは念のため FONT_SETTINGS_VALIDATORS で再検証し、不正値はサイレントに無視する。
+  // (P3-5) シンプルモード ON 時は SIMPLE_MODE_LOCKED の 3 キー (bodyFont/monoFont/bodyFontWeight) を強制する。
+  // popup の Typography セクションは popup.js 側で非表示にされる。
+  if (merged.simpleMode === true) {
+    Object.assign(merged, SIMPLE_MODE_LOCKED);
+  }
+  // バリアント機構は将来別ブランドを出す自由度として残す。
+  // 優先順位 (後勝ち): defaults → stored → simpleMode → VARIANT.lockedFonts
+  // 注意: VARIANT.lockedFonts が **部分 lock** (一部のキーのみ指定) の場合、
+  //       指定外のキーは simpleMode の値が残る (暗黙の合成挙動)。
+  //       現在 default variant の lockedFonts は null のためこの経路は dead だが、
+  //       将来 variant 追加時はこの暗黙挙動を理解しておくこと。
   if (typeof VARIANT !== 'undefined' && VARIANT && VARIANT.lockedFonts) {
     for (const key of Object.keys(VARIANT.lockedFonts)) {
       const validator = FONT_SETTINGS_VALIDATORS[key];
@@ -145,7 +161,7 @@ function getBodyWoff2(fontInfo, weight) {
   return weight === '500' ? (fontInfo.woff2Medium || fontInfo.woff2Regular) : fontInfo.woff2Regular;
 }
 
-// CSS プレースホルダー置換用のマップを構築する（fallback 経路とビルド経路で共有）
+// CSS プレースホルダー置換用のマップを構築する（ビルド経路で共有）
 // CSS 構造破壊を防ぐため、family 名内の " は除去する
 // eslint-disable-next-line no-unused-vars
 function buildPlaceholderMap(bodyFont, monoFont, weight, baseUrl) {
@@ -175,6 +191,7 @@ const PLACEHOLDER_REGEX_SOURCE = '__[A-Z0-9_]+__';
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     FONT_REGISTRY,
+    SIMPLE_MODE_LOCKED,
     mergeFontSettings,
     getPresetFileName,
     FONT_SETTINGS_VALIDATORS,

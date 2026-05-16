@@ -29,6 +29,7 @@
 - 選択された本文用フォントキー（例: `noto-sans-jp`）
 - 選択された本文用フォントの太さ（`400` または `500`）
 - 選択された等幅フォントキー（例: `udev-gothic-jpdoc`）
+- シンプルモードの有効/無効状態（boolean、 ON で Noto Sans JP + UDEV Gothic JPDOC に固定）
 - 登録済みプリセット CSS のフラグ（boolean、内部状態）
 
 このデータはブラウザ内にのみ保存され、外部サーバーへの送信は一切行いません。
@@ -72,6 +73,7 @@ This extension uses `chrome.storage.local` to store only:
 - Selected body font key (e.g. `noto-sans-jp`)
 - Selected body font weight (`400` or `500`)
 - Selected monospace font key (e.g. `udev-gothic-jpdoc`)
+- Simple mode flag (boolean, when ON fixes fonts to Noto Sans JP + UDEV Gothic JPDOC)
 - A boolean flag indicating whether preset CSS was registered (internal state)
 
 This data is stored only within the browser and is never transmitted to external servers.

@@ -1,7 +1,6 @@
 // バリアントごとのアイコン PNG を icons/<variant>/icon.svg から生成する。
 // 使い方: node scripts/generate-icons.js <variant>
 //   例:   node scripts/generate-icons.js default
-//         node scripts/generate-icons.js notosans
 
 const puppeteer = require('puppeteer');
 const fs = require('fs');

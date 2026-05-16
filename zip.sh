@@ -4,7 +4,7 @@
 #
 # 使い方:
 #   ./zip.sh                # default variant をビルド
-#   ./zip.sh notosans       # notosans variant をビルド
+#   ./zip.sh <name>         # 将来 variant を追加した場合 (variants/<name>.json 必須)
 #
 # variants/<name>.json の version / zipBaseName を真実の源として使用する。
 

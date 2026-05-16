@@ -44,3 +44,21 @@ temp/
 
 # web-ext sign 用の一時ビルドディレクトリ
 firefox-build/
+
+# cxcx (Chrome 拡張パフォーマンス計測スキル) の出力
+# trace.json / cpuprofile に計測対象サイトの URL リストが含まれるため git track 厳禁。
+# improvement-report.md だけ残したい時は `!cxcx-out/improvement-report.md` で例外指定。
+cxcx-out/
+
+# cxcx のシナリオ YAML (ローカル計測用、 配布対象外)
+cxcx-scenarios.yaml
+
+# CSS テンプレート (generate-css.js が生成、 preset JS の元データだが配布物には不要)
+src/css/replacefont-extension.css
+
+# 生成された preset JS 36 個 (generate-css.js が生成、 ビルド時に毎回再生成)
+src/css/preset-*.js
+
+# AMO ローカル submission 用メタデータ (web-ext sign --amo-metadata 引数で渡す、
+# 配布対象外。 退役 variant のメタも残る場合あり)
+.amo-metadata*.json

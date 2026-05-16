@@ -3,12 +3,12 @@ name: Publish to Chrome Web Store & Firefox AMO
 # ブランチ命名規約:
 #   release/X.Y.Z (例: release/3.0.0)
 #
-# 全 variant が同じ version を共有し、matrix strategy で並列公開する。
+# `release/<X.Y.Z>` への push で variant matrix を並列実行 (現在 default 1 variant)。
 # variants/<name>.json の version とブランチ末尾の X.Y.Z が一致する必要がある。
 #
 # 公開先:
-#   - Chrome Web Store (chrome-webstore-upload-cli 経由、--auto-publish)
-#   - Firefox AMO (web-ext sign --channel=listed --use-submission-api 経由)
+#   - Chrome Web Store (chrome-webstore-upload-cli 経由、 --auto-publish)
+#   - Firefox AMO (web-ext sign --channel=listed、 web-ext 10+ では submission API がデフォルト)
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [default, notosans]
+        variant: [default]
     steps:
       - name: リポジトリをチェックアウト
         # actions/checkout v5.0.0 (SHA pinned for supply chain security)
@@ -115,8 +115,10 @@ jobs:
             echo "::error::variant 用のアイコンディレクトリが見つかりません: $variant_icons_dir"
             exit 1
           fi
+          # replacefont-extension.css は preset JS 生成用のビルド時 input で
+          # ランタイムでは誰も参照しない (Path B 削除後) ため配布から除外。
           zip -r "$zip_path" manifest.json "$variant_icons_dir" src \
-            -x "*.DS_Store" "*.swp" "*~" "*/preview.html"
+            -x "*.DS_Store" "*.swp" "*~" "*/preview.html" "src/css/replacefont-extension.css"
           ls -lh "$zip_path"
           echo "ZIP_PATH=$zip_path" >> "$GITHUB_ENV"
 
@@ -125,14 +127,10 @@ jobs:
         env:
           VARIANT: ${{ matrix.variant }}
           ID_DEFAULT: ${{ secrets.CWS_EXTENSION_ID_DEFAULT }}
-          ID_NOTOSANS: ${{ secrets.CWS_EXTENSION_ID_NOTOSANS }}
         run: |
           case "$VARIANT" in
             default)
               extension_id="$ID_DEFAULT"
-              ;;
-            notosans)
-              extension_id="$ID_NOTOSANS"
               ;;
             *)
               echo "::error::未対応の variant: $VARIANT (publish.yml の matrix と case を更新してください)"
@@ -184,13 +182,14 @@ jobs:
           cp manifest.json "$firefox_dir/"
           cp -r "$variant_icons_dir" "$firefox_dir/icons/${VARIANT}"
           cp -r src "$firefox_dir/src"
-          # ストア配信に不要なファイルを除外（Chrome ZIP と同じポリシー + TTF も除外）
+          # ストア配信に不要なファイルを除外（Chrome ZIP と同じポリシー + TTF + dead CSS template 除外）
           find "$firefox_dir" \( \
             -name "*.DS_Store" -o \
             -name "*.swp" -o \
             -name "*~" -o \
             -name "preview.html" -o \
-            -name "*.ttf" \
+            -name "*.ttf" -o \
+            -name "replacefont-extension.css" \
           \) -delete
           echo "FIREFOX_SOURCE_DIR=$firefox_dir" >> "$GITHUB_ENV"
           echo "📦 Firefox source dir contents:"
