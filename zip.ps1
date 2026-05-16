@@ -1,8 +1,8 @@
 # Chrome Web Store / Firefox AMO 用のパッケージを作成するスクリプト (Windows PowerShell版)
 #
 # 使い方:
-#   .\zip.ps1                  # default variant をビルド
-#   .\zip.ps1 -Variant <name>  # 将来追加される variant をビルド (default 以外は variants/*.json 必須)
+#   .\zip.ps1                     # default variant をビルド
+#   .\zip.ps1 -Variant notosans   # notosans variant をビルド
 #
 # variants/<name>.json の version / zipBaseName を真実の源として使用する。
 

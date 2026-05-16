@@ -220,8 +220,8 @@ async function main() {
   }
 
   console.log('\n🎉 リリースキックオフ完了！');
-  console.log(`   GitHub Actions が matrix strategy で variant 公開:`);
-  console.log(`   ${branch} → CWS_EXTENSION_ID_DEFAULT (現在 default 1 variant のみ)`);
+  console.log(`   GitHub Actions が matrix strategy で variant 並列公開:`);
+  console.log(`   ${branch} → CWS_EXTENSION_ID_DEFAULT / CWS_EXTENSION_ID_NOTOSANS`);
 }
 
 main().catch(e => fail(e.message));

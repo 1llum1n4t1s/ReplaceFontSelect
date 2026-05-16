@@ -5,7 +5,7 @@ version の真実の源泉は `variants/default.json` の `version` フィール
 
 ## [3.0.4] - 2026-05-16
 
-v3.0.3 以降の継続改善 (パフォーマンス + アーキテクチャ + ドキュメント整合性 + notosans 退役)。
+v3.0.3 以降の継続改善 (パフォーマンス + アーキテクチャ + ドキュメント整合性)。 notosans variant も同 version で並行リリース継続。
 
 ### Performance / Architecture
 - **Single-Path Injection (Path A 一本化)**: 旧 Two-Path Injection の Path B (fetch + replaceFontPlaceholders) を削除し、 preset JS による同期注入のみに統合。 コードを簡潔化しつつちらつきゼロを維持
