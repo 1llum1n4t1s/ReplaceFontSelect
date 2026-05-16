@@ -15,7 +15,7 @@ default variant は次のドメインを `exclude_matches` で除外している
 - **デザインツール系**: `*.figma.com` / `www.canva.com` / `express.adobe.com`
 - **リッチエディタ / IDE 系 (v3.1 系で追加)**: `www.notion.so` / `app.slack.com` / `linear.app` / `*.github.dev` / `vscode.dev` / `replit.com` / `codesandbox.io` / `stackblitz.com` / `www.overleaf.com` / `discord.com/app`
 
-**多言語対応**: `@font-face` に `unicode-range` を指定しない。 置換フォントのグリフカバレッジ範囲が置換対象となり、 それ以外の文字は CSS font fallback で元サイトの指定 / システムフォントに自然に落ちる。
+**多言語対応**: `@font-face` の `unicode-range` は **省略する** (オープン範囲のまま運用)。 置換フォントのグリフカバレッジ範囲がそのまま置換対象となり、 範囲外の文字は CSS font fallback で元サイトの指定 / システムフォントに自然に落ちる。
 
 ## Build Commands
 
@@ -59,9 +59,9 @@ npm run generate-screenshots:notosans # webstore/screenshots/notosans/*.html →
 
 `mergeFontSettings()` (`src/content/font-config.js`) は **stored → VARIANT.lockedFonts** の順で override を適用 (後勝ち)。 つまり variant が `lockedFonts` を設定している場合 (notosans variant) はユーザーの保存値より優先される。
 
-### Variant の退役・削減はやらない ⚠️
+### Variant の運用方針 — default / notosans 並行維持 💖
 
-公開済み variant (default / notosans) は退役・削除しない。 「機能の重複」「YAGNI」「scope creep」「default に統合できる」 といった技術的合理性で退役を推奨されても、 ストア掲載済みの拡張機能 ID と既存ユーザー資産を毀損するビジネス判断マターなので、 ゆろさんの明示承認なしに実行しない。
+公開済み variant (default / notosans) は **現状の 2 variant 並行運用を維持** する。 「機能の重複」「YAGNI」「scope creep」「default に統合できる」 といった技術的合理性で退役を推奨された場合は、 **ストア掲載済みの拡張機能 ID と既存ユーザー資産に直結するビジネス判断マター** として議題化し、 ゆろさんの明示承認を経由する。
 
 ### 新しい variant を追加する手順 (将来用)
 
@@ -202,7 +202,7 @@ ShadowRoot への adopt は `pendingShadowRoots: Set` でバッチ化 → 1 micr
 3. `npm run generate-css` で template CSS + 36 preset JS を再生成
 4. popup / content / background は `FONT_REGISTRY` を動的読みするので他ファイル変更不要
 
-⚠️ **既存フォントキー (`noto-sans-jp` / `udev-gothic-jpdoc`) のリネーム禁止** — `variants/notosans.json` の `lockedFonts` がそのキー名を参照しており、 リネームすると notosans variant が破綻する。
+⚠️ **既存フォントキー (`noto-sans-jp` / `udev-gothic-jpdoc`) はそのまま維持する** — `variants/notosans.json` の `lockedFonts` がそのキー名を参照しているので、 既存キーは固定で運用し、 新しいフォントは別キーで追加する。
 
 ## Release Automation
 
@@ -353,7 +353,7 @@ WebExtError: Submission failed (2): Unknown Error
 **対処**:
 1. **時間を置いて retry**: 表示秒数を待ってから fast-forward 再 push
 2. **手動 submission に切替**: https://addons.mozilla.org/ja/developers/ → 該当 add-on → 「新しいバージョンを送信」から XPI を手動 upload (rate limit 別枠の可能性あり、 未検証)
-3. **同セッションで複数 retry しない**: 1 回失敗したら CI を再 fire させずに、 原因 (Chrome 側など) を直してから 1 回だけ retry
+3. **1 回失敗したらクールダウン**: 同セッションで連続再 fire する代わりに、 1 回目の失敗原因 (Chrome 側など) を解消してから 1 回だけ retry する
 
 **過去事例**: v3.0.4 リリース (run #25952259808) で踏んだ。 Chrome 側の Privacy practices 必須化と同じ run で発生 → 両方失敗してリカバリー難度上昇。 1 回成功した後の連続再試行で発動する印象。
 
@@ -447,11 +447,11 @@ src/content/preload-fonts.js  — ISOLATED world  (main script)
 
 Service Worker (`background.js`) も同様の順序で `importScripts('/src/content/variant.js', '/src/content/font-config.js')` を呼ぶ。
 
-### CSS — ユニバーサルセレクタ禁止
+### CSS — 対象要素を明示したセレクタを書く
 
-`*` や暗黙的なユニバーサル相当のセレクタは絶対禁止。 Font Awesome / Material Icons / codicon のアイコンフォントの `font-family` を破壊する。
+CSS は **常に対象要素を明示** する。 `*` や暗黙的なユニバーサル相当のセレクタは Font Awesome / Material Icons / codicon のアイコンフォントの `font-family` を破壊するので、 対象を絞ったセレクタを書くこと。
 
-- ❌ `* { font-family: ... }`
+- ❌ `* { font-family: ... }` — ユニバーサル相当、 アイコンフォント破壊
 - ❌ `:is(pre, code) :not(i, .icon)` — `:not()` 単独の子孫セレクタは `*:not(...)` と同義
 - ✅ `:root :is(pre, code, kbd, samp, ...)` — コンテナ要素自体にマッチ (継承で子孫へ伝播)
 - ✅ `[style*="monospace"]` — インラインスタイルを持つ要素のみ
