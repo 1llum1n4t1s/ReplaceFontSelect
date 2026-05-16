@@ -3,9 +3,9 @@
 「目に優しいフォント置換」(Chrome / Firefox 拡張、 フォント選択 UI 付き) のリリース履歴。
 version の真実の源泉は `variants/default.json` の `version` フィールド。
 
-## [3.0.x 系で進行中の改修] - v3.0.3 以降の継続改善
+## [3.0.4] - 2026-05-16
 
-以下は次回リリース候補 (バージョン番号は別途決定) に向けた改修内容。
+v3.0.3 以降の継続改善 (パフォーマンス + アーキテクチャ + ドキュメント整合性 + notosans 退役)。
 
 ### Performance / Architecture
 - **Single-Path Injection (Path A 一本化)**: 旧 Two-Path Injection の Path B (fetch + replaceFontPlaceholders) を削除し、 preset JS による同期注入のみに統合。 コードを簡潔化しつつちらつきゼロを維持
