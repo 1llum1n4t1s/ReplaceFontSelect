@@ -24,13 +24,16 @@ default variant は次のドメインを `exclude_matches` で除外している
 
 ```bash
 npm run build:default               # icons + CSS + preset JS + variant=default のフルビルド
+npm run build:notosans              # icons + CSS + preset JS + variant=notosans のフルビルド
 npm run build                       # = build:default
-npm run build-variant <name>        # manifest.json + src/content/variant.js だけ再生成 (将来 variant 追加用)
+npm run build-variant <name>        # manifest.json + src/content/variant.js だけ再生成 (variant 切替時)
 
 npm run generate-css                # src/css/replacefont-extension.css + 36 個の preset-*.js を再生成 (variant 非依存)
 npm run convert-fonts               # src/fonts/*.ttf → *.woff2 変換 (フォント追加時のみ手動実行、 variant 非依存)
 npm run generate-icons:default      # icons/default/icon.svg から PNG (16/48/128) を再生成
+npm run generate-icons:notosans     # icons/notosans/icon.svg から PNG (16/48/128) を再生成
 npm run generate-screenshots:default  # webstore/screenshots/default/*.html → webstore/images/default/*.png (要 puppeteer)
+npm run generate-screenshots:notosans # webstore/screenshots/notosans/*.html → webstore/images/notosans/*.png (要 puppeteer)
 ```
 
 `manifest.json` と `src/content/variant.js` と `src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。 "Load unpacked" やテスト実行の前に必ず `build:default` を 1 回走らせる必要がある。 Node.js 20 系を推奨 (CI が `node-version: '20'` で固定)。 テストスイートや linter は無く、 UI 検証は実機ブラウザで行う。
@@ -43,7 +46,7 @@ npm run generate-screenshots:default  # webstore/screenshots/default/*.html → 
 
 ## Variant System
 
-「同じソースから別ブランドの拡張機能を出す仕組み」の骨組み。 現在 `default` 1 variant のみアクティブ。 4 つのファイルが連動:
+「同じソースから別ブランドの拡張機能を出す仕組み」の骨組み。 現在 `default` + `notosans` の 2 variant がアクティブで、 publish.yml の matrix strategy で並行リリースされる。 4 つのファイルが連動:
 
 | ファイル | 役割 |
 |---|---|
@@ -58,6 +61,19 @@ npm run generate-screenshots:default  # webstore/screenshots/default/*.html → 
 | `notosans` | Noto Sans JP + UDEV Gothic JPDOC 固定 | `...323e` | フォント選択 UI なしの固定版 |
 
 `mergeFontSettings()` (`src/content/font-config.js`) は **simpleMode → SIMPLE_MODE_LOCKED → VARIANT.lockedFonts** の順で override を適用 (後勝ち)。 つまり variant が `lockedFonts` を設定している場合は simpleMode より優先される。
+
+### Variant 退役・削減はビジネス判断マター (business-call) ⚠️
+
+公開済み variant の退役 (variant ディレクトリの削除 / publish.yml matrix からの除外 / `.json` の削除) は **技術的判断ではなくビジネス判断** として扱う。 機能の重複 (default の simpleMode と notosans の lockedFonts は機能的に等価) を理由に「YAGNI / scope creep / 冗長」のラベルで自動退役してはいけない。 退役で毀損するものは:
+
+- **既存 Chrome Web Store / Firefox AMO ユーザー** (independent 拡張機能 ID を持つので unpublish 通知が必要)
+- **既存ユーザーのストア review / 評価 / 設定値** (extension ID 単位で蓄積されている)
+- **ブランド資産 / マーケティング** (variant 名で SEO / 紹介記事が成立しているケース)
+- **AMO の listing メタデータ / screenshots / privacy policy** (再登録は人間レビュー数日〜数週間)
+
+退役を検討する場合は **ゆろさんの明示判断を経由する**。 コードレビュー (`/rere` 等) で variant 削減の指摘が出てきても、 それは判定カテゴリ `business-call` であり、 議題提示で止める (`/rere` skill 側も v3.1 系で `business-call` 自動分離フローを実装済み、 参照: `~/.claude/skills/rere/SKILL.md`)。
+
+**過去事例 (2026-05-15)**: `/rere` Agent D の「default の simpleMode と機能重複 (YAGNI)」 指摘を機械的に「全部修正」したことで notosans variant を退役 → 直後に「なんで退役した?」と気付かれて 1 コミットで撤回 (`2439b3a` → `69046a9`)。 復活には variants/notosans.json + icons/notosans/ + docs/notosans/ + webstore/screenshots/notosans/ + package.json scripts + publish.yml matrix + EXTENSION_ID case の **13 ファイル復元**が必要だった。
 
 ### 新しい variant を追加する手順 (将来用)
 
