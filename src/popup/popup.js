@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const enabledToggle = document.getElementById('enabled-toggle');
-  const simpleModeToggle = document.getElementById('simple-mode-toggle');
   const statusDot = document.getElementById('status-dot');
   const statusText = document.getElementById('status-text');
   const settingsSection = document.getElementById('settings-section');
@@ -40,12 +39,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const { defaults, storageKey } = FONT_REGISTRY;
 
   // VARIANT.showFontSelector=false の場合は Typography UI を完全非表示。
-  // それ以外は simpleMode (chrome.storage 設定) に応じて hidden を切り替える。
   const variantShowsFontSelector = (typeof VARIANT === 'undefined' || !VARIANT) ? true : VARIANT.showFontSelector !== false;
-  function applyVisibility(simpleMode) {
-    if (!settingsSection) return;
-    settingsSection.hidden = !variantShowsFontSelector || simpleMode === true;
-  }
+  if (settingsSection) settingsSection.hidden = !variantShowsFontSelector;
 
   // ドロップダウンの選択肢を FONT_REGISTRY から動的生成
   function populateSelect(selectEl, registry) {
@@ -71,8 +66,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     bodyFontSelect.value = settings.bodyFont;
     bodyWeightSelect.value = settings.bodyFontWeight;
     monoFontSelect.value = settings.monoFont;
-    if (simpleModeToggle) simpleModeToggle.checked = settings.simpleMode === true;
-    applyVisibility(settings.simpleMode === true);
   }
 
   // 現在の設定を読み込んでUIに反映
@@ -91,8 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       enabled: enabledToggle.checked,
       bodyFont: bodyFontSelect.value,
       bodyFontWeight: bodyWeightSelect.value,
-      monoFont: monoFontSelect.value,
-      simpleMode: simpleModeToggle ? simpleModeToggle.checked : false
+      monoFont: monoFontSelect.value
     };
     const settings = mergeFontSettings(raw);
     applySettingsToUI(settings);
@@ -101,8 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         _lastSaved.enabled === settings.enabled &&
         _lastSaved.bodyFont === settings.bodyFont &&
         _lastSaved.bodyFontWeight === settings.bodyFontWeight &&
-        _lastSaved.monoFont === settings.monoFont &&
-        _lastSaved.simpleMode === settings.simpleMode) {
+        _lastSaved.monoFont === settings.monoFont) {
       return;
     }
 
@@ -126,7 +117,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateToggleUI(enabledToggle.checked);
     saveSettings();
   });
-  if (simpleModeToggle) simpleModeToggle.addEventListener('change', saveSettings);
   bodyFontSelect.addEventListener('change', saveSettings);
   bodyWeightSelect.addEventListener('change', saveSettings);
   monoFontSelect.addEventListener('change', saveSettings);
