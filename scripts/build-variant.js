@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 // バリアント設定を読み込み、manifest.json と src/content/variant.js を生成する。
-// 使い方: node scripts/build-variant.js <variant-name>
+// 使い方: node scripts/build-variant.js <variant-name> [--firefox]
 //   例:   node scripts/build-variant.js default
 //         node scripts/build-variant.js notosans
+//         node scripts/build-variant.js default --firefox  # Firefox AMO 向け
+//
+// --firefox を付けると background.scripts を併記する (AMO MV3 validator が
+// service_worker 単独を reject するため Firefox-compatible fallback として追加)。
+// 付けない (デフォルト) は Chrome / Edge 互換で background.service_worker のみ出力。
 
 const fs = require('fs');
 const path = require('path');
@@ -101,9 +106,11 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 function main() {
-  const variantName = process.argv[2];
+  const args = process.argv.slice(2);
+  const variantName = args[0];
+  const isFirefox = args.includes('--firefox');
   if (!variantName) {
-    fail('使い方: node scripts/build-variant.js <variant-name>');
+    fail('使い方: node scripts/build-variant.js <variant-name> [--firefox]');
   }
   if (!/^[a-z][a-z0-9_-]*$/.test(variantName)) {
     fail(`バリアント名は [a-z][a-z0-9_-]* の形式: "${variantName}"`);
@@ -111,8 +118,19 @@ function main() {
   const variant = loadVariant(variantName);
 
   const manifest = buildManifest(variant, variantName);
+  // Firefox AMO の MV3 validator は service_worker 単独を reject するため、
+  // Firefox build 時のみ background.scripts を併記する。 Chrome / Edge は
+  // 両方併記を拒否 ('background.scripts' requires manifest version of 2 or
+  // lower) するため、 Chrome 互換ではこのキーを出力せず service_worker のみ。
+  if (isFirefox) {
+    manifest.background.scripts = [
+      'src/content/variant.js',
+      'src/content/font-config.js',
+      'src/background/background.js'
+    ];
+  }
   fs.writeFileSync(MANIFEST_OUT, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
-  console.log(`✅ manifest.json を生成 (variant=${variantName}, version=${variant.version})`);
+  console.log(`✅ manifest.json を生成 (variant=${variantName}, version=${variant.version}, target=${isFirefox ? 'firefox' : 'chrome'})`);
 
   const variantJs = buildVariantJs(variant);
   fs.writeFileSync(VARIANT_JS_OUT, variantJs, 'utf8');

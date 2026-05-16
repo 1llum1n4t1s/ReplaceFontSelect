@@ -116,10 +116,28 @@ jobs:
             echo "::error::variant 用のアイコンディレクトリが見つかりません: $variant_icons_dir"
             exit 1
           fi
-          # replacefont-extension.css は preset JS 生成用のビルド時 input で
-          # ランタイムでは誰も参照しない (Path B 削除後) ため配布から除外。
+          # v3.0.3 戦略: replacefont-extension.css を WAR から fetch するので配布に含める。
+          # (P1-7) lockedFonts variant (notosans 等) では popup UI が無く preset 切替が発生しないので、
+          # lockedFonts に対応する 1 個の preset JS だけ同梱して残り 35 個を除外する (約 -2.43 MB)。
+          extra_excludes=""
+          locked_preset=$(node -e '
+            const v = require("./variants/" + process.env.VARIANT + ".json");
+            if (!v.lockedFonts) process.exit(0);
+            const b = v.lockedFonts.bodyFont, m = v.lockedFonts.monoFont, w = v.lockedFonts.bodyFontWeight;
+            if (b && m && w) console.log("preset-" + b + "-" + m + "-w" + w + ".js");
+          ')
+          if [ -n "$locked_preset" ]; then
+            echo "🎯 lockedFonts variant ($VARIANT): preset を $locked_preset だけ同梱 (他は除外)"
+            for f in src/css/preset-*.js; do
+              base=$(basename "$f")
+              if [ "$base" != "$locked_preset" ]; then
+                extra_excludes="$extra_excludes $f"
+              fi
+            done
+          fi
+          # shellcheck disable=SC2086
           zip -r "$zip_path" manifest.json "$variant_icons_dir" src \
-            -x "*.DS_Store" "*.swp" "*~" "*/preview.html" "src/css/replacefont-extension.css"
+            -x "*.DS_Store" "*.swp" "*~" "*/preview.html" $extra_excludes
           ls -lh "$zip_path"
           echo "ZIP_PATH=$zip_path" >> "$GITHUB_ENV"
 
@@ -175,6 +193,9 @@ jobs:
           VARIANT: ${{ matrix.variant }}
         # web-ext sign の --source-dir に渡すための、Chrome ZIP と同じ内容を持つ
         # クリーンなディレクトリを構築する。manifest.json + icons/<variant> + src のみ。
+        # Firefox AMO の MV3 validator は service_worker 単独を reject するため、
+        # --firefox フラグで manifest.json を再生成して background.scripts を併記。
+        # Chrome step はこれより前に実行済みなので、 Chrome 用 manifest が上書きされても問題ない。
         run: |
           firefox_dir="firefox-build"
           variant_icons_dir="icons/${VARIANT}"
@@ -182,20 +203,31 @@ jobs:
             echo "::error::variant 用のアイコンディレクトリが見つかりません: $variant_icons_dir"
             exit 1
           fi
+          node scripts/build-variant.js "${VARIANT}" --firefox
           rm -rf "$firefox_dir"
           mkdir -p "$firefox_dir/icons"
           cp manifest.json "$firefox_dir/"
           cp -r "$variant_icons_dir" "$firefox_dir/icons/${VARIANT}"
           cp -r src "$firefox_dir/src"
-          # ストア配信に不要なファイルを除外（Chrome ZIP と同じポリシー + TTF + dead CSS template 除外）
+          # ストア配信に不要なファイルを除外 (Chrome ZIP と同じポリシー + TTF 除外)。
+          # v3.0.3 戦略: replacefont-extension.css は WAR から fetch するので配布に含める (削除しない)。
           find "$firefox_dir" \( \
             -name "*.DS_Store" -o \
             -name "*.swp" -o \
             -name "*~" -o \
             -name "preview.html" -o \
-            -name "*.ttf" -o \
-            -name "replacefont-extension.css" \
+            -name "*.ttf" \
           \) -delete
+          # (P1-7) lockedFonts variant: 必要な 1 preset 以外を削除
+          locked_preset=$(node -e '
+            const v = require("./variants/" + process.env.VARIANT + ".json");
+            if (!v.lockedFonts) process.exit(0);
+            const b = v.lockedFonts.bodyFont, m = v.lockedFonts.monoFont, w = v.lockedFonts.bodyFontWeight;
+            if (b && m && w) console.log("preset-" + b + "-" + m + "-w" + w + ".js");
+          ')
+          if [ -n "$locked_preset" ]; then
+            find "$firefox_dir/src/css" -name "preset-*.js" -not -name "$locked_preset" -delete
+          fi
           echo "FIREFOX_SOURCE_DIR=$firefox_dir" >> "$GITHUB_ENV"
           echo "📦 Firefox source dir contents:"
           ls -la "$firefox_dir"

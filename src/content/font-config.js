@@ -57,6 +57,7 @@ const FONT_REGISTRY = {
       localFontsBold: ['LINE Seed JP Bold'],
       woff2Regular: 'LINESeedJP-Regular.woff2',
       woff2Medium: 'LINESeedJP-Regular.woff2', // Medium 未提供のため Regular で代替
+
       woff2Bold: 'LINESeedJP-Bold.woff2'
     }
   },
@@ -116,7 +117,10 @@ function mergeFontSettings(stored) {
       }
     }
   }
-  // 優先順位 (後勝ち): defaults → stored → VARIANT.lockedFonts
+  // バリアントが lockedFonts を持つ場合 (例: notosans variant) はユーザー設定より優先する。
+  // VARIANT は scripts/build-variant.js が生成し、content_scripts / popup / background のいずれの
+  // コンテキストでも variant.js が先に読まれている前提。未定義時 (Node テスト等) は何もしない。
+  // 各 lockedFonts キーは念のため FONT_SETTINGS_VALIDATORS で再検証し、不正値はサイレントに無視する。
   if (typeof VARIANT !== 'undefined' && VARIANT && VARIANT.lockedFonts) {
     for (const key of Object.keys(VARIANT.lockedFonts)) {
       const validator = FONT_SETTINGS_VALIDATORS[key];
@@ -141,7 +145,7 @@ function getBodyWoff2(fontInfo, weight) {
   return weight === '500' ? (fontInfo.woff2Medium || fontInfo.woff2Regular) : fontInfo.woff2Regular;
 }
 
-// CSS プレースホルダー置換用のマップを構築する（ビルド経路で共有）
+// CSS プレースホルダー置換用のマップを構築する（fallback 経路とビルド経路で共有）
 // CSS 構造破壊を防ぐため、family 名内の " は除去する
 // eslint-disable-next-line no-unused-vars
 function buildPlaceholderMap(bodyFont, monoFont, weight, baseUrl) {
