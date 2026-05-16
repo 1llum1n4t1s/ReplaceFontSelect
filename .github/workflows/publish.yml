@@ -3,7 +3,8 @@ name: Publish to Chrome Web Store & Firefox AMO
 # ブランチ命名規約:
 #   release/X.Y.Z (例: release/3.0.0)
 #
-# `release/<X.Y.Z>` への push で variant matrix を並列実行 (現在 default 1 variant)。
+# `release/<X.Y.Z>` への push で variant matrix を並列実行 (default + notosans)。
+# 全 variant が同じ version を共有し、 matrix strategy で並列公開する。
 # variants/<name>.json の version とブランチ末尾の X.Y.Z が一致する必要がある。
 #
 # 公開先:
@@ -26,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [default]
+        variant: [default, notosans]
     steps:
       - name: リポジトリをチェックアウト
         # actions/checkout v5.0.0 (SHA pinned for supply chain security)
@@ -127,10 +128,14 @@ jobs:
         env:
           VARIANT: ${{ matrix.variant }}
           ID_DEFAULT: ${{ secrets.CWS_EXTENSION_ID_DEFAULT }}
+          ID_NOTOSANS: ${{ secrets.CWS_EXTENSION_ID_NOTOSANS }}
         run: |
           case "$VARIANT" in
             default)
               extension_id="$ID_DEFAULT"
+              ;;
+            notosans)
+              extension_id="$ID_NOTOSANS"
               ;;
             *)
               echo "::error::未対応の variant: $VARIANT (publish.yml の matrix と case を更新してください)"

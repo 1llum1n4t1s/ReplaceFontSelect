@@ -1,0 +1,35 @@
+{
+  "name": "NotoSansへ置換するやつ(改修型)",
+  "description": "読みづらいフォントをNoto Sans JP / UDEV Gothic JPDOCに自動置換。パフォーマンス改善版。",
+  "version": "3.0.4",
+  "geckoId": "{ee49eeb2-93a9-4062-ba75-06610054323e}",
+  "popupTitle": "NotoSansへ置換するやつ",
+  "popupDescription": "読みづらいフォントをNoto Sans JP / UDEV Gothic JPDOCに自動置換します",
+  "lockedFonts": {
+    "bodyFont": "noto-sans-jp",
+    "monoFont": "udev-gothic-jpdoc",
+    "bodyFontWeight": "400"
+  },
+  "showFontSelector": false,
+  "excludeMatches": [
+    "https://*.onenote.com/*",
+    "https://*.officeapps.live.com/*",
+    "https://*.sharepoint.com/*",
+    "https://docs.google.com/*",
+    "https://*.figma.com/*",
+    "https://www.canva.com/*",
+    "https://express.adobe.com/*",
+    "https://www.notion.so/*",
+    "https://app.slack.com/*",
+    "https://linear.app/*",
+    "https://*.github.dev/*",
+    "https://vscode.dev/*",
+    "https://replit.com/*",
+    "https://codesandbox.io/*",
+    "https://stackblitz.com/*",
+    "https://www.overleaf.com/*",
+    "https://discord.com/app/*"
+  ],
+  "zipBaseName": "notosans-font-replacer",
+  "secretsKey": "NOTOSANS"
+}

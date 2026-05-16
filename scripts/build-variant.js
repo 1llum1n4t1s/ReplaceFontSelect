@@ -2,7 +2,7 @@
 // バリアント設定を読み込み、manifest.json と src/content/variant.js を生成する。
 // 使い方: node scripts/build-variant.js <variant-name>
 //   例:   node scripts/build-variant.js default
-//         (将来 variant を追加した場合は variants/<name>.json + ここに例追加)
+//         node scripts/build-variant.js notosans
 
 const fs = require('fs');
 const path = require('path');

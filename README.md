@@ -60,20 +60,23 @@
 `ＭＳ ゴシック` や `Consolas`、`JetBrains Mono` などの等幅フォントを、選択した等幅フォントに置換します。
 GitHub のコード表示や、技術ブログのコードブロック、入力フォームなども圧倒的に読みやすくなります。
 
-## 🔧 ローカル開発・ビルド
+## 🔧 ローカル開発・派生版ビルド
+
+このリポジトリは「**バリアント方式**」で複数の派生版を 1 つのソースから生成できます。 `variants/<name>.json` に各ブランドの設定が入っています。
 
 ```bash
-npm run build:default       # default variant をビルド (現行リリース対象)
+npm run build:default       # 通常版（フォント選択 UI 付き、 simpleMode トグルあり）
+npm run build:notosans      # Noto Sans JP + UDEV Gothic JPDOC 固定の派生版
 
 # Chrome 拡張のローカル読み込み（要事前ビルド）
 # chrome://extensions → Developer mode ON → "Load unpacked" でリポジトリルートを選択
 ```
 
-`manifest.json` と `src/content/variant.js` はビルド生成物（`.gitignore` 済）です。「Load unpacked」する前に必ず `npm run build:default` を実行してください。
+`manifest.json` と `src/content/variant.js` はビルド生成物（`.gitignore` 済）です。「Load unpacked」する前に必ず `npm run build:default` か `npm run build:notosans` を実行してください。
 
-> シンプルモード (popup のトグル) で旧 notosans variant 相当 (Noto Sans JP + UDEV Gothic JPDOC 固定) に切り替えられます。
+> default の **シンプルモード** トグル ON でも notosans 相当の挙動になります (Noto Sans JP + UDEV Gothic JPDOC 固定)。 「最初からシンプル」を求めるユーザーは notosans 派生版が、 「普段は選びたいけど時々シンプル」が default + simpleMode が向いています。
 
-バリアント機構自体は将来別ブランドを出す自由度として残してあります。 詳細は [CLAUDE.md](CLAUDE.md) を参照。
+詳細は [CLAUDE.md](CLAUDE.md) の "Variant System" セクションを参照。
 
 ## 📄 ライセンス
 

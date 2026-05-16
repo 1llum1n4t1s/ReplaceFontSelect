@@ -2,6 +2,7 @@
 // バリアントごとの HTML テンプレートから対応する PNG を出力する。
 // 使い方: node scripts/generate-screenshots.js <variant>
 //   例:   node scripts/generate-screenshots.js default
+//         node scripts/generate-screenshots.js notosans
 
 const puppeteer = require('puppeteer');
 const fs = require('fs');
