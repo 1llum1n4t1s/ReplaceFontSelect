@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.0.6] - 2026-05-17
+
+direct font-family 指定サイト (tohoho-web.com 系) でフォント置換が完全に不発になる重要バグを 2 系統で修正。 CSS 変数を使わず `html { font-family: sans-serif }` / `p { font-family: sans-serif }` のように直接指定し、 `@font-face` も使わないレガシー型サイト全般で置換が効かなかった問題を解消。
+
+### Fix
+- **body 本文への直接適用ルール追加 (BODY_FORCE_TARGETS)**: block container (`body, p, h1-h6, li, dt, dd, blockquote, figcaption, caption, th, td, label, button, article, section, main, aside, nav, header, footer, summary, details`) に対して `:root :is(...)` で direct `font-family !important` を当てるルールを生成。 inline 要素 (`span, a, i, b, em, strong`) は意図的に除外して Font Awesome / Material Icons 等のアイコンフォントを保護
+- **minifyCSS の正規表現 bug 修正 (致命)**: 旧 `replace(/\s*([{}:;,>])\s*/g, '$1')` が `:` 周辺の空白も消去していたため、 `:root :is(...)` の descendant combinator が `:root:is(...)` (compound selector) に化けて永遠に不発になる dead selector を生成していた。 既存の MONO 強制ルール (`:root :is(pre, code, ...)`) も同じ影響で CSS 変数経由でしか機能していなかった。 `:` を圧縮対象から除外し descendant combinator を保護
+- 検証: `https://www.tohoho-web.com/ex/semver.html` を含む direct font-family 指定サイトで置換が機能するようになった
+
 ## [3.0.5] - 2026-05-16
 
 default variant と同じ Two-Path Injection 戦略の復活 + cxcx 純性能改善 10 件適用。 notosans は lockedFonts=on の挙動が core 機能で、 v3.0.4 改修によるレグレッション (旧来型サイトでの置換失敗) を解消。
