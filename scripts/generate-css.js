@@ -182,6 +182,20 @@ const MONO_FORCE_TARGETS = [
   '[class*="language-"]',
 ];
 
+// CSS 変数を使わず direct font-family を指定するサイト対策。
+// block container だけを対象にし、 inline 要素 (span, a, i, b, em, strong) は
+// 除外することで Font Awesome / Material Icons 等のアイコンフォントを保護する。
+const BODY_FORCE_TARGETS = [
+  'body',
+  'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'li', 'dt', 'dd',
+  'blockquote', 'figcaption', 'caption',
+  'th', 'td',
+  'label', 'button',
+  'article', 'section', 'main', 'aside', 'nav', 'header', 'footer',
+  'summary', 'details',
+];
+
 function buildEditableExclusionList() {
   return [
     ...EDITABLE_SELECTORS,
@@ -198,6 +212,7 @@ function buildVariableOverrides() {
     .map(v => `  ${v}: "__MONO_FONT_NAME__", __MONO_FONT_FALLBACK__ !important;`)
     .join('\n');
   const monoForceCompound = MONO_FORCE_TARGETS.join(', ');
+  const bodyForceCompound = BODY_FORCE_TARGETS.join(', ');
   const editableExclusion = buildEditableExclusionList();
 
   return `
@@ -205,6 +220,16 @@ ${selector} {
 ${bodyVarsSet}
 
 ${monoVarsSet}
+}
+
+/* Body フォントの直接適用 (CSS 変数を使わず direct font-family を指定するサイト対策、
+   例: tohoho-web.com の html / p { font-family: sans-serif } 系)。
+   :root を含めて html 要素自体にも当て、 子孫 block container は :is() で列挙。 */
+:root:not(:where(${editableExclusion})),
+:host:not(:where(${editableExclusion})),
+:root :is(${bodyForceCompound}):not(:where(${editableExclusion})),
+:host :is(${bodyForceCompound}):not(:where(${editableExclusion})) {
+  font-family: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
 }
 
 :root :is(${monoForceCompound}):not(:where(${editableExclusion})),
@@ -367,10 +392,12 @@ function validateConsistency() {
 // 保守用の replacefont-extension.css は minify しない（読みやすさ優先）
 // ---------------------------------------------
 function minifyCSS(css) {
+  // 注: ':' を圧縮対象から外す。 ':root :is(...)' の descendant combinator (:root と :is の間の空白) を
+  // 保持しないと selector が compound (:root:is(...)) に化けて意味が変わる (html が pre/code 等であることはなく永遠に不発)。
   return css
     .replace(/\/\*[\s\S]*?\*\//g, '')        // ブロックコメント
     .replace(/\s+/g, ' ')                     // 連続空白
-    .replace(/\s*([{}:;,>])\s*/g, '$1')       // 記号周辺
+    .replace(/\s*([{};,>])\s*/g, '$1')       // 記号周辺
     .replace(/;}/g, '}')                      // 末尾セミコロン
     .trim();
 }
