@@ -41,11 +41,20 @@ async function isRegistrationUpToDate(desired) {
     const current = await chrome.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID] });
     if (!current || current.length === 0) return false;
     const reg = current[0];
+    // excludeMatches の同一性チェック: 順序非依存・要素一致で比較する。
+    // 旧登録 (excludeMatches なし) が残っているとここで false 判定 → updateContentScripts が走り
+    // 新しい除外リストで再登録される（修正後の挙動を確実に反映するため）。
+    const desiredExcl = Array.isArray(desired.excludeMatches) ? desired.excludeMatches.slice().sort() : [];
+    const currentExcl = Array.isArray(reg.excludeMatches) ? reg.excludeMatches.slice().sort() : [];
+    const sameExcludes =
+      desiredExcl.length === currentExcl.length &&
+      desiredExcl.every((v, i) => v === currentExcl[i]);
     return (
       Array.isArray(reg.js) && reg.js.length === 1 && reg.js[0] === desired.js[0] &&
       reg.runAt === desired.runAt &&
       reg.allFrames === desired.allFrames &&
-      reg.world === desired.world
+      reg.world === desired.world &&
+      sameExcludes
     );
   } catch {
     return false;
@@ -62,6 +71,13 @@ async function _doEnsureRegistration(settings) {
   }
 
   const jsPath = getPresetPath(settings);
+  // variant 設定の excludeMatches を動的登録にも反映する。
+  // manifest.json の content_scripts.exclude_matches は宣言的に登録された
+  // inject.js / variant.js / font-config.js / preload-fonts.js にしか効かない。
+  // 動的登録のプリセット JS が SharePoint / Docs 等の保護対象ドメインで走ってしまうのを防ぐ。
+  const excludeMatches = (typeof VARIANT !== 'undefined' && Array.isArray(VARIANT.excludeMatches))
+    ? VARIANT.excludeMatches.slice()
+    : [];
   const scriptConfig = {
     id: SCRIPT_ID,
     matches: ['<all_urls>'],
@@ -71,6 +87,9 @@ async function _doEnsureRegistration(settings) {
     world: 'ISOLATED',
     persistAcrossSessions: true
   };
+  if (excludeMatches.length > 0) {
+    scriptConfig.excludeMatches = excludeMatches;
+  }
 
   // 差分チェック: 現在の登録内容が希望形と一致していれば skip（不要な API 呼び出し削減）
   if (await isRegistrationUpToDate(scriptConfig)) {
