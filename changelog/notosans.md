@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.0.8] - 2026-05-27
+
+OneDrive 個人版 (`onedrive.live.com`) でファイルマウスオーバー時の Fluent UI / FabricMDL2Icons アイコンが本文置換の巻き添えで豆腐化していた問題を修正。
+
+### Fix
+- **`onedrive.live.com` を `excludeMatches` に追加**: OneDrive 個人版のファイル管理 UI は SharePoint と同じ FabricMDL2Icons アイコンフォントを PUA コードポイントで描画している。 本文強制ルールが巻き込んで Noto Sans JP に置換 → PUA がカバレッジ外で豆腐化していた。 OneDrive for Business は `*.sharepoint.com` 経由で既存除外済
+- 除外ドメイン総数 17 → 18 に更新
+- `manifest.json` (静的登録) と `VARIANT.excludeMatches` (動的登録のプリセット JS) の両経路に反映
+
+## [3.0.7] - 2026-05-19
+
+SharePoint テナント (`*.sharepoint.com`) でファイル一覧のサブメニューアイコン (Fluent UI / FabricMDL2Icons) が豆腐化していたバグを修正。 動的登録のプリセット JS (本文強制ルール含む) が `excludeMatches` を継承しておらず、 全 URL で走っていた。
+
+### Fix
+- **動的登録のプリセット JS にも `excludeMatches` を継承させる**: `scripts/build-variant.js` が `VARIANT.excludeMatches` を `src/content/variant.js` に焼き込み、 `src/background/background.js` が `chrome.scripting.updateContentScripts` / `registerContentScripts` に渡す経路を新設
+- `isRegistrationUpToDate` の比較項目に `excludeMatches` の sorted equality を追加 (旧登録残存時の skip 判定防止)
+
 ## [3.0.6] - 2026-05-17
 
 direct font-family 指定サイト (tohoho-web.com 系) でフォント置換が完全に不発になる重要バグを 2 系統で修正。 CSS 変数を使わず `html { font-family: sans-serif }` / `p { font-family: sans-serif }` のように直接指定し、 `@font-face` も使わないレガシー型サイト全般で置換が効かなかった問題を解消。

@@ -3,6 +3,24 @@
 「目に優しいフォント置換」(Chrome / Firefox 拡張、 フォント選択 UI 付き) のリリース履歴。
 version の真実の源泉は `variants/default.json` の `version` フィールド。
 
+## [3.0.8] - 2026-05-27
+
+OneDrive 個人版 (`onedrive.live.com`) でファイルマウスオーバー時の Fluent UI / FabricMDL2Icons アイコンが本文置換の巻き添えで豆腐化していた問題を修正。
+
+### Fix
+- **`onedrive.live.com` を `excludeMatches` に追加**: OneDrive 個人版のファイル管理 UI は SharePoint と同じ FabricMDL2Icons アイコンフォントを PUA コードポイントで描画している。 `:root :is(button, li, ...)` の本文強制ルールが巻き込んで Noto Sans JP 等に置換 → PUA がカバレッジ外で豆腐化していた。 OneDrive for Business は `*.sharepoint.com` 経由で既存除外済
+- 除外ドメイン総数 17 → 18 に更新 (`CLAUDE.md` の「Microsoft / Google のリッチエディタ / ファイル管理系」グループに記載)
+- `manifest.json` (静的登録) と `VARIANT.excludeMatches` (動的登録のプリセット JS) の両経路に反映 (v3.0.7 で確立した二重管理プラクティスを継承)
+
+## [3.0.7] - 2026-05-19
+
+SharePoint テナント (`*.sharepoint.com`) でファイル一覧のサブメニューアイコン (Fluent UI / FabricMDL2Icons) が豆腐化していたバグを修正。 v3.0.1 で `excludeMatches` に追加していたはずなのに静的登録分しか効いておらず、 動的登録のプリセット JS (本文強制ルール含む) が全 URL で走っていた。
+
+### Fix
+- **動的登録のプリセット JS にも `excludeMatches` を継承させる**: `scripts/build-variant.js` が `VARIANT.excludeMatches` を `src/content/variant.js` に焼き込み、 `src/background/background.js` の `_doEnsureRegistration` が `chrome.scripting.updateContentScripts` / `registerContentScripts` に渡す経路を新設
+- **`isRegistrationUpToDate` の比較項目に `excludeMatches` の sorted equality を追加**: 旧登録 (excludeMatches なし) が残った状態で skip 判定されるのを防止
+- 教訓: `manifest.json` の `exclude_matches` (宣言的登録) と動的登録の `excludeMatches` は別管理。 除外ドメインを追加するときは両経路に反映する (`systemPatterns.md` の「excludeMatches の二重管理」セクション参照)
+
 ## [3.0.6] - 2026-05-17
 
 direct font-family 指定サイト (tohoho-web.com 系) でフォント置換が完全に不発になる重要バグを 2 系統で修正。 CSS 変数を使わず `html { font-family: sans-serif }` / `p { font-family: sans-serif }` のように直接指定し、 `@font-face` も使わないレガシー型サイト全般で置換が効かなかった問題を解消。

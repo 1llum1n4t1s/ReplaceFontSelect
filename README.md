@@ -1,6 +1,6 @@
 # 目に優しいフォント置換
 
-[![Version](https://img.shields.io/badge/version-3.0.6-blue.svg)](https://github.com/1llum1n4t1s/ReplaceFontSelect)
+[![Version](https://img.shields.io/badge/version-3.0.8-blue.svg)](https://github.com/1llum1n4t1s/ReplaceFontSelect)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ウェブサイト上の読みづらいフォントを、好みのフォントに自動で置き換える Chrome / Firefox 拡張機能です。

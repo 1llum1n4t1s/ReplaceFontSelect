@@ -1,7 +1,7 @@
 {
   "name": "NotoSansへ置換するやつ(改修型)",
   "description": "読みづらいフォントをNoto Sans JP / UDEV Gothic JPDOCに自動置換。パフォーマンス改善版。",
-  "version": "3.0.7",
+  "version": "3.0.8",
   "geckoId": "{ee49eeb2-93a9-4062-ba75-06610054323e}",
   "popupTitle": "NotoSansへ置換するやつ",
   "popupDescription": "読みづらいフォントをNoto Sans JP / UDEV Gothic JPDOCに自動置換します",
@@ -15,6 +15,7 @@
     "https://*.onenote.com/*",
     "https://*.officeapps.live.com/*",
     "https://*.sharepoint.com/*",
+    "https://onedrive.live.com/*",
     "https://docs.google.com/*",
     "https://*.figma.com/*",
     "https://www.canva.com/*",
