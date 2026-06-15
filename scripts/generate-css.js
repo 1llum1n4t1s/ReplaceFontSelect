@@ -163,6 +163,28 @@ const EDITABLE_SELECTORS = [
   '.ace_editor',
 ];
 
+// font-family にグリフを載せる著名アイコンフォントの慣用 class / 属性。
+// block container (button / li / td / summary 等) 自体がアイコン要素のとき、
+// 本文置換の !important で巻き添え豆腐化するのを防ぐため negation に合流させる。
+// ⚠️ 子孫ユニバーサル ' *' は付けない: negation 内の '*' は「祖先に該当要素があるか」を
+//    全要素探索させ Blink の Style recalc を 2〜4.7 倍に膨らませる
+//    (cxcx-out/improvement-report.md:164)。 自要素マッチのみなら bloom filter で枝刈りでき低コスト。
+const ICON_FONT_SELECTORS = [
+  // Font Awesome (4 / 5 / 6)
+  '.fa', '.fas', '.far', '.fab', '.fal', '.fad',
+  '[class^="fa-"]', '[class*=" fa-"]',
+  // Google Material Icons / Material Symbols
+  '[class*="material-icons"]', '[class*="material-symbols"]',
+  // VS Code codicon / Microsoft Fluent (FabricMDL2Icons)
+  '[class*="codicon"]', '[class*="ms-Icon"]',
+  // Bootstrap Icons / Glyphicons
+  '[class*="glyphicon"]', '[class^="bi-"]', '[class*=" bi-"]',
+  // IcoMoon ほか汎用アイコン命名 (token 一致で誤除外を抑制)
+  '[class*="icomoon"]',
+  '[class~="icon"]', '[class^="icon-"]', '[class*=" icon-"]',
+  '[data-icon]',
+];
+
 const VAR_OVERRIDE_CLASS_SELECTORS = [
   '[class*="prose"]', '[class*="markdown"]',
 ];
@@ -196,10 +218,16 @@ const BODY_FORCE_TARGETS = [
   'summary', 'details',
 ];
 
+// :not(:where(...)) 用の除外リスト。 編集領域 (RTE / input / code editor) *自身* と
+// アイコンフォント要素自体を、 自要素マッチのみで本文置換から守る。
+// ⚠️ 編集領域の子孫ユニバーサル ' *' はここに入れない (P0-3):
+//    negation 内の '*' は「祖先に編集領域があるか」を全要素探索させ Style recalc を
+//    2〜4.7 倍に膨らませる (cxcx-out/improvement-report.md:164)。
+//    子孫にある置換ターゲットは buildVariableOverrides の revert ルールで cascade 後勝ちさせて戻す。
 function buildEditableExclusionList() {
   return [
     ...EDITABLE_SELECTORS,
-    ...EDITABLE_SELECTORS.map(s => `${s} *`),
+    ...ICON_FONT_SELECTORS,
   ].join(', ');
 }
 
@@ -214,6 +242,8 @@ function buildVariableOverrides() {
   const monoForceCompound = MONO_FORCE_TARGETS.join(', ');
   const bodyForceCompound = BODY_FORCE_TARGETS.join(', ');
   const editableExclusion = buildEditableExclusionList();
+  const editableCompound = EDITABLE_SELECTORS.join(', ');
+  const forceCompound = [...BODY_FORCE_TARGETS, ...MONO_FORCE_TARGETS].join(', ');
 
   return `
 ${selector} {
@@ -237,6 +267,19 @@ ${monoVarsSet}
 [style*="monospace"]:not(:where(${editableExclusion})),
 [style*="ui-monospace"]:not(:where(${editableExclusion})) {
   font-family: "__MONO_FONT_NAME__", "Berkeley Mono", "IBM Plex Mono", "Geist Mono", "Cascadia Code", "Cascadia Mono", "Consolas", "Monaco", "Courier New", __MONO_FONT_FALLBACK__ !important;
+}
+
+/* (P0-3) 編集領域の *子孫* にある置換ターゲットだけを revert で元に戻す。
+   編集領域自身は上の :not(:where()) で既に除外済み (= サイト指定フォントが生きる) なので、
+   子孫の置換ターゲットを revert すると author 宣言が無ければ継承で編集領域の値に着地する。
+   子孫ユニバーサル ' *' を使わず置換対象と同じ限定セットだけ祖先チェックするので軽量。
+   詳細度 :root :is(editable) :is(target) = (0,3,0) が置換ルール (0,1,1)/(0,2,0) に勝ち、
+   かつ source order で後勝ちするため revert が確実に効く。 */
+:root :is(${editableCompound}) :is(${forceCompound}),
+:host :is(${editableCompound}) :is(${forceCompound}),
+:root :is(${editableCompound}) :is([style*="monospace"], [style*="ui-monospace"]),
+:host :is(${editableCompound}) :is([style*="monospace"], [style*="ui-monospace"]) {
+  font-family: revert !important;
 }
 `;
 }
