@@ -24,10 +24,10 @@ $zipBase = $variantConfig.zipBaseName
 Write-Host "🎯 Variant: $Variant (version=$version, zipBase=$zipBase)" -ForegroundColor Cyan
 Write-Host ""
 
-# 依存関係のインストール（package-lock.json の整合性チェック付き）
-# npm ci: lockfile に厳密に従い、差分があれば失敗する。サプライチェーン攻撃対策
-Write-Host "📦 依存関係をインストール中（npm ci）..." -ForegroundColor Cyan
-npm ci
+# 依存関係のインストール（pnpm-lock.yaml の整合性チェック付き）
+# pnpm install --frozen-lockfile: lockfile に厳密に従い、差分があれば失敗する。サプライチェーン攻撃対策
+Write-Host "📦 依存関係をインストール中（pnpm install --frozen-lockfile）..." -ForegroundColor Cyan
+pnpm install --frozen-lockfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ 依存関係のインストールに失敗しました" -ForegroundColor Red
     exit 1

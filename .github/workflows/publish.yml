@@ -63,15 +63,20 @@ jobs:
           fi
           echo "✅ variants/${VARIANT}.json の version とブランチ一致: $variant_version"
 
+      - name: pnpm セットアップ
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1  # v4
+        with:
+          version: 11
+
       - name: Node セットアップ
         # actions/setup-node v5.0.0 (SHA pinned)
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: 依存インストール
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: アイコン生成
         env:
@@ -172,10 +177,10 @@ jobs:
           CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
           CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
           CWS_EXTENSION_ID: ${{ steps.ext.outputs.extension_id }}
-        # chrome-webstore-upload-cli は devDependencies に固定し、npm ci で
-        # package-lock.json の integrity hash 検証済みのローカル版を --no で呼ぶ
+        # chrome-webstore-upload-cli は devDependencies に固定し、pnpm install --frozen-lockfile で
+        # pnpm-lock.yaml の integrity hash 検証済みのローカル版を pnpm exec で呼ぶ
         run: |
-          npx --no chrome-webstore-upload upload \
+          pnpm exec chrome-webstore-upload upload \
             --source "$ZIP_PATH" \
             --extension-id "$CWS_EXTENSION_ID" \
             --client-id "$CWS_CLIENT_ID" \
@@ -240,8 +245,8 @@ jobs:
           # AMO API キーは全 variant 共通（同一 Mozilla アカウントの JWT）
           WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
-        # web-ext は devDependencies に固定し、npm ci で integrity 検証済みの
-        # ローカル版を npx --no で呼ぶ（Chrome 側と同じサプライチェーン方針）
+        # web-ext は devDependencies に固定し、pnpm install --frozen-lockfile で integrity 検証済みの
+        # ローカル版を pnpm exec で呼ぶ（Chrome 側と同じサプライチェーン方針）
         run: |
           if [ -z "$WEB_EXT_API_KEY" ] || [ -z "$WEB_EXT_API_SECRET" ]; then
             echo "::error::AMO_JWT_ISSUER / AMO_JWT_SECRET の GitHub Secrets が未設定です"
@@ -249,7 +254,7 @@ jobs:
           fi
           # web-ext 10+ では submission API がデフォルト動作。
           # --use-submission-api フラグは廃止されたので渡さない。
-          npx --no web-ext sign \
+          pnpm exec web-ext sign \
             --source-dir="$FIREFOX_SOURCE_DIR" \
             --artifacts-dir="web-ext-artifacts" \
             --channel=listed

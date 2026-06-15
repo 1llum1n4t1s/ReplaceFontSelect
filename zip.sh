@@ -24,9 +24,9 @@ ZIP_BASE=$(node -p "require('$VARIANT_PATH').zipBaseName")
 echo "🎯 Variant: $VARIANT (version=$VERSION, zipBase=$ZIP_BASE)"
 echo ""
 
-# 依存関係のインストール（package-lock.json の整合性チェック付き）
-echo "📦 依存関係をインストール中（npm ci）..."
-npm ci
+# 依存関係のインストール（pnpm-lock.yaml の整合性チェック付き）
+echo "📦 依存関係をインストール中（pnpm install --frozen-lockfile）..."
+pnpm install --frozen-lockfile
 echo ""
 
 # アイコン生成

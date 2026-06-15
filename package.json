@@ -13,9 +13,9 @@
     "generate-screenshots:default": "node scripts/generate-screenshots.js default",
     "generate-screenshots:notosans": "node scripts/generate-screenshots.js notosans",
     "build-variant": "node scripts/build-variant.js",
-    "build:default": "node scripts/generate-icons.js default && npm run generate-css && node scripts/build-variant.js default",
-    "build:notosans": "node scripts/generate-icons.js notosans && npm run generate-css && node scripts/build-variant.js notosans",
-    "build": "npm run build:default",
+    "build:default": "node scripts/generate-icons.js default && pnpm run generate-css && node scripts/build-variant.js default",
+    "build:notosans": "node scripts/generate-icons.js notosans && pnpm run generate-css && node scripts/build-variant.js notosans",
+    "build": "pnpm run build:default",
     "release": "node scripts/release.js"
   },
   "devDependencies": {
