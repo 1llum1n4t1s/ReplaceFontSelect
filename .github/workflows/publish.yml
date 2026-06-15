@@ -72,7 +72,8 @@ jobs:
         # actions/setup-node v5.0.0 (SHA pinned)
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
-          node-version: '20'
+          # pnpm 11 は Node.js v22.13+ を要求するため 22 系に固定 (pnpm/action-setup で v11 を導入)
+          node-version: '22'
           cache: 'pnpm'
 
       - name: 依存インストール

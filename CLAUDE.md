@@ -33,7 +33,7 @@ pnpm run generate-screenshots:default  # webstore/screenshots/default/*.html →
 pnpm run generate-screenshots:notosans # webstore/screenshots/notosans/*.html → webstore/images/notosans/*.png (要 puppeteer)
 ```
 
-`manifest.json` と `src/content/variant.js` と `src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。 "Load unpacked" やテスト実行の前に必ず `build:default` を 1 回走らせる必要がある。 Node.js 20 系を推奨 (CI が `node-version: '20'` で固定)。 テストスイートや linter は無く、 UI 検証は実機ブラウザで行う。
+`manifest.json` と `src/content/variant.js` と `src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。 "Load unpacked" やテスト実行の前に必ず `build:default` を 1 回走らせる必要がある。 Node.js 22 系を推奨 (CI が `node-version: '22'` で固定。 pnpm 11 が Node 22.13+ を要求するため)。 テストスイートや linter は無く、 UI 検証は実機ブラウザで行う。
 
 ### Local Testing
 
