@@ -132,44 +132,41 @@
     return root.querySelector(`style[${RFS_SELECTOR}="${RFS_PRESET}"]`) !== null;
   }
 
-  function getDefaultSettings() {
-    return Object.assign({}, FONT_REGISTRY.defaults);
-  }
-
   /**
    * chrome.storage.local からフォント設定を読み込む（タイムアウト付き）
+   * getDefaultSettings は font-config.js 定義のグローバルを使用
    */
   function loadFontSettings() {
     const defaults = getDefaultSettings();
     const presetKey = FONT_REGISTRY.presetRegisteredKey;
-    return new Promise((resolve) => {
-      let settled = false;
-      const settle = (value) => {
-        if (settled) return;
-        settled = true;
-        resolve(value);
-      };
-      const timeout = setTimeout(() => {
-        log('[フォント置換] Settings load timeout, using defaults');
-        settle(defaults);
-      }, SETTINGS_LOAD_TIMEOUT_MS);
 
-      try {
-        chrome.storage.local.get([FONT_REGISTRY.storageKey, presetKey], (result) => {
-          clearTimeout(timeout);
-          if (chrome.runtime.lastError) {
-            settle(defaults);
-            return;
-          }
-          const stored = result[FONT_REGISTRY.storageKey] || {};
-          prebuiltCSSRegistered = result[presetKey] === true;
-          settle(mergeFontSettings(stored));
-        });
-      } catch (e) {
-        clearTimeout(timeout);
-        settle(defaults);
-      }
+    let getPromise;
+    try {
+      getPromise = chrome.storage.local.get([FONT_REGISTRY.storageKey, presetKey]);
+    } catch (e) {
+      log('[フォント置換] 設定読み込み例外:', e && e.message);
+      return Promise.resolve(defaults);
+    }
+
+    let timeoutId;
+    const timeout = new Promise((resolve) => {
+      timeoutId = setTimeout(() => {
+        log('[フォント置換] Settings load timeout, using defaults');
+        resolve(defaults);
+      }, SETTINGS_LOAD_TIMEOUT_MS);
     });
+    const settled = getPromise.then((result) => {
+      clearTimeout(timeoutId);
+      // タイムアウト後に遅延到着した場合も prebuiltCSSRegistered には反映する（従来挙動を維持）
+      const stored = result[FONT_REGISTRY.storageKey] || {};
+      prebuiltCSSRegistered = result[presetKey] === true;
+      return mergeFontSettings(stored);
+    }, (e) => {
+      clearTimeout(timeoutId);
+      log('[フォント置換] 設定読み込み失敗:', e && e.message);
+      return defaults;
+    });
+    return Promise.race([settled, timeout]);
   }
 
   function buildFontConfig(bodyFontInfo, monoFontInfo, bodyFontWeight) {
@@ -228,6 +225,7 @@
         const text = await response.text();
         return replaceFontPlaceholders(text);
       } catch (e) {
+        log('[フォント置換] テンプレートCSS取得失敗:', e && e.message);
         fixedCSSCache.delete(cacheKey);
         return null;
       }
@@ -249,6 +247,7 @@
         sheet.replaceSync(cssText);
         return sheet;
       } catch (e) {
+        log('[フォント置換] 共有 CSSStyleSheet 構築失敗:', e && e.message);
         sharedStyleSheetPromise = null;
         return null;
       }
@@ -258,26 +257,26 @@
 
   // ── Shadow DOM 対応 ──
   // inject.js は manifest の content_scripts で MAIN world / document_start 登録済み。
-  // host 要素に data-rfs-shadow="" 属性が一時的に付くのを監視し、処理後は削除する。
+  // host 要素に data-rfs-shadow="" 属性が一時的に付くのを attributeFilter 付き
+  // MutationObserver で直接検知する (MutationRecord.target が host そのもの)。
+  // 旧実装はイベント受信ごとに document.querySelectorAll('[data-rfs-shadow]') で
+  // 全 DOM を走査していた (O(DOM要素数)/回)。属性監視なら O(新規shadow数) で済む。
+  // ※ 切断状態の host への属性付与は mutation が飛ばないが、接続時に
+  //   setupShadowDOMObserver (childList 監視) → findShadowRoots が回収する (従来と同じ経路)。
 
-  let shadowBatchPending = false;
-  const handleShadowCreated = () => {
-    if (shadowBatchPending) return;
-    shadowBatchPending = true;
-    queueMicrotask(() => {
-      shadowBatchPending = false;
-      const elements = document.querySelectorAll('[data-rfs-shadow]');
-      for (const el of elements) {
-        // 処理済みマーカーではなく即座に属性を外す（DOM 汚染回避）
-        el.removeAttribute('data-rfs-shadow');
-        if (el.shadowRoot) {
-          injectCSS(el.shadowRoot);
-        }
-      }
-    });
+  const SHADOW_HOST_ATTR = 'data-rfs-shadow';
+  const processShadowHost = (el) => {
+    if (!el.hasAttribute || !el.hasAttribute(SHADOW_HOST_ATTR)) return; // removeAttribute 由来の発火を無視
+    // 処理済みマーカーではなく即座に属性を外す（DOM 汚染回避）
+    el.removeAttribute(SHADOW_HOST_ATTR);
+    if (el.shadowRoot) injectCSS(el.shadowRoot);
   };
-  window.addEventListener('replace-font-shadow-created', handleShadowCreated);
-  disposers.push(() => window.removeEventListener('replace-font-shadow-created', handleShadowCreated));
+  const shadowHostObserver = new MutationObserver((records) => {
+    for (const record of records) processShadowHost(record.target);
+  });
+  // document を observe すれば documentElement 出現前 (document_start 直後) でも登録できる
+  shadowHostObserver.observe(document, { attributes: true, attributeFilter: [SHADOW_HOST_ATTR], subtree: true });
+  disposers.push(() => shadowHostObserver.disconnect());
 
   /**
    * 指定したルート（ShadowRoot / document.head）に CSS を注入する
@@ -329,7 +328,7 @@
         setupStyleSheetMonitor();
       }
     } catch (e) {
-      // エラー時はサイレントに失敗
+      log('[フォント置換] CSS注入失敗:', e && e.message);
     } finally {
       root._replaceFontInProgress = false;
     }
@@ -337,10 +336,13 @@
 
   function findShadowRoots(node) {
     if (node.nodeType !== Node.ELEMENT_NODE) return;
+    // 切断状態で attachShadow された host は属性 mutation が観測できないため、接続時にここで属性を回収する
+    if (node.hasAttribute(SHADOW_HOST_ATTR)) node.removeAttribute(SHADOW_HOST_ATTR);
     if (node.isConnected && node.shadowRoot) injectCSS(node.shadowRoot);
     const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
     let currentNode;
     while ((currentNode = walker.nextNode())) {
+      if (currentNode.hasAttribute(SHADOW_HOST_ATTR)) currentNode.removeAttribute(SHADOW_HOST_ATTR);
       if (currentNode.isConnected && currentNode.shadowRoot) injectCSS(currentNode.shadowRoot);
     }
   }
@@ -601,13 +603,19 @@
 
   let styleSheetMonitorActive = false;
 
+  // 置換先 (= 削除してはいけない) フォント名の小文字 Set を構築
+  function getReplacementNameSet() {
+    const set = new Set();
+    if (selectedBodyFont) set.add(selectedBodyFont.name.toLowerCase());
+    if (selectedMonoFont) set.add(selectedMonoFont.name.toLowerCase());
+    return set;
+  }
+
   function buildTargetFamiliesFromRegistry() {
     // 空のときのフォールバック: FONT_REGISTRY から name を直接構築
     const set = new Set();
     if (typeof FONT_REGISTRY === 'undefined') return set;
-    const replacement = new Set();
-    if (selectedBodyFont) replacement.add(selectedBodyFont.name.toLowerCase());
-    if (selectedMonoFont) replacement.add(selectedMonoFont.name.toLowerCase());
+    const replacement = getReplacementNameSet();
     for (const key of Object.keys(FONT_REGISTRY.body || {})) {
       const name = FONT_REGISTRY.body[key].name.toLowerCase();
       if (!replacement.has(name)) set.add(name);
@@ -631,9 +639,7 @@
     // 置換対象フォントファミリーを「拡張機能のCSS」から収集
     const targetFamilies = new Set();
     try {
-      const replacementNames = new Set();
-      if (selectedBodyFont) replacementNames.add(selectedBodyFont.name.toLowerCase());
-      if (selectedMonoFont) replacementNames.add(selectedMonoFont.name.toLowerCase());
+      const replacementNames = getReplacementNameSet();
 
       // 拡張機能が定義した @font-face のファミリー名を収集
       // 属性値で 'preset' か 'fallback' を指定して <style data-replace-font="dynamic"> を除外
@@ -785,6 +791,24 @@
   }
 
   // ── 初期化 ──
+
+  // document_start 時点でまだ存在しない DOM ノードの出現を待って callback を 1 回だけ実行する。
+  // 既に存在すれば即実行して null を返し、待機した場合は MutationObserver を返す (呼び出し側で disposers 登録)。
+  function whenNodeReady(getNode, observeTarget, callback) {
+    if (getNode()) {
+      callback();
+      return null;
+    }
+    const observer = new MutationObserver(() => {
+      if (getNode()) {
+        observer.disconnect();
+        callback();
+      }
+    });
+    observer.observe(observeTarget, { childList: true });
+    return observer;
+  }
+
   // IIFE スコープのクロージャ変数で二重初期化を防ぐ（DOM 属性は使わない）
   let initialized = false;
 
@@ -795,18 +819,8 @@
 
     setupShadowDOMObserver();
 
-    if (document.head) {
-      startEarlyHeadMonitor();
-    } else {
-      const headWatcher = new MutationObserver(() => {
-        if (document.head) {
-          headWatcher.disconnect();
-          startEarlyHeadMonitor();
-        }
-      });
-      headWatcher.observe(document.documentElement, { childList: true });
-      disposers.push(() => headWatcher.disconnect());
-    }
+    const headWatcher = whenNodeReady(() => document.head, document.documentElement, startEarlyHeadMonitor);
+    if (headWatcher) disposers.push(() => headWatcher.disconnect());
 
     const settings = await loadFontSettings();
     log('[フォント置換] 設定読み込み完了:', settings, 'プリセットモード:', prebuiltCSSRegistered);
@@ -840,18 +854,8 @@
       createPreloadTag();
     };
 
-    if (document.head) {
-      performInjections();
-    } else {
-      const observer = new MutationObserver(() => {
-        if (document.head) {
-          observer.disconnect();
-          performInjections();
-        }
-      });
-      observer.observe(document.documentElement, { childList: true });
-      disposers.push(() => observer.disconnect());
-    }
+    const injectionWatcher = whenNodeReady(() => document.head, document.documentElement, performInjections);
+    if (injectionWatcher) disposers.push(() => injectionWatcher.disconnect());
 
     flushPendingRoots();
     setupFontForceLoad();
@@ -860,16 +864,6 @@
     log(`[フォント置換] 初期化完了: body=${selectedBodyFont.name} (weight=${selectedBodyFontWeight}), mono=${selectedMonoFont.name}, preset=${prebuiltCSSRegistered}`);
   }
 
-  // 実行開始
-  if (document.documentElement) {
-    initialize();
-  } else {
-    const observer = new MutationObserver(() => {
-      if (document.documentElement) {
-        observer.disconnect();
-        initialize();
-      }
-    });
-    observer.observe(document, { childList: true });
-  }
+  // 実行開始 (initialize は必ず走らせたいので disposers には登録しない)
+  whenNodeReady(() => document.documentElement, document, initialize);
 })();

@@ -24,12 +24,11 @@
         const host = this;
         queueMicrotask(() => {
           try {
+            // ISOLATED 側は attributeFilter 付き MutationObserver でこの属性を直接検知する
             host.setAttribute('data-rfs-shadow', '');
           } catch (_) {
             // SVGElement 等で setAttribute が使えない場合は無視
           }
-          // Content Script 側に通知（detail なしのシンプルなイベント）
-          window.dispatchEvent(new Event('replace-font-shadow-created'));
         });
       }
       return shadowRoot;

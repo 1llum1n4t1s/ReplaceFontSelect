@@ -29,7 +29,7 @@ async function loadSettings() {
     const result = await chrome.storage.local.get(FONT_REGISTRY.storageKey);
     return mergeFontSettings(result[FONT_REGISTRY.storageKey] || {});
   } catch {
-    return Object.assign({}, FONT_REGISTRY.defaults);
+    return getDefaultSettings();
   }
 }
 

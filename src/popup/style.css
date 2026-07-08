@@ -97,9 +97,8 @@ body[data-variant="default"] {
   --font-display: 'ZenKakuGothic', 'Yu Mincho', serif;
   --font-mono: 'IBMPlexSansJP', 'SF Mono', Menlo, monospace;
 
-  /* Variant-specific tokens (toggle, dropdown caret) */
+  /* Variant-specific tokens (toggle) */
   --toggle-on: #2A8C5F;
-  --caret-color: '%238B7A6A';
 }
 
 /* ============================================================
@@ -120,7 +119,6 @@ body[data-variant="notosans"] {
   --rule-strong: #007A99;
   --shadow: 0 1px 0 rgba(10, 17, 48, 0.04), 0 2px 8px rgba(10, 17, 48, 0.06);
   --shadow-press: 0 0 0 2px rgba(0, 122, 153, 0.25);
-  --glow: none;
 
   --text: var(--ink);
   --text-soft: var(--ink-soft);
@@ -132,7 +130,6 @@ body[data-variant="notosans"] {
   --font-mono: 'UDEVGothicJPDOC', 'SF Mono', Menlo, monospace;
 
   --toggle-on: #007A99;
-  --caret-color: '%23007A99';
 }
 
 /* ============================================================
@@ -157,7 +154,6 @@ body[data-variant="notosans"] {
     --shadow-press: 0 0 0 3px rgba(232, 155, 92, 0.2);
 
     --toggle-on: #B57F5A;
-    --caret-color: '%23C5B59E';
   }
 
   /* --- NOTOSANS DARK : Cyber Night (夜空 + ネオン) --- */
@@ -175,10 +171,8 @@ body[data-variant="notosans"] {
     --rule-strong: #00F0FF;
     --shadow: 0 0 0 1px rgba(0, 240, 255, 0.08);
     --shadow-press: 0 0 0 1px var(--accent), 0 0 16px rgba(0, 240, 255, 0.4);
-    --glow: 0 0 8px rgba(0, 240, 255, 0.55);
 
     --toggle-on: #00F0FF;
-    --caret-color: '%2300F0FF';
   }
 }
 

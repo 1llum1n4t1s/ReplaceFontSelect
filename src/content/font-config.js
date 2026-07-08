@@ -105,10 +105,17 @@ const FONT_SETTINGS_VALIDATORS = {
   bodyFontWeight: (v) => v === '400' || v === '500'
 };
 
+// 既定設定の複製を返す (storage 到達不能時などのエラーフォールバック用。
+// 意図的に mergeFontSettings を通さず lockedFonts も適用しない)
+// eslint-disable-next-line no-unused-vars
+function getDefaultSettings() {
+  return { ...FONT_REGISTRY.defaults };
+}
+
 // 保存済み設定をデフォルトとマージし、無効値はデフォルトに戻す
 // eslint-disable-next-line no-unused-vars
 function mergeFontSettings(stored) {
-  const merged = Object.assign({}, FONT_REGISTRY.defaults);
+  const merged = { ...FONT_REGISTRY.defaults };
   if (stored && typeof stored === 'object') {
     for (const key of Object.keys(FONT_REGISTRY.defaults)) {
       const validator = FONT_SETTINGS_VALIDATORS[key];
@@ -175,6 +182,7 @@ const PLACEHOLDER_REGEX_SOURCE = '__[A-Z0-9_]+__';
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     FONT_REGISTRY,
+    getDefaultSettings,
     mergeFontSettings,
     getPresetFileName,
     FONT_SETTINGS_VALIDATORS,

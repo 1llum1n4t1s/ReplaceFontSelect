@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const bodyWeightSelect = document.getElementById('body-weight');
   const monoFontSelect = document.getElementById('mono-font');
   const saveNotice = document.getElementById('save-notice');
-  const { defaults, storageKey } = FONT_REGISTRY;
+  const { storageKey } = FONT_REGISTRY;
 
   // VARIANT.showFontSelector=false の場合は Typography UI を完全非表示。
   const variantShowsFontSelector = (typeof VARIANT === 'undefined' || !VARIANT) ? true : VARIANT.showFontSelector !== false;
@@ -73,13 +73,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const result = await chrome.storage.local.get(storageKey);
     applySettingsToUI(mergeFontSettings(result[storageKey] || {}));
   } catch (e) {
-    applySettingsToUI(Object.assign({}, defaults));
+    applySettingsToUI(getDefaultSettings());
   }
 
   let noticeTimer = 0;
   let _lastSaved = null;
 
-  function saveSettings() {
+  async function saveSettings() {
     const raw = {
       enabled: enabledToggle.checked,
       bodyFont: bodyFontSelect.value,
@@ -97,20 +97,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    chrome.storage.local.set({ [storageKey]: settings }, () => {
-      if (chrome.runtime.lastError) {
-        saveNotice.textContent = `⚠️ 保存に失敗しました: ${chrome.runtime.lastError.message}`;
-        saveNotice.classList.add('visible');
-        clearTimeout(noticeTimer);
-        noticeTimer = 0;
-        return;
-      }
+    try {
+      await chrome.storage.local.set({ [storageKey]: settings });
       _lastSaved = settings;
       saveNotice.textContent = 'ページを再読み込みすると反映されます';
       saveNotice.classList.add('visible');
       clearTimeout(noticeTimer);
       noticeTimer = setTimeout(() => saveNotice.classList.remove('visible'), 3000);
-    });
+    } catch (e) {
+      saveNotice.textContent = `⚠️ 保存に失敗しました: ${e.message}`;
+      saveNotice.classList.add('visible');
+      clearTimeout(noticeTimer);
+      noticeTimer = 0;
+    }
   }
 
   enabledToggle.addEventListener('change', () => {
