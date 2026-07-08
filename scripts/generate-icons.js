@@ -3,7 +3,7 @@
 //   例:   node scripts/generate-icons.js default
 //         node scripts/generate-icons.js notosans
 
-const puppeteer = require('puppeteer');
+// puppeteer v25+ は ESM-only のため CommonJS からは動的 import で読み込む (generateIcons 内)
 const fs = require('fs');
 const path = require('path');
 
@@ -69,8 +69,9 @@ async function generateIcons() {
   const svgText = normalizeSvgFontFamily(rawSvg);
   const fontBase64 = fs.readFileSync(fontPath).toString('base64');
 
+  const { default: puppeteer } = await import('puppeteer');
   const browser = await puppeteer.launch({
-    headless: 'new',
+    headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
   try {

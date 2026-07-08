@@ -4,7 +4,7 @@
 //   例:   node scripts/generate-screenshots.js default
 //         node scripts/generate-screenshots.js notosans
 
-const puppeteer = require('puppeteer');
+// puppeteer v25+ は ESM-only のため CommonJS からは動的 import で読み込む (main 内)
 const fs = require('fs');
 const path = require('path');
 
@@ -139,8 +139,9 @@ async function main() {
   }
 
   // ブラウザを1回だけ起動して全画像で共有
+  const { default: puppeteer } = await import('puppeteer');
   const browser = await puppeteer.launch({
-    headless: 'new',
+    headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
     protocolTimeout: 120000
   });

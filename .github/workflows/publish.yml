@@ -173,21 +173,19 @@ jobs:
           echo "extension_id=$extension_id" >> "$GITHUB_OUTPUT"
 
       - name: Chrome Web Store にアップロード & 公開
+        # chrome-webstore-upload-cli v4: 認証情報は CLI フラグ廃止・環境変数のみ
+        # (CLIENT_ID / CLIENT_SECRET / REFRESH_TOKEN / PUBLISHER_ID / EXTENSION_ID)。
+        # サブコマンドなしで upload + publish を一括実行 (--auto-publish は v4 で削除)。
         env:
-          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
-          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
-          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
-          CWS_EXTENSION_ID: ${{ steps.ext.outputs.extension_id }}
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          EXTENSION_ID: ${{ steps.ext.outputs.extension_id }}
         # chrome-webstore-upload-cli は devDependencies に固定し、pnpm install --frozen-lockfile で
         # pnpm-lock.yaml の integrity hash 検証済みのローカル版を pnpm exec で呼ぶ
         run: |
-          pnpm exec chrome-webstore-upload upload \
-            --source "$ZIP_PATH" \
-            --extension-id "$CWS_EXTENSION_ID" \
-            --client-id "$CWS_CLIENT_ID" \
-            --client-secret "$CWS_CLIENT_SECRET" \
-            --refresh-token "$CWS_REFRESH_TOKEN" \
-            --auto-publish
+          pnpm exec chrome-webstore-upload --source "$ZIP_PATH"
           echo "🎉 ${{ matrix.variant }} → Chrome Web Store への公開リクエスト送信完了"
 
       - name: Firefox 用ソースディレクトリを準備
