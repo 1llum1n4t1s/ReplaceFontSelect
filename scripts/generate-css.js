@@ -175,6 +175,9 @@ const ICON_FONT_SELECTORS = [
   '[class^="fa-"]', '[class*=" fa-"]',
   // Google Material Icons / Material Symbols
   '[class*="material-icons"]', '[class*="material-symbols"]',
+  // Google Symbols (Google Meet / Workspace 系のリガチャアイコン。
+  // class 名が "google-symbols" で material-* パターンに一致しないため個別追加)
+  '[class*="google-symbols"]',
   // VS Code codicon / Microsoft Fluent (FabricMDL2Icons)
   '[class*="codicon"]', '[class*="ms-Icon"]',
   // Bootstrap Icons / Glyphicons
