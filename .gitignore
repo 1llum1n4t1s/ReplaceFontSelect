@@ -62,3 +62,6 @@ src/css/preset-*.js
 # AMO ローカル submission 用メタデータ (web-ext sign --amo-metadata 引数で渡す、
 # 配布対象外。 退役 variant のメタも残る場合あり)
 .amo-metadata*.json
+
+# wrangler のローカル状態キャッシュ (web/ のデプロイ時に生成される)
+web/.wrangler/
