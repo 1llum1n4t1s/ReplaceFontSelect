@@ -36,7 +36,7 @@ Write-Host ""
 
 # アイコン生成
 Write-Host "🎨 アイコンを生成中..." -ForegroundColor Cyan
-node scripts/generate-icons.js
+node scripts/generate-icons.js $Variant
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ アイコン生成に失敗しました" -ForegroundColor Red
     exit 1
@@ -98,9 +98,9 @@ Copy-Item "src" -Destination $tempDir -Recurse
 
 # 不要なファイルを除外
 # - preview.html はストア配信に不要 (SVG はインストール時不要だが残してもOK)
-# - replacefont-extension.css は preset JS 生成用のビルド時 input で
-#   ランタイムでは誰も参照しない (Path B 削除後) ため配布から除外
-Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html","replacefont-extension.css" | Remove-Item -Force
+# - replacefont-extension.css は Path B (preload-fonts.js の TEMPLATE_CSS_URL fetch) が
+#   web_accessible_resources 経由で参照するため配布に含める (publish.yml と同じ方針)
+Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html" | Remove-Item -Force
 
 # ZIPファイルを作成
 Compress-Archive -Path "$tempDir/*" -DestinationPath $zipPath -Force
@@ -121,11 +121,43 @@ Write-Host ""
 Write-Host "✨ Chrome Web Store Developer Dashboardにアップロードできます！" -ForegroundColor Green
 Write-Host "   https://chrome.google.com/webstore/devconsole" -ForegroundColor Blue
 
-# Firefox AMO用のXPIファイルを作成（コードベースは同一）
+# Firefox AMO用のXPIファイルを作成
+# Chrome ZIP の単純コピーでは AMO MV3 validator が service_worker 単独を reject するため、
+# build-variant.js --firefox で background.scripts を併記した manifest を作り直してから固める
+# (publish.yml の「Firefox 用ソースディレクトリを準備」ステップと同じ構成)。
 Write-Host ""
 Write-Host "🦊 Firefox AMO用のXPIファイルを作成中..." -ForegroundColor Cyan
 if (Test-Path $xpiPath) { Remove-Item $xpiPath -Force }
-Copy-Item $zipPath $xpiPath -Force
+
+node scripts/build-variant.js $Variant --firefox
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Firefox 用 manifest の生成に失敗しました" -ForegroundColor Red
+    exit 1
+}
+
+$firefoxDir = "./firefox-build"
+if (Test-Path $firefoxDir) { Remove-Item $firefoxDir -Recurse -Force }
+New-Item -ItemType Directory -Path $firefoxDir | Out-Null
+Copy-Item "manifest.json" -Destination $firefoxDir
+New-Item -ItemType Directory -Path "$firefoxDir/icons/$Variant" -Force | Out-Null
+Copy-Item "$variantIconsSrc/*" -Destination "$firefoxDir/icons/$Variant/" -Recurse
+Copy-Item "src" -Destination $firefoxDir -Recurse
+# Chrome ZIP と同じ除外ポリシー + TTF 除外 (AMO はソース由来の TTF を配信物に含めない)
+Get-ChildItem -Path $firefoxDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html","*.ttf" | Remove-Item -Force
+
+# Compress-Archive は .zip 前提なので一旦 zip で固めてから .xpi へリネームする
+$xpiTempZip = "./$zipBase-firefox-temp.zip"
+if (Test-Path $xpiTempZip) { Remove-Item $xpiTempZip -Force }
+Compress-Archive -Path "$firefoxDir/*" -DestinationPath $xpiTempZip -Force
+Remove-Item $firefoxDir -Recurse -Force
+Move-Item $xpiTempZip $xpiPath -Force
+
+# manifest.json を Chrome 版へ戻す (Firefox 版のまま残すと "Load unpacked" が壊れる)
+node scripts/build-variant.js $Variant
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Chrome 用 manifest への復帰に失敗しました" -ForegroundColor Red
+    exit 1
+}
 
 if (Test-Path $xpiPath) {
     Write-Host "✅ XPIファイルを作成しました: $xpiPath" -ForegroundColor Green

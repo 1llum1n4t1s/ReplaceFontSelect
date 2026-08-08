@@ -31,7 +31,7 @@ echo ""
 
 # アイコン生成
 echo "🎨 アイコンを生成中..."
-node scripts/generate-icons.js
+node scripts/generate-icons.js "$VARIANT"
 echo ""
 
 # フォント変換（TTFがある場合）
