@@ -29,7 +29,7 @@
     "https://codesandbox.io/*",
     "https://stackblitz.com/*",
     "https://www.overleaf.com/*",
-    "https://discord.com/app/*"
+    "https://discord.com/*"
   ],
   "zipBaseName": "notosans-font-replacer",
   "secretsKey": "NOTOSANS"

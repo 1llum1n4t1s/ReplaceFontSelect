@@ -13,7 +13,7 @@ This file provides guidance to Claude Code and other coding agents working in th
 default variant は次のドメインを `exclude_matches` で除外している (フォントが作品 / 編集体験の一部となるサービス保護、 およびアイコンフォント破壊回避のため、 全 18 ドメイン):
 - **Microsoft / Google のリッチエディタ / ファイル管理系**: `*.onenote.com` / `*.officeapps.live.com` (Excel/Word/PowerPoint Online) / `*.sharepoint.com` (SharePoint Online — Excel/Word を開いた時のホストオリジン。 `officeapps.live.com` には遷移せず SharePoint オリジン内の iframe で WAC = WebApps Components が動くため別途除外が必要) / `onedrive.live.com` (OneDrive 個人版のファイル管理 UI — Fluent UI / FabricMDL2Icons のアイコンフォントが本文置換の巻き添えになるため除外。 OneDrive for Business は `*.sharepoint.com` 経由で別途カバー済) / `docs.google.com` (Docs / Sheets / Slides / Forms)
 - **デザインツール系**: `*.figma.com` / `www.canva.com` / `express.adobe.com`
-- **リッチエディタ / IDE 系 (v3.1 系で追加)**: `www.notion.so` / `app.slack.com` / `linear.app` / `*.github.dev` / `vscode.dev` / `replit.com` / `codesandbox.io` / `stackblitz.com` / `www.overleaf.com` / `discord.com/app`
+- **リッチエディタ / IDE 系 (v3.1 系で追加)**: `www.notion.so` / `app.slack.com` / `linear.app` / `*.github.dev` / `vscode.dev` / `replit.com` / `codesandbox.io` / `stackblitz.com` / `www.overleaf.com` / `discord.com` (アプリ本体は `/channels/*` 配下で `/app/*` にはマッチしないため、 Notion / Linear と同じくドメイン全体を除外)
 
 **多言語対応**: `@font-face` の `unicode-range` は **省略する** (オープン範囲のまま運用)。 置換フォントのグリフカバレッジ範囲がそのまま置換対象となり、 範囲外の文字は CSS font fallback で元サイトの指定 / システムフォントに自然に落ちる。
 
