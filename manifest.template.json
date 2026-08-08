@@ -14,8 +14,7 @@
   },
   "permissions": [
     "storage",
-    "scripting",
-    "alarms"
+    "scripting"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'self'; form-action 'none'"
