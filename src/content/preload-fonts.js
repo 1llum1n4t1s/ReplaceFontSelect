@@ -133,7 +133,7 @@
   }
 
   /**
-   * chrome.storage.local からフォント設定を読み込む（タイムアウト付き）
+   * chrome.storage.local からフォント設定を読み込む（遅延はログのみ、値は必ず storage 準拠）
    * getDefaultSettings は font-config.js 定義のグローバルを使用
    */
   function loadFontSettings() {
@@ -148,16 +148,16 @@
       return Promise.resolve(defaults);
     }
 
-    let timeoutId;
-    const timeout = new Promise((resolve) => {
-      timeoutId = setTimeout(() => {
-        log('[フォント置換] Settings load timeout, using defaults');
-        resolve(defaults);
-      }, SETTINGS_LOAD_TIMEOUT_MS);
-    });
-    const settled = getPromise.then((result) => {
+    // タイムアウトで defaults を採用すると enabled:false のユーザーにも置換が走る。
+    // setupStyleSheetMonitor がサイト側 @font-face を deleteRule した後では事後撤去でも
+    // 元に戻せないため、遅延はログに残すだけにして enabled の判定は必ず storage の実値で行う。
+    // 遅延側に倒した場合の最悪ケースは「そのページで置換が効かない」だけで、リロードで回復する。
+    const timeoutId = setTimeout(() => {
+      log('[フォント置換] Settings load is slow, still waiting for storage');
+    }, SETTINGS_LOAD_TIMEOUT_MS);
+
+    return getPromise.then((result) => {
       clearTimeout(timeoutId);
-      // タイムアウト後に遅延到着した場合も prebuiltCSSRegistered には反映する（従来挙動を維持）
       const stored = result[FONT_REGISTRY.storageKey] || {};
       prebuiltCSSRegistered = result[presetKey] === true;
       return mergeFontSettings(stored);
@@ -166,7 +166,6 @@
       log('[フォント置換] 設定読み込み失敗:', e && e.message);
       return defaults;
     });
-    return Promise.race([settled, timeout]);
   }
 
   function buildFontConfig(bodyFontInfo, monoFontInfo, bodyFontWeight) {
