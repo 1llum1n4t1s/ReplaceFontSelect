@@ -102,10 +102,21 @@
 
   // ページ離脱時のクリーンアップ関数（MutationObserver / Listener 等のリーク防止）
   const disposers = [];
-  const onPagehideDispose = () => {
+  let disposed = false;
+  const runDisposers = () => {
+    if (disposed) return;
+    disposed = true;
     for (const dispose of disposers) {
       try { dispose(); } catch (e) {}
     }
+    disposers.length = 0;
+  };
+  // bfcache 入場 (persisted: true) では破棄しない。content script は bfcache 復元時に
+  // 再注入されないため、ここで observer と復帰用 pageshow を外すと戻る/進むの後に
+  // 監視が二度と復活しない。各 observer は自前の pagehide/pageshow ペアで待避・復帰する。
+  const onPagehideDispose = (e) => {
+    if (e && e.persisted) return;
+    runDisposers();
   };
   const onPagehideCacheClear = (e) => {
     if (!e.persisted) return;
@@ -282,6 +293,7 @@
    */
   async function injectCSS(root) {
     if (!root) return;
+    if (disposed) return; // 無効化確定 / ページ破棄後は pendingRoots に溜めない (ShadowRoot 参照リーク防止)
     if (root._replaceFontApplied || root._replaceFontInProgress) return;
     if (!settingsReady) {
       pendingRoots.add(root);
@@ -826,7 +838,9 @@
 
     if (!settings.enabled) {
       pendingRoots.clear();
-      if (earlyHeadObserver) { earlyHeadObserver.disconnect(); earlyHeadObserver = null; }
+      // 無効時は監視自体を畳む (shadowHostObserver / shadow DOM observer / earlyHeadObserver)。
+      // 残すと injectCSS が新規 ShadowRoot を pendingRoots に溜め続け GC を阻害する。
+      runDisposers();
       return;
     }
 
@@ -836,7 +850,7 @@
 
     if (!bodyFontInfo || !monoFontInfo) {
       pendingRoots.clear();
-      if (earlyHeadObserver) { earlyHeadObserver.disconnect(); earlyHeadObserver = null; }
+      runDisposers();
       return;
     }
     selectedBodyFont = bodyFontInfo;

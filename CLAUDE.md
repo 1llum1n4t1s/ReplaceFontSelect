@@ -307,8 +307,8 @@ minor / major bump は手作業 (上述「minor / major bump の運用」参照)
 ### CI 自動公開 (`.github/workflows/publish.yml`)
 
 - **トリガー**: `release/<X.Y.Z>` 形式のブランチへの push (例: `release/3.0.3`, `release/3.1.0`)
-- **matrix strategy**: 現在 `variant: [default]` 1 要素。 将来 variant を追加する場合は配列を拡張
-- **整合性チェック**: ブランチ末尾の `X.Y.Z` と `variants/default.json` の `version` と生成された `manifest.json` の `version` が一致しないと該当 variant のジョブが失敗
+- **matrix strategy**: 現在 `variant: [default, notosans]` の 2 要素で並列公開。 将来 variant を追加する場合は配列を拡張
+- **整合性チェック**: ブランチ末尾の `X.Y.Z` と `variants/<matrix.variant>.json` の `version` と生成された `manifest.json` の `version` が一致しないと該当 variant のジョブが失敗
 - **公開先**: Chrome Web Store と Firefox AMO の **両方** に並列公開
 
 #### Chrome Web Store

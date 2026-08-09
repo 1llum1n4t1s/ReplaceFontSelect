@@ -105,11 +105,13 @@ const FONT_SETTINGS_VALIDATORS = {
   bodyFontWeight: (v) => v === '400' || v === '500'
 };
 
-// 既定設定の複製を返す (storage 到達不能時などのエラーフォールバック用。
-// 意図的に mergeFontSettings を通さず lockedFonts も適用しない)
+// 既定設定を返す (storage 到達不能時などのエラーフォールバック用)。
+// lockedFonts は variant の契約なので障害時ほど守る必要がある (notosans で Noto Sans JP 以外を
+// 選ぶと、同梱されていない preset JS を登録しようとして Path A ごと失敗する)。
+// そのため raw defaults ではなく mergeFontSettings({}) 相当を返す。
 // eslint-disable-next-line no-unused-vars
 function getDefaultSettings() {
-  return { ...FONT_REGISTRY.defaults };
+  return mergeFontSettings({});
 }
 
 // 保存済み設定をデフォルトとマージし、無効値はデフォルトに戻す
