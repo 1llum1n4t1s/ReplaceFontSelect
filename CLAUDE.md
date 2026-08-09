@@ -189,7 +189,7 @@ ShadowRoot への adopt は `pendingShadowRoots: Set` でバッチ化 → 1 micr
 ```json
 {
   "enabled": true,
-  "bodyFont": "noto-sans-jp",
+  "bodyFont": "ibm-plex-sans-jp",
   "monoFont": "udev-gothic-jpdoc",
   "bodyFontWeight": "400"
 }

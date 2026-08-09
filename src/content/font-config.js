@@ -89,7 +89,7 @@ const FONT_REGISTRY = {
   },
   defaults: {
     enabled: true,
-    bodyFont: 'noto-sans-jp',
+    bodyFont: 'ibm-plex-sans-jp',
     monoFont: 'udev-gothic-jpdoc',
     bodyFontWeight: '400'
   },
