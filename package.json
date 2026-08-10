@@ -21,7 +21,7 @@
   "devDependencies": {
     "chrome-webstore-upload-cli": "4.0.1",
     "puppeteer": "^25.5.0",
-    "ttf2woff2": "^8.0.0",
+    "ttf2woff2": "^8.0.1",
     "web-ext": "10.6.0"
   },
   "keywords": [
