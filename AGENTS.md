@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code and other coding agents working in this repository.
+This file provides guidance to Codex and other coding agents working in this repository.
 
 ## Project Overview
 
@@ -217,7 +217,7 @@ ShadowRoot への adopt は `pendingShadowRoots: Set` でバッチ化 → 1 micr
 
 ```bash
 pnpm run release                 # variant patch +1 → release/<X.Y.Z> ブランチ
-node scripts/release.js --yes    # 直接呼び（確認プロンプト省略、CI / Claude Code から）
+node scripts/release.js --yes    # 直接呼び（確認プロンプト省略、CI / Codex から）
 
 # フラグ
 --dry-run / -n  計画だけ表示。 書き込み・push しない
@@ -294,7 +294,7 @@ Chrome の重複エラーログを避けたい / 履歴をクリーンに保ち�
 
 ### `/vava` スキル経由の起動
 
-このプロジェクトに対して `/vava` スキルが起動された場合、Claude Code は **標準フローを使わず** `pnpm run release`（`scripts/release.js`）に委譲する。
+このプロジェクトに対して `/vava` スキルが起動された場合、Codex は **標準フローを使わず** `pnpm run release`（`scripts/release.js`）に委譲する。
 
 `release.js` は:
 - `variants/<name>.json` の version → patch +1 → `package.json` の version も自動同期
