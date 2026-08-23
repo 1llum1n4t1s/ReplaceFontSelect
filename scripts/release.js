@@ -15,9 +15,9 @@
 //   1. 全 variants/*.json の version が一致しているか確認 (一致しなければ abort)
 //   2. version を patch +1 して全 variant に反映
 //   3. main にコミット & push
-//   4. release/<X.Y.Z> ブランチを作って push (これが publish.yml のトリガー)
-//   5. main に戻る
-//   (--prune-old) 6. 古い release/* ブランチをリモートから削除
+//   4. main のまま release/<X.Y.Z> ブランチを作って push
+//      (これが publish.yml のトリガー)
+//   (--prune-old) 5. 古い release/* ブランチをリモートから削除
 
 const fs = require('fs');
 const path = require('path');
@@ -208,9 +208,8 @@ async function main() {
   run('git push origin main', { modifyState: true });
 
   // 4. release/<X.Y.Z> ブランチを作成・push
-  run(`git checkout -b ${branch}`, { modifyState: true });
+  run(`git branch ${branch}`, { modifyState: true });
   run(`git push -u origin ${branch}`, { modifyState: true });
-  run('git checkout main', { modifyState: true });
 
   // 5. 古いリリースブランチを削除
   if (PRUNE_OLD && pruneCandidates.length > 0) {
