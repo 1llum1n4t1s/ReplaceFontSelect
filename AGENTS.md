@@ -4,7 +4,7 @@ This file provides guidance to Codex and other coding agents working in this rep
 
 ## Project Overview
 
-**目に優しいフォント置換** — Chrome / Firefox (140+) 拡張機能 (Manifest V3) で、 ウェブサイト上の読みづらいフォントを、 ユーザーが選んだ日本語フォントへ自動置換する。 本文 6 種 × 等幅 3 種 × Weight (400/500) = 36 通りのプリセットを `document_start` で同期注入することでちらつきゼロを実現している。
+**目に優しいフォント置換** — Chrome / Firefox desktop (140+) / Firefox Android (142+) 拡張機能 (Manifest V3) で、 ウェブサイト上の読みづらいフォントを、 ユーザーが選んだ日本語フォントへ自動置換する。 本文 6 種 × 等幅 3 種 × Weight (400/500) = 36 通りのプリセットを `document_start` で同期注入することでちらつきゼロを実現している。
 
 このリポジトリは **単一コードベース** から複数の派生版 (variant) を別々の拡張機能として公開できる「バリアント方式」を採用している。 現在 `default` (フォント選択 UI 付き) と `notosans` (Noto Sans JP + UDEV Gothic JPDOC 固定版) の 2 variant が定義されており、 それぞれ独立した拡張機能 ID として Chrome Web Store / Firefox AMO に並行リリースされている。 ユーザーの使い分け:
 - **default**: フォント選択 UI で好きなフォントを 36 プリセットから選ぶ通常版
@@ -40,7 +40,7 @@ pnpm run generate-screenshots:notosans # webstore/screenshots/notosans/*.html �
 ### Local Testing
 
 - **Chrome**: `chrome://extensions` → Developer mode ON → "Load unpacked" でリポジトリルートを選択
-- **Firefox**: `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on..." で `manifest.json` を選択 (Firefox 140+)
+- **Firefox**: `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on..." で `manifest.json` を選択 (desktop 140+ / Android 142+)
 - コード変更後は拡張機能リストで再読み込み+対象ページをリロード (preset JS / CSS は `document_start` 時にキャッシュされるため)
 
 ## Variant System
@@ -87,7 +87,9 @@ pnpm run generate-screenshots:notosans # webstore/screenshots/notosans/*.html �
 ```
 ┌─ Path A: Preset JS (同期注入、 document_start 同期実行) ───────────────┐
 │ src/background/background.js (Service Worker)                          │
-│   chrome.scripting.updateContentScripts で preset JS を ISOLATED に登録 │
+│   chrome.scripting.updateContentScripts で、有効時だけ次の2本を動的登録   │
+│   - preset JS: ISOLATED world                                          │
+│   - inject.js: MAIN world (Shadow DOM attachShadow フック)              │
 │   (初回 / ID 不在時は registerContentScripts でフォールバック)            │
 │   ↓                                                                    │
 │ src/css/preset-{body}-{mono}-w{weight}.js (36 個から 1 個選択)          │
@@ -103,7 +105,7 @@ pnpm run generate-screenshots:notosans # webstore/screenshots/notosans/*.html �
 │   3. setupStyleSheetMonitor: サイト側の競合 @font-face (例: x.com の     │
 │      Chirp) を deleteRule で削除 → ブラウザは Chirp を解決できなくなり、│
 │      fallback chain で拡張機能の Noto Sans JP に到達                    │
-│   4. Shadow DOM への adoptedStyleSheets 共有 (CSSStyleSheet 単一実体)   │
+│   4. open / closed Shadow DOM へ world 別の adoptedStyleSheets 共有    │
 │   5. 動的フォント検出 (Next.js next/font 等のハッシュ family)            │
 │      → ランタイム @font-face で対応する Noto Sans JP woff2 を注入       │
 │   6. Regular weight (本文) の woff2 を <link rel=preload> (top frame のみ)│
@@ -120,8 +122,9 @@ pnpm run generate-screenshots:notosans # webstore/screenshots/notosans/*.html �
 
 `background.js` は `setTimeout` ベースの debounce / retry で動作:
 
-- **debounce**: `chrome.storage.onChanged` listener が 0.15 秒の `setTimeout` で連続変更を集約し、 最新値で `chrome.scripting.updateContentScripts` を 1 回だけ呼ぶ (atomic 1 API call、 unregister + register の race を解消)
-- **retry**: `updateContentScripts` 失敗時は `registerContentScripts` でフォールバックし、 ID 不在 / 初回登録ケースをカバー
+- **debounce**: `chrome.storage.onChanged` listener が 0.15 秒の `setTimeout` で連続変更を集約し、 最新値でプリセット JS と MAIN world フックの登録状態を同期する
+- **atomic update**: 既存の各登録は `chrome.scripting.updateContentScripts` 1 回で原子的に更新し、 unregister + register 間の race を避ける
+- **retry**: 各 ID の `updateContentScripts` 失敗時は `registerContentScripts` でフォールバックし、 ID 不在 / 初回登録ケースをカバー
 - **永続化**: `persistAcrossSessions: true` + `chrome.runtime.onStartup` 二重ガードで SW evict 後も復活
 - **SW evict 注意**: Chrome MV3 の SW は 30 秒 idle で evict され、 evict 時に `setTimeout` の timer が失われる。 storage 変更直後に user が他タブへ移動 + 30 秒 idle した場合、 debounce timer 消失で設定が反映されない race window が極小に残る (受容可能リスク、 `onStartup` で復旧)
 
@@ -175,11 +178,11 @@ notosans の Lab Day / Cyber Night ブロックは `body[data-variant="notosans"
 
 ### Shadow DOM 戦略
 
-1. **`src/content/inject.js`** (page context / MAIN world) — `Element.prototype.attachShadow` をフックし、 host 要素に `data-rfs-shadow` 属性を `queueMicrotask` で遅延設定 (カスタム要素コンストラクタとの互換性のため)。 通知はこの属性自体が担う (イベント dispatch は不要)。
-2. **`shadowHostObserver`** (ISOLATED world) — `attributeFilter: ['data-rfs-shadow']` の MutationObserver で `document` を subtree 監視し、 `MutationRecord.target` から host を直接得て `injectCSS(host.shadowRoot)` → 属性を即削除。 旧実装のイベント受信ごとの `querySelectorAll` 全 DOM 走査 (O(DOM要素数)/回) を O(新規shadow数) に削減。 切断状態の host への属性付与は mutation が飛ばないため、 接続時に `findShadowRoots` が属性を回収する。
-3. **`setupShadowDOMObserver()`** (ISOLATED world) — MutationObserver (`subtree: true`) + 初回 TreeWalker scan で既存 Shadow DOM をカバー (inject.js のフックを補完するセーフティネット)。
+1. **`src/content/inject.js`** (page context / MAIN world) — 拡張機能が有効なときだけ `background.js` が動的登録する。`Element.prototype.attachShadow` をフックし、 **open root** は host 要素に `data-rfs-shadow` 属性を `queueMicrotask` で遅延設定 (カスタム要素コンストラクタとの互換性のため)。**closed root** は `host.shadowRoot` から再取得できず ISOLATED world にも渡せないため、返り値を MAIN world 内で保持し、preset / fallback CSS 出現後に直接注入する。無効化後は登録を解除し、開いているページを再読み込みするとフックも存在しなくなる。
+2. **`shadowHostObserver`** (ISOLATED world / open root) — `attributeFilter: ['data-rfs-shadow']` の MutationObserver で `document` を subtree 監視し、 `MutationRecord.target` から host を直接得て `injectCSS(host.shadowRoot)` → 属性を即削除。旧実装のイベント受信ごとの `querySelectorAll` 全 DOM 走査 (O(DOM要素数)/回) を O(新規shadow数) に削減。切断状態の host への属性付与は mutation が飛ばないため、接続時に `findShadowRoots` が属性を回収する。
+3. **`setupShadowDOMObserver()`** (ISOLATED world / open root) — MutationObserver (`subtree: true`) + 初回 TreeWalker scan で既存 Shadow DOM をカバー (`inject.js` のフックを補完するセーフティネット)。
 
-CSS 注入は `adoptedStyleSheets` (Constructable Stylesheets) で **単一の `CSSStyleSheet` インスタンスを全 ShadowRoot で共有** してメモリ効率化。 `_replaceFontApplied` フラグで重複注入を防ぐ。 MAIN → ISOLATED world 間は属性 (`data-rfs-shadow`) で通信 (`CustomEvent.detail` は構造化クローンで `null` になるため)。
+CSS 注入は `adoptedStyleSheets` (Constructable Stylesheets) で **MAIN / ISOLATED の各 world ごとに単一の `CSSStyleSheet` インスタンスを共有**してメモリ効率化する。adopt が拒否される root だけ `<style>` 注入へフォールバックする。open root は `_replaceFontApplied` フラグで重複注入を防ぎ、MAIN → ISOLATED world 間は属性 (`data-rfs-shadow`) で通信する (`CustomEvent.detail` は構造化クローンで `null` になるため)。
 
 ShadowRoot への adopt は `pendingShadowRoots: Set` でバッチ化 → 1 microtask で N 個に sheet を流し込む。
 
@@ -441,13 +444,15 @@ https://addons.mozilla.org/ja/developers/ で「Submit a New Add-on」から XPI
 
 ### Manifest content_scripts のロード順 (絶対)
 
-`manifest.template.json` で定義され、 `build-variant.js` が exclude_matches を注入する:
+宣言的 content script は `manifest.template.json` で定義され、 `build-variant.js` が exclude_matches を注入する。MAIN world の `inject.js` とプリセット JS は `background.js` が同じ excludeMatches で動的登録する:
 
 ```
-src/content/inject.js         — MAIN world      (Shadow DOM intercept は最優先)
 src/content/variant.js        — ISOLATED world  (VARIANT を font-config 前に定義)
 src/content/font-config.js    — ISOLATED world  (mergeFontSettings は VARIANT に依存)
 src/content/preload-fonts.js  — ISOLATED world  (main script)
+
+動的: src/content/inject.js   — MAIN world      (有効時のみ Shadow DOM intercept)
+動的: src/css/preset-*.js     — ISOLATED world  (有効時のみ選択プリセット)
 ```
 
 Service Worker (`background.js`) も同様の順序で `importScripts('/src/content/variant.js', '/src/content/font-config.js')` を呼ぶ。
@@ -477,10 +482,10 @@ CSS は **常に対象要素を明示** する。 `*` や暗黙的なユニバ�
 
 ### Cross-Browser Compatibility
 
-Chrome / Firefox 140+ を単一コードで対応:
+Chrome / Firefox desktop 140+ / Firefox Android 142+ を単一コードで対応:
 - 使用している `chrome.*` API は全て Firefox の `chrome.*` 名前空間でも動作 (`browser.*` リライト不要)
-- `chrome.scripting.registerContentScripts` の `persistAcrossSessions` / `world` は Firefox 140+ で対応
-- `chrome.scripting.updateContentScripts` (v3.x で導入、 unregister+register の atomic 化) も同 Firefox 140+ で対応
+- `chrome.scripting.registerContentScripts` の `persistAcrossSessions` / `world` は Firefox desktop 140+ / Android 142+ で対応
+- `chrome.scripting.updateContentScripts` (v3.x で導入、 unregister+register の atomic 化) も同じ下限で対応
 - gecko id は variant ごとに `variants/<name>.json` の `geckoId` から注入される (Chrome は `browser_specific_settings` を silently ignore)
 - `chrome.runtime.getURL('')` は両ブラウザで正常動作するため、 `getExtensionBaseURL()` の Chrome 固有フォールバック (`chrome-extension://${runtime.id}`) には到達しない
 - `src/popup/style.css` のフォントは相対パス (`../fonts/...`) を使い、 拡張機能オリジン内で両ブラウザが解決する
@@ -523,8 +528,8 @@ if (typeof importScripts === 'function') {
 ### その他の制約
 
 - `web_accessible_resources` に `src/fonts/*.woff2` と `src/css/replacefont-extension.css` を含める。 後者は Path B で `preload-fonts.js` が fetch + placeholder 解決して注入するために必須
-- `src/content/inject.js` は manifest の `content_scripts` で MAIN world に直接注入されるため WAR に含めない (攻撃対象面の縮小)
-- `content_scripts.all_frames: true` で top + iframe 全フレームに注入。 iframe 内 (広告 / 埋め込みウィジェット) のフォントも置換対象になる。 background.js の `registerContentScripts` も `allFrames: true` で揃える
+- `src/content/inject.js` は `background.js` が拡張機能パッケージ内のファイルとして MAIN world へ動的登録するため WAR に含めない (攻撃対象面の縮小)
+- 宣言的 `content_scripts.all_frames: true` と動的登録の `allFrames: true` を揃え、top + iframe 全フレームを対象にする。 iframe 内 (広告 / 埋め込みウィジェット) のフォントも置換対象になる
 - `extension_pages` CSP: `script-src 'self'; object-src 'self'; base-uri 'self'; form-action 'none'` (base-uri / form-action は defense-in-depth)
 - M PLUS 2 / Murecho は variable font — Regular/Bold が同一 woff2 から取得される
 - `manifest.json` の `run_at: "document_start"` で最早期に注入

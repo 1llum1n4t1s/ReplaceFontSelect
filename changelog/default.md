@@ -3,6 +3,21 @@
 「目に優しいフォント置換」(Chrome / Firefox 拡張、 フォント選択 UI 付き) のリリース履歴。
 version の真実の源泉は `variants/default.json` の `version` フィールド。
 
+## [3.0.14] - 2026-08-27
+
+設定ポップアップから Kagayoi Support へ問い合わせできるようにし、Google AdSense・X・Shadow DOM を含むモダンサイトでの置換精度と安定性を改善。
+
+### Added
+- **お問い合わせフォームを追加**: 設定ポップアップからメール認証付きで Kagayoi Support へ問い合わせを送信可能
+- **Firefox のデータ送信許可に対応**: 問い合わせ情報を送る直前にブラウザの許可を取得し、拒否時は送信しない
+
+### Fix
+- **Google AdSense のページ見出しを保護**: 「ホーム」の横に上下のトグル風グリフが表示される問題を修正
+- **X のフォント置換を改善**: `TwitterChirp` 系 alias と競合 `@font-face` の検出を強化
+- **closed Shadow DOM に対応**: 閉じた ShadowRoot にも共有 stylesheet を直接適用し、採用できない環境では `<style>` へフォールバック
+- **CSS の二重注入と取りこぼしを修正**: `documentElement` 直下の preset を正しく検出し、`body` 配下や遅延読み込みの stylesheet も監視対象に追加
+- **無効時のページフックを停止**: 拡張機能を無効にした状態では Shadow DOM 検出スクリプトを登録しないよう変更
+
 ## [3.0.8] - 2026-05-27
 
 OneDrive 個人版 (`onedrive.live.com`) でファイルマウスオーバー時の Fluent UI / FabricMDL2Icons アイコンが本文置換の巻き添えで豆腐化していた問題を修正。
