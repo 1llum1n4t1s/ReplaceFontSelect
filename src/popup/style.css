@@ -907,3 +907,15 @@ body[data-variant="notosans"] .version { color: var(--accent-2); }
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+
+/* ── お問い合わせ / 評価 ──────────────────────────────────────────
+   Kagayoi.Support の共通部品 <kagayoi-support-footer> が描画する。
+   ここは置き場所と配色の受け渡しだけを持つ。 */
+.support-footer { margin-top: 4px; }
+
+kagayoi-support-footer {
+  --kgs-surface: var(--surface);
+  --kgs-surface-hover: var(--bg-alt);
+  --kgs-border: var(--rule);
+  --kgs-accent: var(--accent);
+}
