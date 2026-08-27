@@ -5,7 +5,7 @@
 
 ウェブサイト上の読みづらいフォントを、好みのフォントに自動で置き換える Chrome / Firefox 拡張機能です。
 **9種類のフォント**（本文用6種 + 等幅用3種）から選択でき、設定はポップアップから簡単に変更できます。
-特定のフォント（MS ゴシック、メイリオ、Yu Gothic、システムフォントなど）を狙い撃ちで置換するため、サイトのデザインを極力崩さずに視認性を大幅に向上させます。
+読みづらい指定フォントだけを狙い撃ちで置換するため、サイトのデザインを極力崩さずに視認性を大幅に向上させます。
 置換フォントが持つグリフの範囲で文字が置き換わり、カバーされない文字（アラビア文字やタイ文字など一部言語）はブラウザが元サイト指定のフォントへ自動フォールバックします。
 
 ## 📥 インストール
@@ -25,7 +25,7 @@
 - 🔄 **完全自動**: インストールするだけで、あらゆるサイトのフォントが自動的に置換されます。
 - 📦 **モダンなWeb対応**: 一般的な拡張機能では対応が難しい **Shadow DOM** 内のフォントも漏らさず置換します（YouTube や各種モダンなWebアプリに対応）。
 - 🎯 **デザインを尊重**: フォントの種類（ゴシック/明朝/等幅）を判別し、元のデザイン意図を維持したまま最適なフォントへ置き換えます。
-- 🛠️ **広範なサポート**: Windows/Mac/Linux の標準フォントから、Inter や Roboto などの主要な Web フォントまで幅広くカバーしています。
+- 🛠️ **広範なサポート**: OS 標準のフォントから主要な Web フォントまで幅広くカバーしています。
 - 🌐 **多言語対応**: 置換フォントが持つ文字範囲で自然に置き換わり、カバーされない文字は CSS font fallback で元の指定へ戻ります。
 
 ## 🔤 選択可能フォント
@@ -54,10 +54,10 @@
 ## 🔄 置換の仕組み
 
 ### 一般的なフォント（ゴシック体・明朝体）→ 選択した本文フォント
-`ＭＳ Ｐゴシック`、`メイリオ`、`游ゴシック` などの標準的な日本語フォントに加え、`Arial`、`Helvetica`、`Inter`、`system-ui` などの欧文・システムフォントも選択した本文フォントに置換します。読みづらい明朝体も視認性の高いフォントに置き換わるため、長文の閲覧も快適になります。
+サイトが指定した日本語のゴシック体・明朝体と、欧文やシステム既定のフォントを、選択した本文フォントに置換します。読みづらい明朝体も視認性の高い書体に置き換わるため、長文の閲覧も快適になります。
 
 ### 等幅フォント・コード → 選択した等幅フォント
-`ＭＳ ゴシック` や `Consolas`、`JetBrains Mono` などの等幅フォントを、選択した等幅フォントに置換します。
+サイトが指定した等幅フォントを、選択した等幅フォントに置換します。
 GitHub のコード表示や、技術ブログのコードブロック、入力フォームなども圧倒的に読みやすくなります。
 
 ## 🔧 ローカル開発・派生版ビルド
@@ -89,7 +89,7 @@ pnpm run build:notosans     # Noto Sans JP + UDEV Gothic JPDOC 固定の派生�
 
 This extension automatically replaces hard-to-read fonts on websites with user-selected fonts. Available for **Chrome** and **Firefox**.
 Choose from **9 fonts** (6 body + 3 monospace) via a popup dropdown. Settings persist across browser sessions.
-It targets specific fonts (MS Gothic, Meiryo, Yu Gothic, System fonts, etc.) to improve legibility while preserving the original site design.
+It targets only hard-to-read fonts to improve legibility while preserving the original site design.
 Characters are replaced only within the glyph coverage of the selected font; uncovered scripts (e.g., Arabic, Thai) fall back to the site's original font via CSS cascade.
 
 ### Install
@@ -108,7 +108,7 @@ Characters are replaced only within the glyph coverage of the selected font; unc
 - 🔄 **Fully Automatic**: Works instantly across all websites without configuration.
 - 📦 **Modern Web Support**: Supports **Shadow DOM** elements (works on YouTube and modern web apps).
 - 🎯 **Preserve Intent**: Replaces fonts based on their type (Gothic, Serif, or Monospace) to maintain the intended layout.
-- 🛠️ **Broad Coverage**: Covers everything from OS standard fonts to popular web fonts like Inter and Roboto.
+- 🛠️ **Broad Coverage**: Covers everything from OS standard fonts to popular web fonts.
 - 🌐 **Multilingual-friendly**: Replacement follows the selected font's glyph coverage; uncovered characters fall back via CSS cascade.
 
 ### Available Fonts
