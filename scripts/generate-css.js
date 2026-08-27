@@ -48,6 +48,9 @@ const GOTHIC_FONT_FAMILIES = [
   'FKGrotesk', 'FKGroteskNeue', 'FKGroteskNeueThin', 'FKDisplay',
   'IBM Plex Sans', 'IBMPlexSans',
   'ABC Social', 'Graphik', 'Euclid Circular',
+  // X / Twitter の現行・旧称 Web フォント。サイト側 @font-face を無効化し、
+  // fallback chain を置換フォントへ到達させるため exact family 名を保持する。
+  'TwitterChirp', 'TwitterChirpExtendedHeavy', 'Chirp',
   'Manrope', 'Poppins', 'Outfit', 'Plus Jakarta Sans',
   'Söhne', 'Söhne-Buch', 'Söhne-Kraft',
   'Signifer',
@@ -263,6 +266,13 @@ ${monoVarsSet}
 :root :is(${bodyForceCompound}):not(:where(${editableExclusion})),
 :host :is(${bodyForceCompound}):not(:where(${editableExclusion})) {
   font-family: "__BODY_FONT_NAME__", __BODY_FONT_FALLBACK__ !important;
+}
+
+/* Google AdSense のページ見出しは固定 line-height に overflow: auto を指定しており、
+   置換フォントのメトリクスが縦に 1〜2px はみ出すと Windows の縦スクロールバーが現れる。
+   横方向の overflow は維持し、不要な縦スクロールバーだけを抑える。 */
+as-app-header .as-app-header-title > h1.as-app-title {
+  overflow-y: hidden !important;
 }
 
 :root :is(${monoForceCompound}):not(:where(${editableExclusion})),

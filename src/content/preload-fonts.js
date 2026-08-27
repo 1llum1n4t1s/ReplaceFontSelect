@@ -53,38 +53,6 @@
   const CSS_BASE_URL = `${BASE_URL}src/css/`;
   const TEMPLATE_CSS_URL = `${CSS_BASE_URL}replacefont-extension.css`;
 
-  // ── 早期 <head> 監視バッファ ──
-  // (P2-2) cap で上限を設けて、 大量に push される長尺ページでメモリ膨張を防ぐ。
-  // 急ぐ stylesheet (最初の EARLY_STYLE_BUFFER_CAP 個) だけ通常通り捕捉し、 cap 超過分は無視する。
-  // setupStyleSheetMonitor 側で headObserver が継続して新規シートを捕捉するので、 cap 超過分は実害なし。
-  const EARLY_STYLE_BUFFER_CAP = 50;
-  const earlyStyleBuffer = [];
-  let earlyHeadObserver = null;
-
-  function startEarlyHeadMonitor() {
-    if (earlyHeadObserver) return;
-    const head = document.head;
-    if (!head) return;
-    earlyHeadObserver = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (earlyStyleBuffer.length >= EARLY_STYLE_BUFFER_CAP) return;
-          if (node.nodeName === 'STYLE' ||
-              (node.nodeName === 'LINK' && (node.rel === 'stylesheet' || node.as === 'style'))) {
-            earlyStyleBuffer.push(node);
-          }
-        }
-      }
-    });
-    earlyHeadObserver.observe(head, { childList: true });
-    disposers.push(() => {
-      if (earlyHeadObserver) {
-        earlyHeadObserver.disconnect();
-        earlyHeadObserver = null;
-      }
-    });
-  }
-
   // ── 状態管理 ──
   const fixedCSSCache = new Map();
   let sharedStyleSheetPromise = null;
@@ -138,9 +106,7 @@
    * プリセットJSが注入した <style data-replace-font="preset"> がDOMに存在するかチェックする
    */
   function checkPresetCSSInDOM() {
-    const root = document.head || document.documentElement;
-    if (!root) return false;
-    return root.querySelector(`style[${RFS_SELECTOR}="${RFS_PRESET}"]`) !== null;
+    return document.querySelector(`style[${RFS_SELECTOR}="${RFS_PRESET}"]`) !== null;
   }
 
   /**
@@ -214,8 +180,7 @@
     const promise = (async () => {
       try {
         if (prebuiltCSSRegistered) {
-          const presetStyle = (document.head || document.documentElement)
-            ?.querySelector(`style[${RFS_SELECTOR}="${RFS_PRESET}"]`);
+          const presetStyle = document.querySelector(`style[${RFS_SELECTOR}="${RFS_PRESET}"]`);
           if (presetStyle) {
             return presetStyle.textContent;
           }
@@ -266,7 +231,7 @@
   }
 
   // ── Shadow DOM 対応 ──
-  // inject.js は manifest の content_scripts で MAIN world / document_start 登録済み。
+  // inject.js は有効時だけ background.js が MAIN world / document_start へ動的登録する。
   // host 要素に data-rfs-shadow="" 属性が一時的に付くのを attributeFilter 付き
   // MutationObserver で直接検知する (MutationRecord.target が host そのもの)。
   // 旧実装はイベント受信ごとに document.querySelectorAll('[data-rfs-shadow]') で
@@ -317,9 +282,13 @@
       if (root instanceof ShadowRoot) {
         const sheet = await getSharedStyleSheet();
         if (sheet) {
-          root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
-          root._replaceFontApplied = true;
-          return;
+          try {
+            root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+            root._replaceFontApplied = true;
+            return;
+          } catch (e) {
+            log('[フォント置換] adoptedStyleSheets 採用失敗、style 注入へフォールバック:', e && e.message);
+          }
         }
       }
 
@@ -638,56 +607,74 @@
     return set;
   }
 
+  function collectTargetFamilies(rules, replacementNames, targetFamilies) {
+    if (!rules) return;
+    for (const rule of rules) {
+      if (rule.type !== CSSRule.FONT_FACE_RULE) continue;
+      const family = getFontFamilyName(rule);
+      if (family && !replacementNames.has(family)) targetFamilies.add(family);
+    }
+  }
+
+  function collectTargetFamiliesFromExtensionText(extStyles, replacementNames, targetFamilies) {
+    if (typeof CSSStyleSheet !== 'function') return;
+    for (const node of extStyles) {
+      if (!node.textContent) continue;
+      try {
+        // node.sheet.cssRules が参照できない環境でも、拡張機能自身が生成した CSS 文字列は
+        // Constructable Stylesheet へ再パースできる。FONT_REGISTRY の置換先名だけに
+        // 退化させず、Chirp などの source alias をすべて回収する。
+        const parsed = new CSSStyleSheet();
+        parsed.replaceSync(node.textContent);
+        collectTargetFamilies(parsed.cssRules, replacementNames, targetFamilies);
+      } catch (e) {}
+    }
+  }
+
   function setupStyleSheetMonitor() {
     if (styleSheetMonitorActive || !document.head) return;
     styleSheetMonitorActive = true;
 
-    if (earlyHeadObserver) {
-      earlyHeadObserver.disconnect();
-      earlyHeadObserver = null;
-    }
-
     // 置換対象フォントファミリーを「拡張機能のCSS」から収集
     const targetFamilies = new Set();
+    const replacementNames = getReplacementNameSet();
+    const extStyles = document.querySelectorAll(
+      `style[${RFS_SELECTOR}="${RFS_PRESET}"], style[${RFS_SELECTOR}="${RFS_FALLBACK}"]`
+    );
     try {
-      const replacementNames = getReplacementNameSet();
 
       // 拡張機能が定義した @font-face のファミリー名を収集
       // 属性値で 'preset' か 'fallback' を指定して <style data-replace-font="dynamic"> を除外
-      const extSheets = document.querySelectorAll(
-        `style[${RFS_SELECTOR}="${RFS_PRESET}"], style[${RFS_SELECTOR}="${RFS_FALLBACK}"]`
-      );
-      for (const node of extSheets) {
+      for (const node of extStyles) {
         const sheet = node.sheet;
         if (!sheet) continue;
         try {
-          for (const rule of sheet.cssRules) {
-            if (rule.type === CSSRule.FONT_FACE_RULE) {
-              const family = getFontFamilyName(rule);
-              if (family && !replacementNames.has(family)) {
-                targetFamilies.add(family);
-              }
-            }
-          }
+          collectTargetFamilies(sheet.cssRules, replacementNames, targetFamilies);
         } catch (e) {}
       }
     } catch (e) {
       log('[フォント置換] 置換対象フォント一覧の構築に失敗:', e.message);
     }
 
-    // 空の場合は FONT_REGISTRY から直接フォールバック構築（CSP で cssRules 取得失敗時の保険）
+    // cssRules 参照に失敗しても、拡張機能自身の CSS テキストから source alias を再構築する。
+    if (targetFamilies.size === 0) {
+      collectTargetFamiliesFromExtensionText(extStyles, replacementNames, targetFamilies);
+    }
+
+    // CSS の再パースも使えない古い環境だけ FONT_REGISTRY を最終フォールバックにする。
     if (targetFamilies.size === 0) {
       const fallback = buildTargetFamiliesFromRegistry();
       for (const name of fallback) targetFamilies.add(name);
     }
 
     if (targetFamilies.size === 0) {
-      earlyStyleBuffer.length = 0;
       return;
     }
 
     let hasBlockedSheets = false;
     const processedSheets = new WeakSet();
+    const pendingLinkLoads = new WeakSet();
+    const styleNodeSelector = 'style, link[rel~="stylesheet" i], link[as="style" i]';
 
     function neutralizeCompetingFontFaces(sheet) {
       if (!sheet) return true;
@@ -716,19 +703,36 @@
       }
       if (node.nodeName === 'LINK') {
         if (node.sheet) {
+          pendingLinkLoads.delete(node);
           neutralizeCompetingFontFaces(node.sheet);
-        } else {
+        } else if (!pendingLinkLoads.has(node)) {
+          pendingLinkLoads.add(node);
           node.addEventListener('load', () => {
+            pendingLinkLoads.delete(node);
             if (node.sheet) neutralizeCompetingFontFaces(node.sheet);
           }, { once: true });
         }
       }
     }
 
+    function processStyleSubtree(node) {
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (node.matches(styleNodeSelector)) processStyleNode(node);
+      for (const child of node.querySelectorAll(styleNodeSelector)) {
+        processStyleNode(child);
+      }
+    }
+
+    // monitor の起動前に追加済みの全 style/link を処理する。
+    // link の sheet が未ロードなら load listener を付けるため、件数 cap は不要。
+    for (const node of document.querySelectorAll(styleNodeSelector)) {
+      processStyleNode(node);
+    }
+
     // (P2-1) 初回走査は targetFamilies 構築の直後ではなく DOMContentLoaded まで遅延する 2-tier 戦略。
     // document_start 時点の `document.styleSheets` は通常空〜数枚で初回走査の体感メリットが薄い一方、 大規模サイトでは
     // ロード中シートを早期 access すると CPU を奪うため、 ready 段階に揃ってから 1 回だけ走査する方が効率的。
-    // headObserver による後続シート検知は document_start で先に設置するので、 ready より前に挿入されたシートも捕捉できる。
+    // styleObserver は直後に documentElement 全体へ設置し、ready より前の後続シートも捕捉する。
     const runInitialScan = () => {
       for (const sheet of document.styleSheets) {
         if (!sheet.ownerNode?.dataset?.[RFS_ATTR]) {
@@ -737,12 +741,6 @@
           }
         }
       }
-
-      for (const node of earlyStyleBuffer) {
-        processStyleNode(node);
-      }
-      earlyStyleBuffer.length = 0;
-
       if (hasBlockedSheets) {
         const extStyle = document.querySelector(`style[${RFS_SELECTOR}]`);
         if (extStyle?.parentNode) {
@@ -758,22 +756,22 @@
       runInitialScan();
     }
 
-    const headObserver = new MutationObserver((mutations) => {
+    const styleObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          const isStyle = node.nodeName === 'STYLE';
-          const isLink = node.nodeName === 'LINK' &&
-            (node.rel === 'stylesheet' || node.as === 'style');
-          if (isStyle || isLink) processStyleNode(node);
+          processStyleSubtree(node);
         }
       }
     });
 
-    headObserver.observe(document.head, { childList: true });
-    const onHeadPagehide = () => headObserver.disconnect();
-    const onHeadPageshow = (e) => {
-      if (e.persisted && document.head) {
-        headObserver.observe(document.head, { childList: true });
+    styleObserver.observe(document.documentElement, { childList: true, subtree: true });
+    const onStylePagehide = () => styleObserver.disconnect();
+    const onStylePageshow = (e) => {
+      if (e.persisted && document.documentElement) {
+        styleObserver.observe(document.documentElement, { childList: true, subtree: true });
+        for (const node of document.querySelectorAll(styleNodeSelector)) {
+          processStyleNode(node);
+        }
         for (const sheet of document.styleSheets) {
           if (!sheet.ownerNode?.dataset?.[RFS_ATTR]) {
             neutralizeCompetingFontFaces(sheet);
@@ -781,12 +779,12 @@
         }
       }
     };
-    window.addEventListener('pagehide', onHeadPagehide);
-    window.addEventListener('pageshow', onHeadPageshow);
+    window.addEventListener('pagehide', onStylePagehide);
+    window.addEventListener('pageshow', onStylePageshow);
     disposers.push(() => {
-      headObserver.disconnect();
-      window.removeEventListener('pagehide', onHeadPagehide);
-      window.removeEventListener('pageshow', onHeadPageshow);
+      styleObserver.disconnect();
+      window.removeEventListener('pagehide', onStylePagehide);
+      window.removeEventListener('pageshow', onStylePageshow);
     });
   }
 
@@ -830,15 +828,12 @@
 
     setupShadowDOMObserver();
 
-    const headWatcher = whenNodeReady(() => document.head, document.documentElement, startEarlyHeadMonitor);
-    if (headWatcher) disposers.push(() => headWatcher.disconnect());
-
     const settings = await loadFontSettings();
     log('[フォント置換] 設定読み込み完了:', settings, 'プリセットモード:', prebuiltCSSRegistered);
 
     if (!settings.enabled) {
       pendingRoots.clear();
-      // 無効時は監視自体を畳む (shadowHostObserver / shadow DOM observer / earlyHeadObserver)。
+      // 無効時は監視自体を畳む (shadowHostObserver / shadow DOM observer)。
       // 残すと injectCSS が新規 ShadowRoot を pendingRoots に溜め続け GC を阻害する。
       runDisposers();
       return;

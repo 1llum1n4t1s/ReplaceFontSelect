@@ -1,5 +1,5 @@
 /**
- * Service Worker — プリセットJSの動的登録
+ * Service Worker — プリセットJSと Shadow DOM フックの動的登録
  */
 
 // variant.js を先に読み込み、mergeFontSettings の lockedFonts override が効くようにする。
@@ -10,7 +10,9 @@ if (typeof importScripts === 'function') {
   importScripts('/src/content/variant.js', '/src/content/font-config.js');
 }
 
-const SCRIPT_ID = 'replace-font-css';
+const PRESET_SCRIPT_ID = 'replace-font-css';
+const SHADOW_INTERCEPT_SCRIPT_ID = 'replace-font-shadow-intercept';
+const MANAGED_SCRIPT_IDS = [PRESET_SCRIPT_ID, SHADOW_INTERCEPT_SCRIPT_ID];
 const STORAGE_DEBOUNCE_MS = 150;
 
 let _storageDebounceTimer = null;
@@ -38,7 +40,7 @@ async function loadSettings() {
  */
 async function isRegistrationUpToDate(desired) {
   try {
-    const current = await chrome.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID] });
+    const current = await chrome.scripting.getRegisteredContentScripts({ ids: [desired.id] });
     if (!current || current.length === 0) return false;
     const reg = current[0];
     // excludeMatches の同一性チェック: 順序非依存・要素一致で比較する。
@@ -61,59 +63,67 @@ async function isRegistrationUpToDate(desired) {
   }
 }
 
+async function ensureScriptRegistration(scriptConfig) {
+  if (await isRegistrationUpToDate(scriptConfig)) return true;
+
+  // 既登録なら原子的に更新し、ID がまだ無い初回だけ register へフォールバックする。
+  try {
+    await chrome.scripting.updateContentScripts([scriptConfig]);
+    return true;
+  } catch (_) {
+    try {
+      await chrome.scripting.registerContentScripts([scriptConfig]);
+      return true;
+    } catch (e) {
+      console.error(`[フォント置換] JS登録失敗 (${scriptConfig.id}):`, e && e.message);
+      return false;
+    }
+  }
+}
+
 async function _doEnsureRegistration(settings) {
   const presetKey = FONT_REGISTRY.presetRegisteredKey;
 
   if (!settings.enabled) {
-    try { await chrome.scripting.unregisterContentScripts({ ids: [SCRIPT_ID] }); } catch {}
+    try { await chrome.scripting.unregisterContentScripts({ ids: MANAGED_SCRIPT_IDS }); } catch {}
     try { await chrome.storage.local.set({ [presetKey]: false }); } catch {}
     return;
   }
 
   const jsPath = getPresetPath(settings);
   // variant 設定の excludeMatches を動的登録にも反映する。
-  // manifest.json の content_scripts.exclude_matches は宣言的に登録された
-  // inject.js / variant.js / font-config.js / preload-fonts.js にしか効かない。
-  // 動的登録のプリセット JS が SharePoint / Docs 等の保護対象ドメインで走ってしまうのを防ぐ。
+  // manifest.json の content_scripts.exclude_matches は宣言的な preload 側にしか効かない。
+  // 動的登録するプリセット JS と MAIN world フックにも同じ除外を適用する。
   const excludeMatches = (typeof VARIANT !== 'undefined' && Array.isArray(VARIANT.excludeMatches))
     ? VARIANT.excludeMatches.slice()
     : [];
-  const scriptConfig = {
-    id: SCRIPT_ID,
+  const commonConfig = {
     matches: ['<all_urls>'],
-    js: [jsPath],
     runAt: 'document_start',
     allFrames: true,
-    world: 'ISOLATED',
     persistAcrossSessions: true
   };
   if (excludeMatches.length > 0) {
-    scriptConfig.excludeMatches = excludeMatches;
+    commonConfig.excludeMatches = excludeMatches;
   }
+  const presetConfig = {
+    ...commonConfig,
+    id: PRESET_SCRIPT_ID,
+    js: [jsPath],
+    world: 'ISOLATED'
+  };
+  const shadowConfig = {
+    ...commonConfig,
+    id: SHADOW_INTERCEPT_SCRIPT_ID,
+    js: ['src/content/inject.js'],
+    world: 'MAIN'
+  };
 
-  // 差分チェック: 現在の登録内容が希望形と一致していれば skip（不要な API 呼び出し削減）
-  if (await isRegistrationUpToDate(scriptConfig)) {
-    try { await chrome.storage.local.set({ [presetKey]: true }); } catch {}
-    return;
-  }
-
-  // (P1-8) updateContentScripts への移行: 既登録ありなら 1 回の API call で原子的に更新。
-  // unregister + register の 2 round-trip 中に SW evict されると ID 重複 / 中断状態になり得るリスクを解消。
-  // 既登録なしの初回は updateContentScripts が失敗するので、 その時のみ register にフォールバック。
-  let registered = false;
-  try {
-    await chrome.scripting.updateContentScripts([scriptConfig]);
-    registered = true;
-  } catch (_) {
-    // 初回登録 / ID 不在: register でフォールバック (この経路は通常 onInstalled 直後のみ)
-    try {
-      await chrome.scripting.registerContentScripts([scriptConfig]);
-      registered = true;
-    } catch (e) {
-      console.error('[フォント置換] JS登録失敗:', e && e.message);
-    }
-  }
-  try { await chrome.storage.local.set({ [presetKey]: registered }); } catch {}
+  const [presetRegistered] = await Promise.all([
+    ensureScriptRegistration(presetConfig),
+    ensureScriptRegistration(shadowConfig)
+  ]);
+  try { await chrome.storage.local.set({ [presetKey]: presetRegistered }); } catch {}
 }
 
 /**
