@@ -35,6 +35,8 @@
 
 このデータはブラウザ内にのみ保存され、外部サーバーへの送信は一切行いません。
 
+お問い合わせでメール認証に成功した場合は、認証済みメールアドレス、アクセストークン、有効期限を拡張機能オリジンの `localStorage` に保存します。期限切れまたは不正なセッション情報は削除されます。この情報はお問い合わせ API の認証以外には使用しません。
+
 ### お問い合わせフォーム
 
 設定ポップアップ下部の「お問い合わせ」ボタンからフォームを送信したときだけ、次の情報を Kagayoi Support（`https://support.kagayoi.com`）へ送信します。ボタンを押さない限り、この通信は発生しません。
@@ -44,17 +46,19 @@
 
 初回はメールで届く6桁の確認コードを Kagayoi Support へ送信して本人確認します。認証後の問い合わせと返信は、利用者本人とサポート担当者が確認できるよう Kagayoi Support に保存します。閲覧中のページの内容やフォント設定は送信しません。
 
+Firefox では、初回送信前に、個人識別情報・認証情報・個人的な通信内容を Kagayoi Support へ送信する許可をブラウザの確認画面で求めます。許可しなかった場合、お問い合わせ情報は送信されません。
+
 ### 権限について
 
 | 権限 | 理由 |
 |---|---|
 | `<all_urls>` (host_permissions) | ユーザーが訪問するすべてのウェブページでフォント置換を実行するため。データの収集や送信には使用しません。 |
-| `storage` | フォント選択設定の保存のみに使用。保存されるのはフォント識別子の文字列とブーリアンのみです。 |
-| `scripting` | ブラウザ起動時に `chrome.scripting.registerContentScripts` でプリセット CSS を注入する content script を登録するため。スクリプトは拡張機能バンドル内の静的ファイル（`src/css/preset-*.js`）のみで、外部取得や動的コード生成は行いません。 |
+| `storage` | フォント設定と、プリセット登録済みかを示す内部フラグの保存に使用します。 |
+| `scripting` | 有効時に、同梱プリセット CSS と Shadow DOM 検出用スクリプトを `chrome.scripting.registerContentScripts` で登録するため。外部コードの取得や動的コード生成は行いません。 |
 
 ### 第三者への情報提供
 
-広告ネットワーク・分析ツール・外部サービスとの連携は一切ありません。
+広告ネットワークや分析ツールは使用しません。外部サービスとの通信は、利用者が問い合わせを送信するときの Kagayoi Support に限られます。
 
 ---
 
@@ -85,10 +89,11 @@ This extension uses `chrome.storage.local` to store only:
 - Selected body font key (e.g. `noto-sans-jp`)
 - Selected body font weight (`400` or `500`)
 - Selected monospace font key (e.g. `udev-gothic-jpdoc`)
-- Simple mode flag (boolean, when ON fixes fonts to Noto Sans JP + UDEV Gothic JPDOC)
 - A boolean flag indicating whether preset CSS was registered (internal state)
 
 This data is stored only within the browser and is never transmitted to external servers.
+
+After successful email verification, the verified email address, access token, and expiration time are stored in the extension origin's `localStorage`. Expired or invalid session data is removed. This data is used only to authenticate requests to the support API.
 
 ### Contact form
 
@@ -99,14 +104,16 @@ Only when you press "Contact support" at the bottom of the settings popup and su
 
 On first use, the six-digit code delivered by email is sent to Kagayoi Support to verify you. After verification, Kagayoi Support stores the inquiry and replies so that you and support staff can access them. The content of pages you browse and your font settings are never sent.
 
+On Firefox, before the first transmission, the browser asks you to permit sending personally identifying information, authentication information, and personal communications to Kagayoi Support. If you decline, the inquiry data is not sent.
+
 ### Permissions
 
 | Permission | Reason |
 |---|---|
 | `<all_urls>` (host_permissions) | Required to run font replacement on every page the user visits. Never used for data collection. |
-| `storage` | Used solely to persist font preferences. Only identifier strings and booleans are stored. |
-| `scripting` | Required to register a preset-CSS content script via `chrome.scripting.registerContentScripts` at startup. The script source is a static file shipped inside the extension bundle (`src/css/preset-*.js`); no remote code is fetched or evaluated. |
+| `storage` | Used to persist font settings and an internal flag indicating preset-registration status. |
+| `scripting` | Used while enabled to register the bundled preset CSS and Shadow DOM detector via `chrome.scripting.registerContentScripts`. No remote code is fetched or evaluated. |
 
 ### Third-Party Data Sharing
 
-No advertising networks, analytics tools, or external service integrations are used.
+No advertising networks or analytics tools are used. The only external-service communication is with Kagayoi Support when you choose to submit an inquiry.

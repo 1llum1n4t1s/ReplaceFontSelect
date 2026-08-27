@@ -47,6 +47,7 @@
           <li>製品ID、拡張機能のバージョン、ロケール</li>
         </ul>
         <p>初回はメールで届く6桁の確認コードを Kagayoi Support へ送信して本人確認します。認証後の問い合わせと返信は、利用者本人とサポート担当者が確認できるよう Kagayoi Support に保存します。閲覧中のページの内容やフォント設定は送信しません。</p>
+        <p>Firefox では、初回送信前に、個人識別情報・認証情報・個人的な通信内容を Kagayoi Support へ送信する許可をブラウザの確認画面で求めます。許可しなかった場合、お問い合わせ情報は送信されません。</p>
         <h3>データの保存について</h3>
         <p>本拡張機能は <code>chrome.storage.local</code> を使用して以下のデータのみを保存します：</p>
         <ul>
@@ -57,15 +58,16 @@
           <li>登録済みプリセット CSS のフラグ（boolean、内部状態）</li>
         </ul>
         <p>このデータはブラウザ内にのみ保存され、外部サーバーへの送信は一切行いません。</p>
+        <p>お問い合わせでメール認証に成功した場合は、認証済みメールアドレス、アクセストークン、有効期限を拡張機能オリジンの <code>localStorage</code> に保存します。期限切れまたは不正なセッション情報は削除され、お問い合わせ API の認証以外には使用しません。</p>
         <h3>権限について</h3>
         <div class="table-scroll"><table>
           <tr><th>権限</th><th>理由</th></tr>
           <tr><td><code>&lt;all_urls&gt;</code> (host_permissions)</td><td>ユーザーが訪問するすべてのウェブページでフォント置換を実行するため。データの収集や送信には使用しません。</td></tr>
-          <tr><td><code>storage</code></td><td>フォント選択設定の保存のみに使用。保存されるのはフォント識別子の文字列とブーリアンのみです。</td></tr>
-          <tr><td><code>scripting</code></td><td>ブラウザ起動時に <code>chrome.scripting.registerContentScripts</code> でプリセット CSS を注入する content script を登録するため。スクリプトは拡張機能バンドル内の静的ファイル（<code>src/css/preset-*.js</code>）のみで、外部取得や動的コード生成は行いません。</td></tr>
+          <tr><td><code>storage</code></td><td>フォント設定と、プリセット登録済みかを示す内部フラグの保存に使用します。</td></tr>
+          <tr><td><code>scripting</code></td><td>有効時に、同梱プリセット CSS と Shadow DOM 検出用スクリプトを <code>chrome.scripting.registerContentScripts</code> で登録するため。外部コードの取得や動的コード生成は行いません。</td></tr>
         </table></div>
         <h3>第三者への情報提供</h3>
-        <p>広告ネットワーク・分析ツール・外部サービスとの連携は一切ありません。</p>
+        <p>広告ネットワークや分析ツールは使用しません。外部サービスとの通信は、利用者が問い合わせを送信するときの Kagayoi Support に限られます。</p>
         <p>---</p>
       </section>
       <section>
@@ -88,6 +90,7 @@
           <li>Product ID, extension version, and locale</li>
         </ul>
         <p>On first use, the six-digit code delivered by email is sent to Kagayoi Support to verify you. After verification, Kagayoi Support stores the inquiry and replies so that you and support staff can access them. The content of pages you browse and your font settings are never sent.</p>
+        <p>On Firefox, before the first transmission, the browser asks you to permit sending personally identifying information, authentication information, and personal communications to Kagayoi Support. If you decline, the inquiry data is not sent.</p>
         <h3>Data Storage</h3>
         <p>This extension uses <code>chrome.storage.local</code> to store only:</p>
         <ul>
@@ -95,19 +98,19 @@
           <li>Selected body font key (e.g. <code>noto-sans-jp</code>)</li>
           <li>Selected body font weight (<code>400</code> or <code>500</code>)</li>
           <li>Selected monospace font key (e.g. <code>udev-gothic-jpdoc</code>)</li>
-          <li>Simple mode flag (boolean, when ON fixes fonts to Noto Sans JP + UDEV Gothic JPDOC)</li>
           <li>A boolean flag indicating whether preset CSS was registered (internal state)</li>
         </ul>
         <p>This data is stored only within the browser and is never transmitted to external servers.</p>
+        <p>After successful email verification, the verified email address, access token, and expiration time are stored in the extension origin's <code>localStorage</code>. Expired or invalid session data is removed. This data is used only to authenticate requests to the support API.</p>
         <h3>Permissions</h3>
         <div class="table-scroll"><table>
           <tr><th>Permission</th><th>Reason</th></tr>
           <tr><td><code>&lt;all_urls&gt;</code> (host_permissions)</td><td>Required to run font replacement on every page the user visits. Never used for data collection.</td></tr>
-          <tr><td><code>storage</code></td><td>Used solely to persist font preferences. Only identifier strings and booleans are stored.</td></tr>
-          <tr><td><code>scripting</code></td><td>Required to register a preset-CSS content script via <code>chrome.scripting.registerContentScripts</code> at startup. The script source is a static file shipped inside the extension bundle (<code>src/css/preset-*.js</code>); no remote code is fetched or evaluated.</td></tr>
+          <tr><td><code>storage</code></td><td>Used to persist font settings and an internal flag indicating preset-registration status.</td></tr>
+          <tr><td><code>scripting</code></td><td>Used while enabled to register the bundled preset CSS and Shadow DOM detector via <code>chrome.scripting.registerContentScripts</code>. No remote code is fetched or evaluated.</td></tr>
         </table></div>
         <h3>Third-Party Data Sharing</h3>
-        <p>No advertising networks, analytics tools, or external service integrations are used.</p>
+        <p>No advertising networks or analytics tools are used. The only external-service communication is with Kagayoi Support when you choose to submit an inquiry.</p>
       </section>
     <section>
       <h2>この文書の正本</h2>

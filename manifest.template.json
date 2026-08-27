@@ -8,8 +8,16 @@
       "id": "__VARIANT_GECKO_ID__",
       "strict_min_version": "140.0",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": ["none"],
+        "optional": [
+          "personallyIdentifyingInfo",
+          "authenticationInfo",
+          "personalCommunications"
+        ]
       }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
     }
   },
   "permissions": [
@@ -34,13 +42,6 @@
     "<all_urls>"
   ],
   "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["src/content/inject.js"],
-      "all_frames": true,
-      "run_at": "document_start",
-      "world": "MAIN"
-    },
     {
       "matches": ["<all_urls>"],
       "js": [

@@ -188,7 +188,7 @@
                 <ul>
                     <li><strong>フォント置換の処理はブラウザ内で完結</strong>：外部サーバーへの通信は、利用者がお問い合わせフォームを送信したときだけ発生します</li>
                     <li><strong>フォントファイルは拡張機能内に同梱</strong>：外部からのフォント読み込みは行いません</li>
-                    <li><strong>データの保存なし</strong>：ブラウザのローカルストレージやサーバーへのデータ保存は行いません</li>
+                    <li><strong>必要最小限の保存</strong>：フォント設定と内部状態はブラウザ内に保存し、お問い合わせの認証セッション・本文・返信はサポート提供に必要な範囲で保存します</li>
                 </ul>
             </div>
 
@@ -210,7 +210,8 @@
                     <li>入力されたメールアドレス、お名前（任意）、問い合わせ種別、件名、本文</li>
                     <li>製品ID、拡張機能のバージョン、ロケール</li>
                 </ul>
-                <p>初回はメールで届く6桁の確認コードを Kagayoi Support へ送信して本人確認します。認証後の問い合わせと返信は、利用者本人とサポート担当者が確認できるよう Kagayoi Support に保存します。閲覧中のページの内容やフォント設定は送信しません。</p>
+                <p>初回はメールで届く6桁の確認コードを Kagayoi Support へ送信して本人確認します。認証後の問い合わせと返信は、利用者本人とサポート担当者が確認できるよう Kagayoi Support に保存します。認証済みメールアドレス、アクセストークン、有効期限は拡張機能オリジンの localStorage に保存し、期限切れまたは不正なセッションは削除します。閲覧中のページの内容やフォント設定は送信しません。</p>
+                <p>Firefox では、初回送信前に、個人識別情報・認証情報・個人的な通信内容を送信する許可をブラウザの確認画面で求めます。許可しなかった場合、お問い合わせ情報は送信されません。</p>
             </div>
 
             <div class="section">
@@ -219,7 +220,7 @@
                 <ul>
                     <li>広告ネットワークへの情報提供なし</li>
                     <li>分析ツールの使用なし</li>
-                    <li>外部サービスとの連携なし</li>
+                    <li>Kagayoi Support 以外の外部サービスとの連携なし</li>
                 </ul>
             </div>
 
@@ -288,9 +289,9 @@
 
                 <h3>Key Points</h3>
                 <ul>
-                    <li><strong>All processing is done within the browser</strong>: No communication with external servers</li>
+                    <li><strong>Font replacement is done within the browser</strong>: External communication occurs only when you submit the contact form</li>
                     <li><strong>Font files are bundled with the extension</strong>: No external font loading</li>
-                    <li><strong>No data storage</strong>: No data is saved to browser local storage or servers</li>
+                    <li><strong>Minimal storage</strong>: Font settings and internal state stay in the browser; support session data, inquiries, and replies are stored only as needed to provide support</li>
                 </ul>
             </div>
 
@@ -312,7 +313,8 @@
                     <li>The email address, optional name, inquiry category, subject, and message you entered</li>
                     <li>Product ID, extension version, and locale</li>
                 </ul>
-                <p>On first use, the six-digit code delivered by email is sent to Kagayoi Support to verify you. After verification, Kagayoi Support stores the inquiry and replies so that you and support staff can access them. The content of pages you browse and your font settings are never sent.</p>
+                <p>On first use, the six-digit code delivered by email is sent to Kagayoi Support to verify you. After verification, Kagayoi Support stores the inquiry and replies so that you and support staff can access them. The verified email address, access token, and expiration time are stored in the extension origin's localStorage; expired or invalid sessions are removed. The content of pages you browse and your font settings are never sent.</p>
+                <p>On Firefox, before the first transmission, the browser asks you to permit sending personally identifying information, authentication information, and personal communications. If you decline, the inquiry data is not sent.</p>
             </div>
 
             <div class="section">
@@ -321,7 +323,7 @@
                 <ul>
                     <li>No data sharing with advertising networks</li>
                     <li>No use of analytics tools</li>
-                    <li>No integration with external services</li>
+                    <li>No external-service integration other than Kagayoi Support</li>
                 </ul>
             </div>
 

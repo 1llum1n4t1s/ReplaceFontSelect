@@ -94,7 +94,7 @@ function buildVariantJs(variant) {
     // background.js の chrome.scripting.registerContentScripts / updateContentScripts に
     // excludeMatches として渡すため、 variant 設定をそのまま VARIANT に焼き込む。
     // manifest.json の content_scripts.exclude_matches は宣言的登録分にしか効かないので、
-    // 動的登録のプリセット JS にもここから同じ除外を流し込む必要がある。
+    // 動的登録のプリセット JS と MAIN world フックにも同じ除外を流し込む。
     excludeMatches: Array.isArray(variant.excludeMatches) ? variant.excludeMatches.slice() : []
   };
   const serialized = JSON.stringify(payload, null, 2);
