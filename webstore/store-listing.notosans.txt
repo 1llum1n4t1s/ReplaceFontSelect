@@ -1,0 +1,101 @@
+============================================================
+Chrome Web Store 掲載情報（コピペ用） — NotoSans 版
+アイテム ID: ipfbjlmjgfobhnncbggaaiknhdgkcdfe
+============================================================
+
+⚠️ キーワードスパム対策（2026-08-27 の違反指摘「Yellow Argon」への対応）
+   置換"元"のフォント名を列挙しない。Google は
+   「`ＭＳ Ｐゴシック`、`メイリオ`、`游ゴシック` などの標準的な日本語フォントに加え、
+     `Arial`、`Helvetica`、`Inter`、`system-ui` などの欧文・システムフォントも…」
+   を過剰なキーワードとして弾いた。置換"先"（同梱フォント）は機能の中核なので残してよいが、
+   置換元は「日本語のゴシック体・明朝体」「欧文やシステム既定のフォント」と一般名で書く。
+
+------------------------------------------------------------
+
+■ 名前（75文字以内）
+NotoSansへ置換するやつ(改修型)
+
+■ 概要（132文字以内）
+読みづらいフォントをNoto Sans JP / UDEV Gothic JPDOCに自動置換。パフォーマンス改善版。
+
+■ 説明（16,000文字以内）
+ウェブサイト上の読みづらいフォントを、Noto Sans JP と UDEV Gothic JPDOC に自動で置き換える拡張機能です。
+読みづらい指定フォントだけを狙い撃ちで置換するため、サイトのデザインを極力崩さずに視認性を大幅に向上させます。
+
+特徴
+
+・高速 & 軽量
+  ページの表示速度に影響を与えないよう、徹底的に最適化されています。
+
+・完全自動
+  インストールするだけで、あらゆるサイトのフォントが自動的に置換されます。
+
+・モダンなWeb対応
+  一般的な拡張機能では対応が難しい Shadow DOM 内のフォントも漏らさず置換します
+  （YouTube や各種モダンなWebアプリに対応）。
+
+・デザインを尊重
+  フォントの種類（ゴシック体／明朝体／等幅）を判別し、元のデザイン意図を維持したまま
+  最適なフォントへ置き換えます。
+
+・広範なサポート
+  OS 標準のフォントから主要な Web フォントまで幅広くカバーしています。
+
+置換の仕組み
+
+・本文 → Noto Sans JP
+  サイトが指定した日本語のゴシック体・明朝体と、欧文やシステム既定のフォントを
+  Noto Sans JP に置換します。読みづらい明朝体も視認性の高い書体に置き換わるため、
+  長文の閲覧も快適になります。
+
+・等幅・コード → UDEV Gothic JPDOC
+  サイトが指定した等幅フォントを、プログラミングや文書作成に最適な UDEV Gothic JPDOC に
+  置換します。GitHub のコード表示や、技術ブログのコードブロック、入力フォームなども
+  圧倒的に読みやすくなります。
+
+  UDEV Gothic JPDOC は、濁点・半濁点（「バ」と「パ」など）の判別がしやすく、
+  英数字（「1」と「l」、「0」と「O」）もはっきり区別できる等幅フォントです。
+
+同梱フォントはすべて拡張機能のパッケージに含まれており、実行時に外部から取得するものはありません。
+
+ライセンス
+・プロジェクト本体: MIT License
+・同梱フォント: SIL Open Font License 1.1
+
+------------------------------------------------------------
+
+■ English（説明欄の後半に併記）
+
+This extension automatically replaces hard-to-read fonts on websites with Noto Sans JP and
+UDEV Gothic JPDOC. It targets only hard-to-read fonts to improve legibility while preserving
+the original site design.
+
+Features
+・Fast & Lightweight: Optimized for minimal impact on page load speed.
+・Fully Automatic: Works instantly across all websites without configuration.
+・Modern Web Support: Supports Shadow DOM elements (works on YouTube and modern web apps).
+・Preserve Intent: Replaces fonts based on their category (sans-serif, serif, or monospace)
+  to maintain the intended layout.
+・Broad Coverage: Covers everything from OS standard fonts to popular web fonts.
+
+Replacement Logic
+・Body text: replaced with Noto Sans JP for better screen legibility.
+・Monospace and code: replaced with UDEV Gothic JPDOC, a high-legibility font optimized for
+  coding and documentation.
+
+All bundled fonts ship inside the extension package; nothing is fetched at runtime.
+
+------------------------------------------------------------
+
+■ プライバシー関連（【プライバシー】タブ）
+
+プライバシーポリシー URL
+https://replacefont.kagayoi.com/privacy
+
+データ使用の開示（お問い合わせフォームを同梱しているため必要）
+・個人を特定できる情報   … 問い合わせフォームのメールアドレス・お名前
+・認証に関する情報       … 6桁の確認コード、アクセストークン
+・個人的コミュニケーション … 問い合わせの件名・本文
+
+サポート URL
+https://support.kagayoi.com/
