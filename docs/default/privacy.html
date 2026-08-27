@@ -145,10 +145,10 @@
         <!-- Japanese Version -->
         <section id="ja">
             <h1>プライバシーポリシー</h1>
-            <p class="date">最終更新日: 2026年4月18日</p>
+            <p class="date">最終更新日: 2026年8月27日</p>
 
             <div class="info-box">
-                <p><strong>重要:</strong> この拡張機能は<span class="highlight">一切のユーザーデータを収集・保存・送信しません</span>。全ての処理はあなたのブラウザ内でローカルに完結します。</p>
+                <p><strong>重要:</strong> この拡張機能は、利用者が自分でお問い合わせフォームを送信したときを除き<span class="highlight">一切のユーザーデータを収集・保存・送信しません</span>。フォント置換の処理はすべてあなたのブラウザ内でローカルに完結します。</p>
             </div>
 
             <div class="section">
@@ -160,7 +160,7 @@
             <div class="section">
                 <h2>データ収集について</h2>
                 <h3>収集しないデータ</h3>
-                <p>本拡張機能は、以下を含むいかなるユーザーデータも収集しません：</p>
+                <p>本拡張機能は、以下を含むいかなるユーザーデータも自動的に収集することはありません（お名前とメールアドレスは、利用者がお問い合わせフォームに入力して送信したときだけ受け取ります）：</p>
                 <ul>
                     <li>個人情報（名前、メールアドレス、住所など）</li>
                     <li>ブラウジング履歴</li>
@@ -186,7 +186,7 @@
 
                 <h3>重要な点</h3>
                 <ul>
-                    <li><strong>全ての処理はブラウザ内で完結</strong>：外部サーバーへの通信は一切行いません</li>
+                    <li><strong>フォント置換の処理はブラウザ内で完結</strong>：外部サーバーへの通信は、利用者がお問い合わせフォームを送信したときだけ発生します</li>
                     <li><strong>フォントファイルは拡張機能内に同梱</strong>：外部からのフォント読み込みは行いません</li>
                     <li><strong>データの保存なし</strong>：ブラウザのローカルストレージやサーバーへのデータ保存は行いません</li>
                 </ul>
@@ -204,8 +204,18 @@
             </div>
 
             <div class="section">
+                <h2>お問い合わせフォーム</h2>
+                <p>設定ポップアップ下部の「お問い合わせ」ボタンからフォームを送信したときだけ、次の情報を Kagayoi Support（<code>https://support.kagayoi.com</code>）へ送信します。ボタンを押さない限り、この通信は発生しません。</p>
+                <ul>
+                    <li>入力されたメールアドレス、お名前（任意）、問い合わせ種別、件名、本文</li>
+                    <li>製品ID、拡張機能のバージョン、ロケール</li>
+                </ul>
+                <p>初回はメールで届く6桁の確認コードを Kagayoi Support へ送信して本人確認します。認証後の問い合わせと返信は、利用者本人とサポート担当者が確認できるよう Kagayoi Support に保存します。閲覧中のページの内容やフォント設定は送信しません。</p>
+            </div>
+
+            <div class="section">
                 <h2>第三者への情報提供</h2>
-                <p>本拡張機能は、いかなるデータも収集しないため、第三者への情報提供は一切ありません。</p>
+                <p>本拡張機能は、フォント置換の動作からいかなるデータも収集しないため、第三者への情報提供は一切ありません。お問い合わせフォームから送信された内容は、返信のために開発者（Kagayoi）のサポート窓口でのみ取り扱います。</p>
                 <ul>
                     <li>広告ネットワークへの情報提供なし</li>
                     <li>分析ツールの使用なし</li>
@@ -237,10 +247,10 @@
         <!-- English Version -->
         <section id="en">
             <h1>Privacy Policy</h1>
-            <p class="date">Last Updated: April 18, 2026</p>
+            <p class="date">Last Updated: August 27, 2026</p>
 
             <div class="info-box">
-                <p><strong>Important:</strong> This extension <span class="highlight">does not collect, store, or transmit any user data</span>. All processing is done locally within your browser.</p>
+                <p><strong>Important:</strong> Except for a contact form you submit yourself, this extension <span class="highlight">does not collect, store, or transmit any user data</span>. All font-replacement processing is done locally within your browser.</p>
             </div>
 
             <div class="section">
@@ -252,7 +262,7 @@
             <div class="section">
                 <h2>Data Collection</h2>
                 <h3>Data We Do NOT Collect</h3>
-                <p>This extension does not collect any user data, including but not limited to:</p>
+                <p>This extension never collects the following automatically (your name and email address are received only when you type them into the contact form and submit it):</p>
                 <ul>
                     <li>Personal information (name, email address, physical address, etc.)</li>
                     <li>Browsing history</li>
@@ -296,8 +306,18 @@
             </div>
 
             <div class="section">
+                <h2>Contact form</h2>
+                <p>Only when you press "Contact support" at the bottom of the settings popup and submit the form does the extension send the following to Kagayoi Support (<code>https://support.kagayoi.com</code>). No such request happens unless you press the button.</p>
+                <ul>
+                    <li>The email address, optional name, inquiry category, subject, and message you entered</li>
+                    <li>Product ID, extension version, and locale</li>
+                </ul>
+                <p>On first use, the six-digit code delivered by email is sent to Kagayoi Support to verify you. After verification, Kagayoi Support stores the inquiry and replies so that you and support staff can access them. The content of pages you browse and your font settings are never sent.</p>
+            </div>
+
+            <div class="section">
                 <h2>Third-Party Data Sharing</h2>
-                <p>Since this extension does not collect any data, there is no sharing of information with third parties.</p>
+                <p>Since this extension collects no data from font replacement, there is no sharing of information with third parties. What you submit through the contact form is handled solely by the developer's (Kagayoi) support desk in order to reply to you.</p>
                 <ul>
                     <li>No data sharing with advertising networks</li>
                     <li>No use of analytics tools</li>
