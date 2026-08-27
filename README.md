@@ -1,6 +1,6 @@
 # 目に優しいフォント置換
 
-[![Version](https://img.shields.io/badge/version-3.0.8-blue.svg)](https://github.com/1llum1n4t1s/ReplaceFontSelect)
+[![Version](https://img.shields.io/badge/version-3.0.14-blue.svg)](https://github.com/1llum1n4t1s/ReplaceFontSelect)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ウェブサイト上の読みづらいフォントを、好みのフォントに自動で置き換える Chrome / Firefox 拡張機能です。
@@ -10,23 +10,24 @@
 
 ## 📥 インストール
 
-| ブラウザ | リンク |
-|---------|--------|
-| **Chrome** | [Chrome Web Store](https://chrome.google.com/webstore/detail/TODO) |
-| **Firefox** | [Firefox Add-ons (AMO)](https://addons.mozilla.org/firefox/addon/TODO) |
+| 版 | Chrome | Firefox |
+|---|---|---|
+| **通常版**（フォント選択対応） | [Chrome Web Store](https://chromewebstore.google.com/detail/faghcoiecciapdokelomjgeknadokgeg) | [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/replacefontselect/) |
+| **Noto Sans JP 固定版** | [Chrome Web Store](https://chromewebstore.google.com/detail/ipfbjlmjgfobhnncbggaaiknhdgkcdfe) | [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/replacefontselectnotosans/) |
 
-> Firefox 140 以降に対応しています。
+> Firefox desktop 140 以降、Firefox Android 142 以降に対応しています。
 
 ## ✨ 特徴
 
 - 🎨 **フォント選択**: 本文用6種類・等幅用3種類から好みのフォントをポップアップで選択。設定は自動保存されます。
 - 🔘 **オン/オフ切り替え**: ポップアップのトグルボタンで、拡張機能の有効/無効を簡単に切り替えられます。
 - ⚡ **高速 & 軽量**: ページの表示速度に影響を与えないよう、徹底的に最適化されています。
-- 🔄 **完全自動**: インストールするだけで、あらゆるサイトのフォントが自動的に置換されます。
-- 📦 **モダンなWeb対応**: 一般的な拡張機能では対応が難しい **Shadow DOM** 内のフォントも漏らさず置換します（YouTube や各種モダンなWebアプリに対応）。
+- 🔄 **完全自動**: インストールするだけで、対応サイトのフォントが自動的に置換されます。編集・デザイン体験やアイコン表示を保護する必要がある一部サービスは対象外です。
+- 📦 **モダンなWeb対応**: 一般的な拡張機能では対応が難しい open / closed **Shadow DOM** 内のフォントにも対応します。
 - 🎯 **デザインを尊重**: フォントの種類（ゴシック/明朝/等幅）を判別し、元のデザイン意図を維持したまま最適なフォントへ置き換えます。
 - 🛠️ **広範なサポート**: OS 標準のフォントから主要な Web フォントまで幅広くカバーしています。
 - 🌐 **多言語対応**: 置換フォントが持つ文字範囲で自然に置き換わり、カバーされない文字は CSS font fallback で元の指定へ戻ります。
+- 💬 **お問い合わせ**: 設定ポップアップから Kagayoi Support へ問い合わせできます。Firefoxでは送信前にデータ送信許可を確認します。
 
 ## 🔤 選択可能フォント
 
@@ -74,7 +75,7 @@ pnpm run build:notosans     # Noto Sans JP + UDEV Gothic JPDOC 固定の派生�
 
 `manifest.json` と `src/content/variant.js` はビルド生成物（`.gitignore` 済）です。「Load unpacked」する前に必ず `pnpm run build:default` か `pnpm run build:notosans` を実行してください。
 
-詳細は [CLAUDE.md](CLAUDE.md) の "Variant System" セクションを参照。
+開発時の必須手順は [AGENTS.md](AGENTS.md)、システム設計は [DESIGN.md](DESIGN.md) を参照してください。
 
 ## 📄 ライセンス
 
@@ -94,22 +95,23 @@ Characters are replaced only within the glyph coverage of the selected font; unc
 
 ### Install
 
-| Browser | Link |
-|---------|------|
-| **Chrome** | [Chrome Web Store](https://chrome.google.com/webstore/detail/TODO) |
-| **Firefox** | [Firefox Add-ons (AMO)](https://addons.mozilla.org/firefox/addon/TODO) |
+| Edition | Chrome | Firefox |
+|---|---|---|
+| **Default** (font selector) | [Chrome Web Store](https://chromewebstore.google.com/detail/faghcoiecciapdokelomjgeknadokgeg) | [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/replacefontselect/) |
+| **Noto Sans JP fixed** | [Chrome Web Store](https://chromewebstore.google.com/detail/ipfbjlmjgfobhnncbggaaiknhdgkcdfe) | [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/replacefontselectnotosans/) |
 
-> Requires Firefox 140 or later.
+> Requires Firefox desktop 140+ or Firefox Android 142+.
 
 ### Features
 - 🎨 **Font Selection**: Choose from 6 body fonts and 3 monospace fonts via popup dropdown. Settings auto-save.
 - 🔘 **On/Off Toggle**: Easily enable or disable the extension via the popup toggle button.
 - ⚡ **Fast & Lightweight**: Optimized for minimal impact on page load speed.
-- 🔄 **Fully Automatic**: Works instantly across all websites without configuration.
-- 📦 **Modern Web Support**: Supports **Shadow DOM** elements (works on YouTube and modern web apps).
+- 🔄 **Fully Automatic**: Works instantly on supported websites without configuration. Some editors and design tools are excluded to preserve their editing experience and icon rendering.
+- 📦 **Modern Web Support**: Supports open and closed **Shadow DOM** elements.
 - 🎯 **Preserve Intent**: Replaces fonts based on their type (Gothic, Serif, or Monospace) to maintain the intended layout.
 - 🛠️ **Broad Coverage**: Covers everything from OS standard fonts to popular web fonts.
 - 🌐 **Multilingual-friendly**: Replacement follows the selected font's glyph coverage; uncovered characters fall back via CSS cascade.
+- 💬 **Contact Support**: Send inquiries to Kagayoi Support from the popup. Firefox requests data-transmission permission before sending.
 
 ### Available Fonts
 - **Body**: Noto Sans JP, IBM Plex Sans JP, M PLUS 2, Murecho, Zen Kaku Gothic New, LINE Seed JP

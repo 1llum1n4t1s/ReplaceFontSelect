@@ -80,6 +80,8 @@ pnpm run generate-screenshots:notosans # webstore/screenshots/notosans/*.html �
 
 ## Architecture
 
+システム全体の責務・境界・データフロー・設計判断は [`DESIGN.md`](DESIGN.md) を正本とし、以下ではエージェントが変更時に守る実装契約を補足する。
+
 ### Runtime — Two-Path Injection (Path A 同期 + Path B fetch)
 
 ちらつきゼロを保ちつつ「CSS 変数派サイト」 と「直接 family 指定派サイト」 の両方をカバーするため、 2 経路を併用する設計:
