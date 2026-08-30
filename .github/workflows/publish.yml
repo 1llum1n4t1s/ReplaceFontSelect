@@ -79,6 +79,9 @@ jobs:
       - name: 依存インストール
         run: pnpm install --frozen-lockfile
 
+      - name: 共通サポート部品の同期を確認
+        run: pnpm run check:support
+
       - name: アイコン生成
         env:
           VARIANT: ${{ matrix.variant }}
@@ -144,6 +147,16 @@ jobs:
           # shellcheck disable=SC2086
           zip -r "$zip_path" manifest.json "$variant_icons_dir" src \
             -x "*.DS_Store" "*.swp" "*~" "*/preview.html" $extra_excludes
+          archive_entries=$(unzip -Z1 "$zip_path")
+          for asset in \
+            kagayoi-support-footer.css \
+            kagayoi-support-form.css \
+            kagayoi-support-popup.css; do
+            if ! grep -Fxq "src/shared/$asset" <<< "$archive_entries"; then
+              echo "::error::Chrome ZIP に必須サポート資産がありません: src/shared/$asset"
+              exit 1
+            fi
+          done
           ls -lh "$zip_path"
           echo "ZIP_PATH=$zip_path" >> "$GITHUB_ENV"
 

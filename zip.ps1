@@ -34,6 +34,16 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host ""
 
+# 共通サポート部品を npm package の正本から同期する。
+# build:* を経由しないこの包装経路でも、問い合わせ UI の JS 2本 + CSS 3本を必ず揃える。
+Write-Host "🧩 共通サポート部品を同期中..." -ForegroundColor Cyan
+pnpm run sync:support
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ 共通サポート部品の同期に失敗しました" -ForegroundColor Red
+    exit 1
+}
+Write-Host ""
+
 # アイコン生成
 Write-Host "🎨 アイコンを生成中..." -ForegroundColor Cyan
 node scripts/generate-icons.js $Variant

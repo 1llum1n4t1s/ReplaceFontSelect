@@ -4,6 +4,8 @@
   "type": "commonjs",
   "description": "Chrome/Firefox extension that replaces hard-to-read fonts with Japanese fonts. Variant-based build produces both 'default' (user-selectable fonts) and 'notosans' (Noto Sans JP + UDEV Gothic JPDOC fixed) from a single source.",
   "scripts": {
+    "sync:support": "node --preserve-symlinks-main ./node_modules/kagayoi-support-extension/bin/kagayoi-support-sync.mjs",
+    "check:support": "node --preserve-symlinks-main ./node_modules/kagayoi-support-extension/bin/kagayoi-support-sync.mjs --check",
     "generate-icons": "node scripts/generate-icons.js",
     "generate-icons:default": "node scripts/generate-icons.js default",
     "generate-icons:notosans": "node scripts/generate-icons.js notosans",
@@ -13,14 +15,15 @@
     "generate-screenshots:default": "node scripts/generate-screenshots.js default",
     "generate-screenshots:notosans": "node scripts/generate-screenshots.js notosans",
     "build-variant": "node scripts/build-variant.js",
-    "build:default": "node scripts/generate-icons.js default && pnpm run generate-css && node scripts/build-variant.js default",
-    "build:notosans": "node scripts/generate-icons.js notosans && pnpm run generate-css && node scripts/build-variant.js notosans",
+    "build:default": "pnpm run sync:support && node scripts/generate-icons.js default && pnpm run generate-css && node scripts/build-variant.js default",
+    "build:notosans": "pnpm run sync:support && node scripts/generate-icons.js notosans && pnpm run generate-css && node scripts/build-variant.js notosans",
     "build": "pnpm run build:default",
     "release": "node scripts/release.js"
   },
   "devDependencies": {
     "chrome-webstore-upload-cli": "4.0.1",
-    "puppeteer": "^25.8.0",
+    "kagayoi-support-extension": "1.0.2",
+    "puppeteer": "^25.9.0",
     "ttf2woff2": "^8.0.1",
     "web-ext": "10.6.0"
   },

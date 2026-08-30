@@ -914,6 +914,7 @@ body[data-variant="notosans"] .version { color: var(--accent-2); }
 .support-footer { margin-top: 4px; }
 
 kagayoi-support-footer {
+  --kgs-color-scheme: light dark;
   --kgs-surface: var(--surface);
   --kgs-surface-hover: var(--bg-alt);
   --kgs-border: var(--rule);

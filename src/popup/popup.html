@@ -8,8 +8,6 @@
   <script src="../content/variant.js"></script>
   <script src="../content/font-config.js"></script>
   <script src="popup.js"></script>
-  <script type="module" src="../shared/kagayoi-support-popup.js"></script>
-  <script type="module" src="../shared/kagayoi-support-footer.js"></script>
 </head>
 
 <body data-variant="default">
@@ -95,7 +93,9 @@
     </section>
 
     <div class="support-footer">
-      <kagayoi-support-footer product-id="replace-font-select"></kagayoi-support-footer>
+      <kagayoi-support-footer product-id="replace-font-select" firefox-data-consent></kagayoi-support-footer>
+      <script type="module" src="../shared/kagayoi-support-popup.js"></script>
+      <script type="module" src="../shared/kagayoi-support-footer.js"></script>
     </div>
 
     <!-- フッター -->
