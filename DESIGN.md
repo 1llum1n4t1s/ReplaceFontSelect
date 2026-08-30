@@ -23,16 +23,18 @@
 | `src/content/preload-fonts.js` | fallback CSSの解決・注入、競合font-face除去、動的フォント検出、open Shadow DOM適用、フォントpreloadを担当 |
 | `src/content/inject.js` | MAIN worldで`attachShadow`を捕捉し、open rootを通知しつつclosed rootへ直接CSSを適用 |
 | `src/popup/` | 有効状態・フォント・weightの設定UI。`chrome.storage.local`へ保存 |
-| `src/shared/kagayoi-support-*.js` | Kagayoi Supportのお問い合わせUIと送信境界。Firefoxでは送信前にoptional data permissionを取得 |
+| `kagayoi-support-extension` / `src/shared/kagayoi-support-*` | 共有パッケージを正本として問い合わせUIのJS/CSS 5資産を同梱し、Kagayoi Supportへの送信境界を形成。Firefoxでは送信前にoptional data permissionを取得 |
 | `.github/workflows/publish.yml` | `release/X.Y.Z`を起点に2バリアントを生成し、Chrome Web StoreとFirefox AMOへ提出 |
 
 ## ビルド時データフロー
 
-1. `variants/<name>.json` と `manifest.template.json` から、対象バリアントのmanifestと`VARIANT`を生成する。
-2. `FONT_REGISTRY`から、ランタイム置換用CSSと本文・等幅・weightの全36presetを生成する。
-3. variant別SVGからPNGアイコンを生成する。
-4. Chrome成果物には`background.service_worker`を使用する。Firefox成果物はAMO validatorとの互換性のため`background.scripts`を追加する。
-5. 固定フォント版の配布物には、`lockedFonts`に一致するpresetだけを残す。
+1. exact pinした`kagayoi-support-extension`から、問い合わせUIのJS/CSS 5資産を`src/shared/`へ逐語同期する。
+2. `variants/<name>.json` と `manifest.template.json` から、対象バリアントのmanifestと`VARIANT`を生成する。
+3. `FONT_REGISTRY`から、ランタイム置換用CSSと本文・等幅・weightの全36presetを生成する。
+4. variant別SVGからPNGアイコンを生成する。
+5. Chrome成果物には`background.service_worker`を使用する。Firefox成果物はAMO validatorとの互換性のため`background.scripts`を追加する。
+6. 固定フォント版の配布物には、`lockedFonts`に一致するpresetだけを残す。
+7. CIは共有資産の正本との一致とChrome ZIP内の必須CSSを検査し、問い合わせUIが不完全な成果物の公開を拒否する。
 
 `manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/preset-*.js`、生成PNGはビルド成果物であり、直接編集しない。
 
@@ -63,6 +65,7 @@
 - default / notosansの公開済みIDと並行運用を維持する。
 - サイト除外は宣言的・動的の両経路で一致させ、編集体験やアイコンフォントを保護する。
 - open / closed Shadow DOMのstylesheetはworldごとに共有し、root単位の複製を避ける。
+- 問い合わせUIの同梱5資産は共有パッケージと逐語一致させ、拡張側で派生実装を作らない。
 - versionは全バリアントと`package.json`で同期し、release branch名とも一致させる。
 
 ## 採用済み設計判断とトレードオフ
@@ -86,3 +89,7 @@ open rootはISOLATED worldで安全に扱えるが、closed rootは`host.shadowR
 ### サイト単位の除外
 
 リッチエディタやデザインツールまで強制置換すると、編集体験やアイコンフォントを壊す場合がある。全サイト対応より既存UIの保全を優先し、既知の対象はバリアント設定で除外する。
+
+### 問い合わせUIの共有資産同期
+
+複数拡張で問い合わせUIの挙動・プライバシー境界を揃えるため、共有パッケージを唯一の実装正本とする。一方、MV3拡張は実行時にnpm packageを参照できずremote codeも読み込めないため、JS/CSS 5資産をビルド前に`src/shared/`へ同期して配布物へ同梱する。ビルド時の自動同期に加えてCIで逐語一致とCSSのアーカイブ収録を検査し、正本との乖離や同梱漏れを公開前に止める。
