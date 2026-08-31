@@ -39,8 +39,6 @@ temp/
 # Claude Code local settings (personal, may contain machine-specific permissions)
 .claude/settings.local.json
 
-# Serena MCP working files
-.serena/
 
 # web-ext sign 用の一時ビルドディレクトリ
 firefox-build/
