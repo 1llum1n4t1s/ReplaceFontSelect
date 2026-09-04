@@ -32,6 +32,15 @@ const FONT_REGISTRY = {
       woff2Medium: 'MPLUS2.woff2',
       woff2Bold: 'MPLUS2.woff2'
     },
+    'm-plus-rounded-1c': {
+      name: 'M PLUS Rounded 1c',
+      fallback: 'sans-serif',
+      localFontsRegular: ['Rounded Mplus 1c', 'RoundedMplus1c-Regular'],
+      localFontsBold: ['Rounded Mplus 1c Bold', 'RoundedMplus1c-Bold'],
+      woff2Regular: 'MPLUSRounded1c-Regular.woff2',
+      woff2Medium: 'MPLUSRounded1c-Medium.woff2',
+      woff2Bold: 'MPLUSRounded1c-Bold.woff2'
+    },
     'murecho': {
       name: 'Murecho',
       fallback: 'sans-serif',

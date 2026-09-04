@@ -1,6 +1,6 @@
 # プライバシーポリシー / Privacy Policy
 
-最終更新日: 2026年8月27日 / Last Updated: August 27, 2026
+最終更新日: 2026年9月5日 / Last Updated: September 5, 2026
 
 ---
 
@@ -8,7 +8,7 @@
 
 ### 概要
 
-「目に優しいフォント置換」（以下「本拡張機能」）は、ウェブページ上の読みづらいフォントをユーザーが選択したフォントに自動置換するブラウザ拡張機能です。本文用 6 種類・等幅用 3 種類のフォントから選択できます。置換はユーザーが選んだフォントが持つグリフ範囲に従い、そのフォントに含まれない文字（アラビア文字・タイ文字など一部言語）は CSS font fallback によって元サイト指定のフォントへ自動的に戻ります。
+「目に優しいフォント置換」（以下「本拡張機能」）は、ウェブページ上の読みづらいフォントをユーザーが選択したフォントに自動置換するブラウザ拡張機能です。本文用 7 種類・等幅用 3 種類のフォントから選択できます。置換はユーザーが選んだフォントが持つグリフ範囲に従い、そのフォントに含まれない文字（アラビア文字・タイ文字など一部言語）は CSS font fallback によって元サイト指定のフォントへ自動的に戻ります。
 
 > **重要:** フォント置換の動作で**個人データを収集・送信することはありません**。フォント選択設定のみをブラウザのローカルストレージに保存し、置換処理はブラウザ内で完結します。外部への送信は、利用者が自分でお問い合わせフォームを送信したときだけ発生します（「お問い合わせフォーム」の項を参照）。
 
@@ -46,7 +46,7 @@
 
 初回はメールで届く6桁の確認コードを Kagayoi Support へ送信して本人確認します。認証後の問い合わせと返信は、利用者本人とサポート担当者が確認できるよう Kagayoi Support に保存します。閲覧中のページの内容やフォント設定は送信しません。
 
-Firefox では、初回送信前に、個人識別情報・認証情報・個人的な通信内容を Kagayoi Support へ送信する許可をブラウザの確認画面で求めます。許可しなかった場合、お問い合わせ情報は送信されません。
+Firefox では、個人識別情報（メールアドレス・お名前）と認証情報の送信許可を、インストール時またはこの権限が追加される更新時に求めます。この許可は拡張機能の利用に必須ですが、実際の送信は利用者がお問い合わせを行った場合だけです。個人的な通信内容の送信許可は、お問い合わせの初回送信前に別途求めます。この任意の許可を拒否した場合、お問い合わせ情報は送信されず、フォント置換は引き続き利用できます。
 
 ### 権限について
 
@@ -66,7 +66,7 @@ Firefox では、初回送信前に、個人識別情報・認証情報・個人
 
 ### Overview
 
-"目に優しいフォント置換" (Eye-Friendly Font Replacer) is a browser extension that automatically replaces hard-to-read fonts on web pages with user-selected fonts. Users can choose from **6 body fonts and 3 monospace fonts**. Replacement follows the glyph coverage of the user-selected font; characters outside that coverage (e.g., Arabic, Thai) automatically fall back to the site's original font via the standard CSS font cascade.
+"目に優しいフォント置換" (Eye-Friendly Font Replacer) is a browser extension that automatically replaces hard-to-read fonts on web pages with user-selected fonts. Users can choose from **7 body fonts and 3 monospace fonts**. Replacement follows the glyph coverage of the user-selected font; characters outside that coverage (e.g., Arabic, Thai) automatically fall back to the site's original font via the standard CSS font cascade.
 
 > **Important:** Font replacement **collects and transmits no personal data**. Only font selection preferences are saved locally in the browser. The only outbound transmission happens when you submit the contact form yourself (see "Contact form").
 
@@ -104,7 +104,7 @@ Only when you press "Contact support" at the bottom of the settings popup and su
 
 On first use, the six-digit code delivered by email is sent to Kagayoi Support to verify you. After verification, Kagayoi Support stores the inquiry and replies so that you and support staff can access them. The content of pages you browse and your font settings are never sent.
 
-On Firefox, before the first transmission, the browser asks you to permit sending personally identifying information, authentication information, and personal communications to Kagayoi Support. If you decline, the inquiry data is not sent.
+Firefox requests permission to transmit personally identifying information (email address and name) and authentication information during installation, or when an update adds these permissions. These permissions are required to use the extension, but data is only sent when you submit a support inquiry. Permission to transmit personal communications is requested separately before the first inquiry transmission. If you decline this optional permission, inquiry data is not sent and font replacement remains available.
 
 ### Permissions
 

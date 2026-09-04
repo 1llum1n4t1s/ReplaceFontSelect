@@ -4,10 +4,10 @@ This file provides guidance to Codex and other coding agents working in this rep
 
 ## Project Overview
 
-**目に優しいフォント置換** — Chrome / Firefox desktop (140+) / Firefox Android (142+) 拡張機能 (Manifest V3) で、 ウェブサイト上の読みづらいフォントを、 ユーザーが選んだ日本語フォントへ自動置換する。 本文 6 種 × 等幅 3 種 × Weight (400/500) = 36 通りのプリセットを `document_start` で同期注入することでちらつきゼロを実現している。
+**目に優しいフォント置換** — Chrome / Firefox desktop (140+) / Firefox Android (142+) 拡張機能 (Manifest V3) で、 ウェブサイト上の読みづらいフォントを、 ユーザーが選んだ日本語フォントへ自動置換する。 本文 7 種 × 等幅 3 種 × Weight (400/500) = 42 通りのプリセットを `document_start` で同期注入することでちらつきゼロを実現している。
 
 このリポジトリは **単一コードベース** から複数の派生版 (variant) を別々の拡張機能として公開できる「バリアント方式」を採用している。 現在 `default` (フォント選択 UI 付き) と `notosans` (Noto Sans JP + UDEV Gothic JPDOC 固定版) の 2 variant が定義されており、 それぞれ独立した拡張機能 ID として Chrome Web Store / Firefox AMO に並行リリースされている。 ユーザーの使い分け:
-- **default**: フォント選択 UI で好きなフォントを 36 プリセットから選ぶ通常版
+- **default**: フォント選択 UI で好きなフォントを 42 プリセットから選ぶ通常版
 - **notosans variant**: 最初から Noto Sans JP + UDEV Gothic JPDOC に固定、 フォント選択 UI なし (popup がシンプル)
 
 default variant は次のドメインを `exclude_matches` で除外している (フォントが作品 / 編集体験の一部となるサービス保護、 およびアイコンフォント破壊回避のため、 全 18 ドメイン):
@@ -25,7 +25,7 @@ pnpm run build:notosans             # icons + CSS + preset JS + variant=notosans
 pnpm run build                      # = build:default
 pnpm run build-variant <name>       # manifest.json + src/content/variant.js だけ再生成 (variant 切替時)
 
-pnpm run generate-css               # src/css/replacefont-extension.css + 36 個の preset-*.js を再生成 (variant 非依存)
+pnpm run generate-css               # src/css/replacefont-extension.css + 42 個の preset-*.js を再生成 (variant 非依存)
 pnpm run convert-fonts              # src/fonts/*.ttf → *.woff2 変換 (フォント追加時のみ手動実行、 variant 非依存)
 pnpm run generate-icons:default     # icons/default/icon.svg から PNG (16/48/128) を再生成
 pnpm run generate-icons:notosans    # icons/notosans/icon.svg から PNG (16/48/128) を再生成
@@ -60,7 +60,7 @@ Kagayoi Support の問い合わせUIは、exact pinした `kagayoi-support-exten
 
 | Variant | フォント | gecko id 末尾 | 用途 |
 |---|---|---|---|
-| `default` | ユーザー選択 (6×3×2=36プリセット) | `...323f` | 通常版 |
+| `default` | ユーザー選択 (7×3×2=42プリセット) | `...323f` | 通常版 |
 | `notosans` | Noto Sans JP + UDEV Gothic JPDOC 固定 | `...323e` | フォント選択 UI なしの固定版 |
 
 `mergeFontSettings()` (`src/content/font-config.js`) は **stored → VARIANT.lockedFonts** の順で override を適用 (後勝ち)。 つまり variant が `lockedFonts` を設定している場合 (notosans variant) はユーザーの保存値より優先される。
@@ -98,7 +98,7 @@ Kagayoi Support の問い合わせUIは、exact pinした `kagayoi-support-exten
 │   - inject.js: MAIN world (Shadow DOM attachShadow フック)              │
 │   (初回 / ID 不在時は registerContentScripts でフォールバック)            │
 │   ↓                                                                    │
-│ src/css/preset-{body}-{mono}-w{weight}.js (36 個から 1 個選択)          │
+│ src/css/preset-{body}-{mono}-w{weight}.js (42 個から 1 個選択)          │
 │   IIFE 内で CSS 変数 override (`--font-sans` / `--font-mono` 等を !important)│
 │   → <style data-replace-font="preset"> を <head> に同期注入             │
 │   (CSS 変数を使うモダンサイト = Anthropic / Tailwind / Next.js 系で効く)│
@@ -138,7 +138,7 @@ Kagayoi Support の問い合わせUIは、exact pinした `kagayoi-support-exten
 
 `scripts/generate-css.js` が以下を生成 (`.gitignore` 対象):
 - `src/css/replacefont-extension.css` テンプレート (約 75 KB、 ASCII case-insensitive dedupe で約 330 個の `@font-face`)
-- 36 個の preset JS (各約 68 KB、 CSS 変数 override の静的埋め込み)
+- 42 個の preset JS (各約 68 KB、 CSS 変数 override の静的埋め込み)
 
 **preset JS (Path A)** は CSS 変数 override の静的埋め込みで `__REPLACE_FONT_BASE__` 等のプレースホルダーを含まない。 ファイル URL 解決が不要 (CSS 変数戦略のため)。
 
@@ -213,7 +213,7 @@ ShadowRoot への adopt は `pendingShadowRoots: Set` でバッチ化 → 1 micr
 
 1. `src/fonts/` に TTF を置き `pnpm run convert-fonts` で woff2 化
 2. `FONT_REGISTRY` (`src/content/font-config.js`) の `body` か `mono` にエントリ追加
-3. `pnpm run generate-css` で template CSS + 36 preset JS を再生成
+3. `pnpm run generate-css` で template CSS + 42 preset JS を再生成
 4. popup / content / background は `FONT_REGISTRY` を動的読みするので他ファイル変更不要
 
 ⚠️ **既存フォントキー (`noto-sans-jp` / `udev-gothic-jpdoc`) はそのまま維持する** — `variants/notosans.json` の `lockedFonts` がそのキー名を参照しているので、 既存キーは固定で運用し、 新しいフォントは別キーで追加する。

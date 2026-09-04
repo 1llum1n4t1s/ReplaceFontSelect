@@ -6,7 +6,7 @@
 
 本システムは、Chrome / Firefox向けManifest V3拡張機能として、ウェブページが指定する読みづらい本文・等幅フォントを利用者が選んだ日本語フォントへ置換する。単一コードベースから次の2つの公開済みバリアントを生成する。
 
-- `default`: 本文6種、等幅3種、本文weight 400/500をポップアップで選択する通常版
+- `default`: 本文7種、等幅3種、本文weight 400/500をポップアップで選択する通常版
 - `notosans`: Noto Sans JP、UDEV Gothic JPDOC、weight 400へ固定した版
 
 `web/` は製品ページとプライバシーポリシーを配信する独立したCloudflare Workerであり、拡張機能のランタイムには含まれない。`docs/`、`webstore/`、`changelog/` はストア掲載・公開文書である。
@@ -18,19 +18,19 @@
 | `variants/*.json` | 名前、version、Gecko ID、固定フォント、UI表示、除外サイト、成果物名を定義するバリアント正本 |
 | `manifest.template.json` / `scripts/build-variant.js` | バリアント設定から対象ブラウザ用の `manifest.json` と `src/content/variant.js` を生成 |
 | `src/content/font-config.js` | `FONT_REGISTRY`、既定値、保存値の検証、`lockedFonts`を含む設定マージを一元管理 |
-| `scripts/generate-css.js` | fallback CSSテンプレートと36通りのpreset JSを生成 |
+| `scripts/generate-css.js` | fallback CSSテンプレートと42通りのpreset JSを生成 |
 | `src/background/background.js` | 保存設定を読み、preset JSとShadow DOMフックの動的content script登録を同期 |
 | `src/content/preload-fonts.js` | fallback CSSの解決・注入、競合font-face除去、動的フォント検出、open Shadow DOM適用、フォントpreloadを担当 |
 | `src/content/inject.js` | MAIN worldで`attachShadow`を捕捉し、open rootを通知しつつclosed rootへ直接CSSを適用 |
 | `src/popup/` | 有効状態・フォント・weightの設定UI。`chrome.storage.local`へ保存 |
-| `kagayoi-support-extension` / `src/shared/kagayoi-support-*` | 共有パッケージを正本として問い合わせUIのJS/CSS 5資産を同梱し、Kagayoi Supportへの送信境界を形成。Firefoxでは送信前にoptional data permissionを取得 |
+| `kagayoi-support-extension` / `src/shared/kagayoi-support-*` | 共有パッケージを正本として問い合わせUIのJS/CSS 5資産を同梱し、Kagayoi Supportへの送信境界を形成。Firefoxでは個人識別・認証情報をrequiredとして申告し、通信内容のoptional permissionを送信前に取得 |
 | `.github/workflows/publish.yml` | `release/X.Y.Z`を起点に2バリアントを生成し、Chrome Web StoreとFirefox AMOへ提出 |
 
 ## ビルド時データフロー
 
 1. exact pinした`kagayoi-support-extension`から、問い合わせUIのJS/CSS 5資産を`src/shared/`へ逐語同期する。
 2. `variants/<name>.json` と `manifest.template.json` から、対象バリアントのmanifestと`VARIANT`を生成する。
-3. `FONT_REGISTRY`から、ランタイム置換用CSSと本文・等幅・weightの全36presetを生成する。
+3. `FONT_REGISTRY`から、ランタイム置換用CSSと本文・等幅・weightの全42presetを生成する。
 4. variant別SVGからPNGアイコンを生成する。
 5. Chrome成果物には`background.service_worker`を使用する。Firefox成果物はAMO validatorとの互換性のため`background.scripts`を追加する。
 6. 固定フォント版の配布物には、`lockedFonts`に一致するpresetだけを残す。
@@ -73,6 +73,8 @@
 ### 二経路のフォント注入
 
 同期presetは初期表示のちらつきを抑えられる一方、直接指定されたfont-familyだけでは不十分である。fallback CSSと競合font-face監視を併用し、初期表示と対応範囲を両立する代わりに、生成物とランタイム監視の複雑さを受け入れている。
+
+競合font-faceの走査は、グループ規則の内側と読み取り可能な`@import`先も対象とする。`document.adoptedStyleSheets`は初回・BFCache復帰・style/link追加時に確認する。DOM変化を伴わないCSSOMだけの変更は常時監視しない。
 
 ### 動的content script登録
 

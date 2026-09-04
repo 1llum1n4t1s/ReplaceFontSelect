@@ -54,7 +54,7 @@ cxcx-scenarios.yaml
 # CSS テンプレート (generate-css.js が生成、 preset JS の元データだが配布物には不要)
 src/css/replacefont-extension.css
 
-# 生成された preset JS 36 個 (generate-css.js が生成、 ビルド時に毎回再生成)
+# 生成された preset JS 42 個 (generate-css.js が生成、 ビルド時に毎回再生成)
 src/css/preset-*.js
 
 # AMO ローカル submission 用メタデータ (web-ext sign --amo-metadata 引数で渡す、

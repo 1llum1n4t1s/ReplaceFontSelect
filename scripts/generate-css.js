@@ -39,7 +39,7 @@ const GOTHIC_FONT_FAMILIES = [
   'Motiva Sans', 'MotivaSans',
   'Arial', 'ArialMT', 'Roboto', 'RobotoDraft', 'Helvetica', 'Helvetica Neue', 'HelveticaNeue',
   'Trebuchet MS', 'TrebuchetMS', 'Verdana',
-  'M PLUS Rounded 1c', 'Malgun Gothic',
+  'Malgun Gothic',
   'Arial Unicode MS',
   'Hiragino Sans', 'Hiragino Sans Pro',
   'Inter', 'Inter Variable', 'Inter-Regular', 'Inter-Bold', 'Inter UI',
@@ -207,7 +207,6 @@ const MONO_FORCE_TARGETS = [
   '[class*="shiki"]',
   '[class*="hljs"]',
   '[class*="prism"]',
-  '[class*="language-"]',
 ];
 
 // CSS 変数を使わず direct font-family を指定するサイト対策。

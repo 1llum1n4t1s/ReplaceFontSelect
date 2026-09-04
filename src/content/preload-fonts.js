@@ -673,54 +673,76 @@
 
     let hasBlockedSheets = false;
     const processedSheets = new WeakSet();
-    const pendingLinkLoads = new WeakSet();
+    const pendingStyleLoads = new WeakSet();
     const styleNodeSelector = 'style, link[rel~="stylesheet" i], link[as="style" i]';
 
-    function neutralizeCompetingFontFaces(sheet) {
-      if (!sheet) return true;
-      if (processedSheets.has(sheet)) return true;
+    // @layer / @media などの子規則は、それを所有するグループから削除する。
+    // @import の参照先も同じ対象だが、読めないシートは既存の後勝ち対策に任せる。
+    function neutralizeFontFaceRules(owner, visited = new WeakSet()) {
+      if (visited.has(owner)) return true;
+      visited.add(owner);
       try {
-        const rules = sheet.cssRules;
+        const rules = owner.cssRules;
         if (!rules) return true;
+        let readable = true;
         for (let i = rules.length - 1; i >= 0; i--) {
-          if (rules[i].type === CSSRule.FONT_FACE_RULE) {
-            if (targetFamilies.has(getFontFamilyName(rules[i]))) {
-              sheet.deleteRule(i);
+          const rule = rules[i];
+          if (rule.type === CSSRule.FONT_FACE_RULE) {
+            if (targetFamilies.has(getFontFamilyName(rule))) {
+              owner.deleteRule(i);
             }
+          } else if (rule.type === CSSRule.IMPORT_RULE) {
+            if (!rule.styleSheet || !neutralizeFontFaceRules(rule.styleSheet, visited)) readable = false;
+          } else if (rule.cssRules && !neutralizeFontFaceRules(rule, visited)) {
+            readable = false;
           }
         }
-        processedSheets.add(sheet);
-        return true;
+        return readable;
       } catch (e) {
         return false;
       }
     }
 
+    function neutralizeCompetingFontFaces(sheet) {
+      if (!sheet) return true;
+      if (processedSheets.has(sheet)) return true;
+      const readable = neutralizeFontFaceRules(sheet);
+      if (readable) processedSheets.add(sheet);
+      return readable;
+    }
+
+    function scanAdoptedStyleSheets() {
+      for (const sheet of document.adoptedStyleSheets || []) {
+        if (!neutralizeCompetingFontFaces(sheet)) hasBlockedSheets = true;
+      }
+    }
+
     function processStyleNode(node) {
       if (node.dataset && node.dataset[RFS_ATTR]) return;
-      if (node.nodeName === 'STYLE' && node.sheet) {
-        neutralizeCompetingFontFaces(node.sheet);
-      }
-      if (node.nodeName === 'LINK') {
-        if (node.sheet) {
-          pendingLinkLoads.delete(node);
-          neutralizeCompetingFontFaces(node.sheet);
-        } else if (!pendingLinkLoads.has(node)) {
-          pendingLinkLoads.add(node);
-          node.addEventListener('load', () => {
-            pendingLinkLoads.delete(node);
-            if (node.sheet) neutralizeCompetingFontFaces(node.sheet);
-          }, { once: true });
-        }
+      if (node.sheet) neutralizeCompetingFontFaces(node.sheet);
+      // style 内の @import も非同期ロードする。完了時には親シートの処理済み印を外す。
+      if (!pendingStyleLoads.has(node)) {
+        pendingStyleLoads.add(node);
+        node.addEventListener('load', () => {
+          pendingStyleLoads.delete(node);
+          if (disposed) return;
+          if (node.sheet) {
+            processedSheets.delete(node.sheet);
+            neutralizeCompetingFontFaces(node.sheet);
+          }
+        }, { once: true });
       }
     }
 
     function processStyleSubtree(node) {
-      if (node.nodeType !== Node.ELEMENT_NODE) return;
-      if (node.matches(styleNodeSelector)) processStyleNode(node);
+      if (node.nodeType !== Node.ELEMENT_NODE) return false;
+      let foundStyle = node.matches(styleNodeSelector);
+      if (foundStyle) processStyleNode(node);
       for (const child of node.querySelectorAll(styleNodeSelector)) {
         processStyleNode(child);
+        foundStyle = true;
       }
+      return foundStyle;
     }
 
     // monitor の起動前に追加済みの全 style/link を処理する。
@@ -741,6 +763,7 @@
           }
         }
       }
+      scanAdoptedStyleSheets();
       if (hasBlockedSheets) {
         const extStyle = document.querySelector(`style[${RFS_SELECTOR}]`);
         if (extStyle?.parentNode) {
@@ -757,11 +780,15 @@
     }
 
     const styleObserver = new MutationObserver((mutations) => {
+      let foundStyle = false;
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          processStyleSubtree(node);
+          foundStyle = processStyleSubtree(node) || foundStyle;
         }
       }
+      // 採用だけではDOM mutationが出ないため、初回・復帰時とstyle/link追加時に確認する。
+      // 通常の本文DOM更新ではシート一覧を走査しない。
+      if (foundStyle) scanAdoptedStyleSheets();
     });
 
     styleObserver.observe(document.documentElement, { childList: true, subtree: true });
@@ -772,11 +799,7 @@
         for (const node of document.querySelectorAll(styleNodeSelector)) {
           processStyleNode(node);
         }
-        for (const sheet of document.styleSheets) {
-          if (!sheet.ownerNode?.dataset?.[RFS_ATTR]) {
-            neutralizeCompetingFontFaces(sheet);
-          }
-        }
+        runInitialScan();
       }
     };
     window.addEventListener('pagehide', onStylePagehide);
