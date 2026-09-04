@@ -8,6 +8,12 @@ Please see the [LICENSE](./LICENSE) file for more information.
 
 詳しくは、[LICENSE](./LICENSE) ファイルをご確認ください。
 
+## 同梱フォントの描画設定
+
+全10書体・22ファイルの `gasp` を version 1・全サイズ `15`（`0x000F`）に統一しています。グレースケールと ClearType の平滑化・グリッドフィッティングを指定する設定で、実際の描画は OS・ブラウザに依存します。字形・メトリクス・可変軸・既存のヒンティング命令は変更していません。
+
+フォントの追加・TTF からの再生成時にも、WOFF2 の `gasp.version = 1`、`gasp.gaspRange = {65535: 15}` を適用してください。
+
 ## M PLUS Rounded 1c
 
 - 対象: `MPLUSRounded1c-{Regular,Medium,Bold}.woff2`（400 / 500 / 700）
