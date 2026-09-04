@@ -35,7 +35,7 @@ pnpm run sync:support                  # 共有パッケージ正本から問い
 pnpm run check:support                 # 同梱資産が共有パッケージ正本と一致することを読み取り専用で検査
 ```
 
-`manifest.json` と `src/content/variant.js` と `src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。 "Load unpacked" やテスト実行の前に必ず `build:default` を 1 回走らせる必要がある。 Node.js 22 系を推奨 (CI が `node-version: '22'` で固定。 pnpm 11 が Node 22.13+ を要求するため)。 テストスイートや linter は無く、 UI 検証は実機ブラウザで行う。
+`manifest.json` と `src/content/variant.js` と `src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。 "Load unpacked" やテスト実行の前に必ず `build:default` を 1 回走らせる必要がある。 Node.js 22 系を推奨 (CI が `node-version: '22'` で固定。 pnpm 11 が Node 22.13+ を要求するため)。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
 
 Kagayoi Support の問い合わせUIは、exact pinした `kagayoi-support-extension` を正本とし、`src/shared/` の `kagayoi-support-footer.{js,css}`、`kagayoi-support-popup.{js,css}`、`kagayoi-support-form.css` へ逐語同期する。これら5資産を拡張側で直接改変しない。`build:default` / `build:notosans` と `zip.ps1` は実行前に自動同期し、CIは `check:support` とChrome ZIP内のCSS存在確認で欠落・乖離を拒否する。共有部品を更新するときは依存versionを更新してから `pnpm run sync:support` と両variantのbuildを実行する。
 
@@ -43,9 +43,13 @@ Kagayoi Support の問い合わせUIは、exact pinした `kagayoi-support-exten
 
 ### Local Testing
 
+- **フォント注入の回帰検証**: `node --test scripts/verify-style-injection.cjs` — Puppeteer の実ブラウザで Shadow 初期化、遅延した外部 CSS / @import、DOM 更新時の再移動、ページの破棄・復帰イベントを検証する。拡張 API は fixture を使用し、Firefox 実機の代替にはしない。
 - **Chrome**: `chrome://extensions` → Developer mode ON → "Load unpacked" でリポジトリルートを選択
 - **Firefox**: `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on..." で `manifest.json` を選択 (desktop 140+ / Android 142+)
+- Firefox の読み込み前はフルビルド後に `node scripts/build-variant.js <variant> --firefox` を実行する。Chrome の検証へ戻るときは `pnpm run build-variant <variant>` で Chrome 用 manifest を再生成する。
 - コード変更後は拡張機能リストで再読み込み+対象ページをリロード (preset JS / CSS は `document_start` 時にキャッシュされるため)
+
+問い合わせUIまたはFirefoxの権限申告を変更するときは、[DESIGN.md の送信境界](DESIGN.md#問い合わせuiの共有資産同期)に従い、`manifest.template.json` の申告と共有部品の要求対象、popupの `firefox-data-consent` 属性を照合する。両variantのビルドと `pnpm run check:support` に加え、Firefoxで任意許可を拒否・取得失敗した場合に確認コード送信・再送・認証・問い合わせ送信が止まり、フォント置換は利用できることを検証する。
 
 ## Variant System
 
@@ -505,7 +509,7 @@ Error: Unsupported "/background/service_worker" manifest property used
        without "/background/scripts" property as Firefox-compatible fallback.
 ```
 
-[manifest.template.json](manifest.template.json) は両方併記する設計:
+[manifest.template.json](manifest.template.json) は `service_worker` のみを定義する。Firefox 用には `node scripts/build-variant.js <variant> --firefox` で、次のように `scripts` を併記した manifest を生成する (`zip.ps1` と CI もこの生成経路を使う):
 
 ```json
 "background": {
@@ -518,7 +522,7 @@ Error: Unsupported "/background/service_worker" manifest property used
 }
 ```
 
-- **Chrome**: `service_worker` を見て SW として動作 ([background.js](src/background/background.js) が `importScripts('/src/content/variant.js', '/src/content/font-config.js')` で順次ロード)
+- **Chrome**: `--firefox` を付けずに生成し、`service_worker` のみで SW として動作 ([background.js](src/background/background.js) が `importScripts('/src/content/variant.js', '/src/content/font-config.js')` で順次ロード)。Chrome 用成果物には `scripts` を含めない。
 - **Firefox**: `scripts` を見て event page として動作 (3 ファイルが順次ロード、 `importScripts` は worker 限定 API なので使えない)
 
 そのため [src/background/background.js](src/background/background.js) では `importScripts` を `typeof` ガード:

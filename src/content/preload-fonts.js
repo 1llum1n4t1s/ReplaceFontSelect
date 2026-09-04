@@ -671,10 +671,35 @@
       return;
     }
 
-    let hasBlockedSheets = false;
+    let styleReorderPending = false;
     const processedSheets = new WeakSet();
     const pendingStyleLoads = new WeakSet();
     const styleNodeSelector = 'style, link[rel~="stylesheet" i], link[as="style" i]';
+
+    // 初回・遅延ロードのどちらでも、読めない競合 CSS には後勝ちで対応する。
+    // 同じターンの失敗はまとめ、自分の style 移動は下の observer で除外する。
+    function scheduleExtensionStyleReorder() {
+      if (disposed || styleReorderPending) return;
+      styleReorderPending = true;
+      queueMicrotask(() => {
+        styleReorderPending = false;
+        if (disposed) return;
+        let lastSiteStyle = null;
+        for (const node of document.querySelectorAll(styleNodeSelector)) {
+          if (!node.dataset?.[RFS_ATTR]) lastSiteStyle = node;
+        }
+        if (!lastSiteStyle) return;
+        for (const extStyle of extStyles) {
+          if (!extStyle.isConnected) continue;
+          if (lastSiteStyle.compareDocumentPosition(extStyle) & Node.DOCUMENT_POSITION_PRECEDING) {
+            // body 内の CSS より後ろにする場合は、サイトの部品内へ移さず
+            // documentElement 直下へ置く（preset の初期注入先としても使用）。
+            const parent = document.head?.contains(lastSiteStyle) ? document.head : document.documentElement;
+            parent.appendChild(extStyle);
+          }
+        }
+      });
+    }
 
     // @layer / @media などの子規則は、それを所有するグループから削除する。
     // @import の参照先も同じ対象だが、読めないシートは既存の後勝ち対策に任せる。
@@ -708,17 +733,18 @@
       if (processedSheets.has(sheet)) return true;
       const readable = neutralizeFontFaceRules(sheet);
       if (readable) processedSheets.add(sheet);
+      else scheduleExtensionStyleReorder();
       return readable;
     }
 
     function scanAdoptedStyleSheets() {
       for (const sheet of document.adoptedStyleSheets || []) {
-        if (!neutralizeCompetingFontFaces(sheet)) hasBlockedSheets = true;
+        neutralizeCompetingFontFaces(sheet);
       }
     }
 
     function processStyleNode(node) {
-      if (node.dataset && node.dataset[RFS_ATTR]) return;
+      if (node.dataset && node.dataset[RFS_ATTR]) return false;
       if (node.sheet) neutralizeCompetingFontFaces(node.sheet);
       // style 内の @import も非同期ロードする。完了時には親シートの処理済み印を外す。
       if (!pendingStyleLoads.has(node)) {
@@ -732,15 +758,14 @@
           }
         }, { once: true });
       }
+      return true;
     }
 
     function processStyleSubtree(node) {
       if (node.nodeType !== Node.ELEMENT_NODE) return false;
-      let foundStyle = node.matches(styleNodeSelector);
-      if (foundStyle) processStyleNode(node);
+      let foundStyle = node.matches(styleNodeSelector) && processStyleNode(node);
       for (const child of node.querySelectorAll(styleNodeSelector)) {
-        processStyleNode(child);
-        foundStyle = true;
+        foundStyle = processStyleNode(child) || foundStyle;
       }
       return foundStyle;
     }
@@ -758,20 +783,10 @@
     const runInitialScan = () => {
       for (const sheet of document.styleSheets) {
         if (!sheet.ownerNode?.dataset?.[RFS_ATTR]) {
-          if (!neutralizeCompetingFontFaces(sheet)) {
-            hasBlockedSheets = true;
-          }
+          neutralizeCompetingFontFaces(sheet);
         }
       }
       scanAdoptedStyleSheets();
-      if (hasBlockedSheets) {
-        const extStyle = document.querySelector(`style[${RFS_SELECTOR}]`);
-        if (extStyle?.parentNode) {
-          queueMicrotask(() => {
-            if (extStyle.parentNode) extStyle.parentNode.appendChild(extStyle);
-          });
-        }
-      }
     };
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', runInitialScan, { once: true });

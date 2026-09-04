@@ -18,6 +18,7 @@
   // preset / fallback CSS が現れた時点で共有 Constructable Stylesheet を採用する。
   const pendingClosedRoots = new Set();
   const styledClosedRoots = new WeakSet();
+  let closedRootDisposed = false;
   let closedRootStyleObserver = null;
   let closedRootSharedSheet = null;
   let closedRootSharedCSSText = null;
@@ -67,7 +68,7 @@
   }
 
   function injectClosedRootCSS(root, extensionStyle = findExtensionStyle()) {
-    if (styledClosedRoots.has(root)) return;
+    if (closedRootDisposed || styledClosedRoots.has(root)) return;
     if (!extensionStyle?.textContent) {
       pendingClosedRoots.add(root);
       waitForExtensionStyle();
@@ -99,6 +100,7 @@
 
   window.addEventListener('pagehide', (event) => {
     if (event.persisted) return;
+    closedRootDisposed = true;
     stopClosedRootStyleObserver();
     pendingClosedRoots.clear();
   });
@@ -114,8 +116,11 @@
           isClosed = shadowRoot.mode === 'closed';
         } catch (_) {}
         if (isClosed) {
-          // 補助注入の失敗をページ側の attachShadow 呼び出しへ伝播させない。
-          try { injectClosedRootCSS(shadowRoot); } catch (_) {}
+          // 呼び出し元の同期初期化（adoptedStyleSheets / innerHTML の代入）が
+          // 完了してから注入し、直後の上書きで拡張 CSS が消えるのを防ぐ。
+          queueMicrotask(() => {
+            try { injectClosedRootCSS(shadowRoot); } catch (_) {}
+          });
           return shadowRoot;
         }
 

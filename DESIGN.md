@@ -95,3 +95,5 @@ open rootはISOLATED worldで安全に扱えるが、closed rootは`host.shadowR
 ### 問い合わせUIの共有資産同期
 
 複数拡張で問い合わせUIの挙動・プライバシー境界を揃えるため、共有パッケージを唯一の実装正本とする。一方、MV3拡張は実行時にnpm packageを参照できずremote codeも読み込めないため、JS/CSS 5資産をビルド前に`src/shared/`へ同期して配布物へ同梱する。ビルド時の自動同期に加えてCIで逐語一致とCSSのアーカイブ収録を検査し、正本との乖離や同梱漏れを公開前に止める。
+
+Firefoxの申告は`manifest.template.json`で`personallyIdentifyingInfo`・`authenticationInfo`をrequired、`personalCommunications`をoptionalとする。popupの`firefox-data-consent`属性を受けた共有部品は、送信・確認コード再送のユーザー操作内で通信内容の任意許可を要求し、拒否または取得失敗なら認証APIも問い合わせAPIも呼ばない。必須の申告があっても自動送信は行わず、問い合わせの許可状態はフォント置換の有効状態から独立させる。
