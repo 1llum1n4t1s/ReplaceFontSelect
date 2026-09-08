@@ -194,7 +194,7 @@ notosans の Lab Day / Cyber Night ブロックは `body[data-variant="notosans"
 
 CSS 注入は `adoptedStyleSheets` (Constructable Stylesheets) で **MAIN / ISOLATED の各 world ごとに単一の `CSSStyleSheet` インスタンスを共有**してメモリ効率化する。adopt が拒否される root だけ `<style>` 注入へフォールバックする。open root は `_replaceFontApplied` フラグで重複注入を防ぎ、MAIN → ISOLATED world 間は属性 (`data-rfs-shadow`) で通信する (`CustomEvent.detail` は構造化クローンで `null` になるため)。
 
-ShadowRoot への adopt は `pendingShadowRoots: Set` でバッチ化 → 1 microtask で N 個に sheet を流し込む。
+Shadow DOM の注入順序を変更するときは、[DESIGN.md の world別Shadow DOM処理](DESIGN.md#world別shadow-dom処理)に従い、上記 Local Testing の回帰検証で同期初期化後の CSS 保持とページ破棄後の注入停止を確認する。
 
 ### Storage Schema
 
@@ -215,7 +215,7 @@ ShadowRoot への adopt は `pendingShadowRoots: Set` でバッチ化 → 1 micr
 
 ### Adding a New Font
 
-1. `src/fonts/` に TTF を置き `pnpm run convert-fonts` で woff2 化
+1. `src/fonts/` に TTF を置き `pnpm run convert-fonts` で woff2 化。追加・再生成した WOFF2 には [同梱フォントの描画設定](src/fonts/README.md#同梱フォントの描画設定)を適用して確認する（変換スクリプトは描画設定を自動統一しない）。
 2. `FONT_REGISTRY` (`src/content/font-config.js`) の `body` か `mono` にエントリ追加
 3. `pnpm run generate-css` で template CSS + 42 preset JS を再生成
 4. popup / content / background は `FONT_REGISTRY` を動的読みするので他ファイル変更不要

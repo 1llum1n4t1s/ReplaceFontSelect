@@ -9,7 +9,7 @@
 - `default`: 本文7種、等幅3種、本文weight 400/500をポップアップで選択する通常版
 - `notosans`: Noto Sans JP、UDEV Gothic JPDOC、weight 400へ固定した版
 
-`web/` は製品ページとプライバシーポリシーを配信する独立したCloudflare Workerであり、拡張機能のランタイムには含まれない。`docs/`、`webstore/`、`changelog/` はストア掲載・公開文書である。
+`../vps-web/lp/replacefont/` はVPSから配信する製品ページとプライバシーポリシーであり、拡張機能のランタイムには含まれない。`docs/`、`webstore/`、`changelog/` はストア掲載・公開文書である。
 
 ## 主要コンポーネントと責務
 
@@ -76,6 +76,8 @@
 
 競合font-faceの走査は、グループ規則の内側と読み取り可能な`@import`先も対象とする。`document.adoptedStyleSheets`は初回・BFCache復帰・style/link追加時に確認する。DOM変化を伴わないCSSOMだけの変更は常時監視しない。
 
+読み取り不能なシートは規則を削除できないため、初回走査だけでなくstyle/linkの追加・load完了・BFCache復帰時にも、preset / fallbackのstyleをサイトの最後のstyle/linkより後ろへ移して後勝ちを利用する。サイトCSSがhead内ならhead末尾、body内ならサイトの部品へ混入しないようdocumentElement直下へ置く。移動要求はmicrotaskで集約し、拡張自身のstyle移動を監視対象から除外することで再帰的な移動を防ぐ。通常の本文DOM更新だけでは再移動しない。
+
 ### 動的content script登録
 
 設定に一致するpresetだけを`document_start`へ登録でき、無効時はMAIN worldフックも停止できる。更新は`updateContentScripts`を優先し、初回だけ`registerContentScripts`へフォールバックすることで、unregister/register間のraceを避ける。MV3 Service Workerのevictionで短いdebounceが失われる可能性は、`persistAcrossSessions`と`onStartup`で回復する。
@@ -83,6 +85,8 @@
 ### world別Shadow DOM処理
 
 open rootはISOLATED worldで安全に扱えるが、closed rootは`host.shadowRoot`から再取得できない。そのためMAIN worldで返り値を捕捉する責務を分け、共有sheetと`<style>` fallbackで互換性とメモリ効率を両立する。
+
+closed rootへの注入はmicrotaskへ遅延し、`attachShadow`呼び出し元による同期的な`adoptedStyleSheets` / `innerHTML`初期化で拡張CSSが消えることを防ぐ。preset / fallback CSSが未到着ならrootを保留して出現後に注入する。BFCacheへ保存しない`pagehide`では保留rootと監視を解放し、予約済みmicrotaskからも注入しない。
 
 ### バリアント方式
 
@@ -97,3 +101,9 @@ open rootはISOLATED worldで安全に扱えるが、closed rootは`host.shadowR
 複数拡張で問い合わせUIの挙動・プライバシー境界を揃えるため、共有パッケージを唯一の実装正本とする。一方、MV3拡張は実行時にnpm packageを参照できずremote codeも読み込めないため、JS/CSS 5資産をビルド前に`src/shared/`へ同期して配布物へ同梱する。ビルド時の自動同期に加えてCIで逐語一致とCSSのアーカイブ収録を検査し、正本との乖離や同梱漏れを公開前に止める。
 
 Firefoxの申告は`manifest.template.json`で`personallyIdentifyingInfo`・`authenticationInfo`をrequired、`personalCommunications`をoptionalとする。popupの`firefox-data-consent`属性を受けた共有部品は、送信・確認コード再送のユーザー操作内で通信内容の任意許可を要求し、拒否または取得失敗なら認証APIも問い合わせAPIも呼ばない。必須の申告があっても自動送信は行わず、問い合わせの許可状態はフォント置換の有効状態から独立させる。
+
+## 製品ページの配信先
+
+製品ページの配信HTMLは `../vps-web/lp/replacefont/`（編集元は `../vps-web/tools/lp/templates/`）、公開実体はVPSの `/srv/www/lp/replacefont/`。
+直接配信の設定は `../vps-web/deploy/caddy-sites/lp-replacefont.caddy` に置く。
+公開URLを維持し、静的ファイルの配信は `vps-web/deploy/deploy-lp.ps1` へ統一する。
