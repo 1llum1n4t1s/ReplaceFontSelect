@@ -37,7 +37,7 @@ pnpm run check:support                 # 同梱資産が共有パッケージ正
 
 `manifest.json` と `src/content/variant.js` と `src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。 "Load unpacked" やテスト実行の前に必ず `build:default` を 1 回走らせる必要がある。 Node.js 22 系を推奨 (CI が `node-version: '22'` で固定。 pnpm 11 が Node 22.13+ を要求するため)。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
 
-Kagayoi Support の問い合わせUIは、exact pinした `kagayoi-support-extension` を正本とし、`src/shared/` の `kagayoi-support-footer.{js,css}`、`kagayoi-support-popup.{js,css}`、`kagayoi-support-form.css` へ逐語同期する。これら5資産を拡張側で直接改変しない。`build:default` / `build:notosans` と `zip.ps1` は実行前に自動同期し、CIは `check:support` とChrome ZIP内のCSS存在確認で欠落・乖離を拒否する。共有部品を更新するときは依存versionを更新してから `pnpm run sync:support` と両variantのbuildを実行する。
+Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-extension` を正本とし、`src/shared/` の `kagayoi-support-footer.{js,css}`、`kagayoi-support-popup.{js,css}`、`kagayoi-support-form.css` へ逐語同期する。これら5資産を拡張側で直接改変しない。`build:default` / `build:notosans` と `zip.ps1` は実行前に自動同期し、CIは `check:support` とChrome ZIP内のCSS存在確認で欠落・乖離を拒否する。共有部品を更新するときは依存versionを更新してから `pnpm run sync:support` と両variantのbuildを実行する。
 
 アイコン / スクショ生成 (puppeteer) は headless Chrome バイナリが必要。 初回のみ `pnpm exec puppeteer browsers install chrome` を実行する (`~/.cache/puppeteer/` に保存され、 未導入だと `build:*` が ChromeLauncher の resolveExecutablePath エラーで落ちる)。 puppeteer は v25+ (ESM-only) のため、 `scripts/generate-icons.js` / `generate-screenshots.js` は CommonJS から動的 `import('puppeteer')` で読み込む。
 

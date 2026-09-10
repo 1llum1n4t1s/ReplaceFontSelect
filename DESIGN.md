@@ -23,12 +23,12 @@
 | `src/content/preload-fonts.js` | fallback CSSの解決・注入、競合font-face除去、動的フォント検出、open Shadow DOM適用、フォントpreloadを担当 |
 | `src/content/inject.js` | MAIN worldで`attachShadow`を捕捉し、open rootを通知しつつclosed rootへ直接CSSを適用 |
 | `src/popup/` | 有効状態・フォント・weightの設定UI。`chrome.storage.local`へ保存 |
-| `kagayoi-support-extension` / `src/shared/kagayoi-support-*` | 共有パッケージを正本として問い合わせUIのJS/CSS 5資産を同梱し、Kagayoi Supportへの送信境界を形成。Firefoxでは個人識別・認証情報をrequiredとして申告し、通信内容のoptional permissionを送信前に取得 |
+| `@kagayoi/support-extension` / `src/shared/kagayoi-support-*` | 共有パッケージを正本として問い合わせUIのJS/CSS 5資産を同梱し、Kagayoi Supportへの送信境界を形成。Firefoxでは個人識別・認証情報をrequiredとして申告し、通信内容のoptional permissionを送信前に取得 |
 | `.github/workflows/publish.yml` | `release/X.Y.Z`を起点に2バリアントを生成し、Chrome Web StoreとFirefox AMOへ提出 |
 
 ## ビルド時データフロー
 
-1. exact pinした`kagayoi-support-extension`から、問い合わせUIのJS/CSS 5資産を`src/shared/`へ逐語同期する。
+1. exact pinした`@kagayoi/support-extension`から、問い合わせUIのJS/CSS 5資産を`src/shared/`へ逐語同期する。
 2. `variants/<name>.json` と `manifest.template.json` から、対象バリアントのmanifestと`VARIANT`を生成する。
 3. `FONT_REGISTRY`から、ランタイム置換用CSSと本文・等幅・weightの全42presetを生成する。
 4. variant別SVGからPNGアイコンを生成する。
