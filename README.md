@@ -62,21 +62,9 @@
 サイトが指定した等幅フォントを、選択した等幅フォントに置換します。
 GitHub のコード表示や、技術ブログのコードブロック、入力フォームなども圧倒的に読みやすくなります。
 
-## 🔧 ローカル開発・派生版ビルド
+## 🔧 開発情報
 
-このリポジトリは「**バリアント方式**」で複数の派生版を 1 つのソースから生成できます。 `variants/<name>.json` に各ブランドの設定が入っています。
-
-```bash
-pnpm run build:default      # 通常版（フォント選択 UI 付き）
-pnpm run build:notosans     # Noto Sans JP + UDEV Gothic JPDOC 固定の派生版
-
-# Chrome 拡張のローカル読み込み（要事前ビルド）
-# chrome://extensions → Developer mode ON → "Load unpacked" でリポジトリルートを選択
-```
-
-`manifest.json` と `src/content/variant.js` はビルド生成物（`.gitignore` 済）です。「Load unpacked」する前に必ず `pnpm run build:default` か `pnpm run build:notosans` を実行してください。
-
-開発時の必須手順は [AGENTS.md](AGENTS.md)、システム設計は [DESIGN.md](DESIGN.md) を参照してください。
+このリポジトリからローカルビルドや派生版の開発を行う場合は、必須コマンドと検証手順を [AGENTS.md](AGENTS.md)、システムの構造と設計判断を [DESIGN.md](DESIGN.md) で確認してください。
 
 ## 📄 ライセンス
 

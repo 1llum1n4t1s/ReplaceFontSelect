@@ -54,7 +54,6 @@
 - 宣言的content script、preset、MAIN worldフックには同じ`excludeMatches`を適用する。
 - MAIN worldとISOLATED worldの間でShadowRootを直接渡さず、open rootのhost属性`data-rfs-shadow`だけを通知に使う。
 - Kagayoi Supportへの送信は共有コンポーネント内に閉じ、フォント置換ランタイムから分離する。
-- 公開用Workerは静的アセットだけをGET / HEADで返し、拡張機能の設定や閲覧ページ情報を扱わない。
 
 ## 重要な不変条件
 
@@ -106,4 +105,4 @@ Firefoxの申告は`manifest.template.json`で`personallyIdentifyingInfo`・`aut
 
 製品ページの配信HTMLは `../vps-web/lp/replacefont/`（編集元は `../vps-web/tools/lp/templates/`）、公開実体はVPSの `/srv/www/lp/replacefont/`。
 直接配信の設定は `../vps-web/deploy/caddy-sites/lp-replacefont.caddy` に置く。
-公開URLを維持し、静的ファイルの配信は `vps-web/deploy/deploy-lp.ps1` へ統一する。
+公開URLを維持し、静的ファイルの配信は `../vps-web/deploy/deploy-lp.ps1` へ統一する。

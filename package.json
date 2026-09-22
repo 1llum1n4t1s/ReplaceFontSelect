@@ -23,9 +23,9 @@
   "devDependencies": {
     "chrome-webstore-upload-cli": "4.0.1",
     "@kagayoi/support-extension": "1.0.6",
-    "puppeteer": "^25.10.0",
+    "puppeteer": "^25.11.0",
     "ttf2woff2": "^8.0.1",
-    "web-ext": "10.6.0"
+    "web-ext": "10.7.0"
   },
   "keywords": [
     "chrome-extension",
