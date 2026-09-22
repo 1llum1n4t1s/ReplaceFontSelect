@@ -10,7 +10,7 @@ This file provides guidance to Codex and other coding agents working in this rep
 - **default**: フォント選択 UI で好きなフォントを 42 プリセットから選ぶ通常版
 - **notosans variant**: 最初から Noto Sans JP + UDEV Gothic JPDOC に固定、 フォント選択 UI なし (popup がシンプル)
 
-default variant は次のドメインを `exclude_matches` で除外している (フォントが作品 / 編集体験の一部となるサービス保護、 およびアイコンフォント破壊回避のため、 全 18 ドメイン):
+両 variant は次のドメインを `exclude_matches` で除外している (フォントが作品 / 編集体験の一部となるサービス保護、 およびアイコンフォント破壊回避のため、 全 18 ドメイン):
 - **Microsoft / Google のリッチエディタ / ファイル管理系**: `*.onenote.com` / `*.officeapps.live.com` (Excel/Word/PowerPoint Online) / `*.sharepoint.com` (SharePoint Online — Excel/Word を開いた時のホストオリジン。 `officeapps.live.com` には遷移せず SharePoint オリジン内の iframe で WAC = WebApps Components が動くため別途除外が必要) / `onedrive.live.com` (OneDrive 個人版のファイル管理 UI — Fluent UI / FabricMDL2Icons のアイコンフォントが本文置換の巻き添えになるため除外。 OneDrive for Business は `*.sharepoint.com` 経由で別途カバー済) / `docs.google.com` (Docs / Sheets / Slides / Forms)
 - **デザインツール系**: `*.figma.com` / `www.canva.com` / `express.adobe.com`
 - **リッチエディタ / IDE 系 (v3.1 系で追加)**: `www.notion.so` / `app.slack.com` / `linear.app` / `*.github.dev` / `vscode.dev` / `replit.com` / `codesandbox.io` / `stackblitz.com` / `www.overleaf.com` / `discord.com` (アプリ本体は `/channels/*` 配下で `/app/*` にはマッチしないため、 Notion / Linear と同じくドメイン全体を除外)
@@ -20,6 +20,7 @@ default variant は次のドメインを `exclude_matches` で除外している
 ## Build Commands
 
 ```bash
+pnpm install --frozen-lockfile         # 初回 checkout 後・pnpm-lock.yaml 更新後の依存同期
 pnpm run build:default              # icons + CSS + preset JS + variant=default のフルビルド
 pnpm run build:notosans             # icons + CSS + preset JS + variant=notosans のフルビルド
 pnpm run build                      # = build:default
@@ -35,7 +36,7 @@ pnpm run sync:support                  # 共有パッケージ正本から問い
 pnpm run check:support                 # 同梱資産が共有パッケージ正本と一致することを読み取り専用で検査
 ```
 
-`manifest.json` と `src/content/variant.js` と `src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。 "Load unpacked" やテスト実行の前に必ず `build:default` を 1 回走らせる必要がある。 Node.js 22 系を推奨 (CI が `node-version: '22'` で固定。 pnpm 11 が Node 22.13+ を要求するため)。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
+`manifest.json` と `src/content/variant.js` と `src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。初回 checkout 後と `pnpm-lock.yaml` の変更後は `pnpm install --frozen-lockfile` で依存を同期する。"Load unpacked" の前には対象 variant のフルビルドを 1 回走らせる。`node --test scripts/verify-style-injection.cjs` はソースを直接読み込むためフルビルドは前提にしない。Node.js 22 系を推奨 (CI が `node-version: '22'` で固定。 pnpm 11 が Node 22.13+ を要求するため)。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
 
 Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-extension` を正本とし、`src/shared/` の `kagayoi-support-footer.{js,css}`、`kagayoi-support-popup.{js,css}`、`kagayoi-support-form.css` へ逐語同期する。これら5資産を拡張側で直接改変しない。`build:default` / `build:notosans` と `zip.ps1` は実行前に自動同期し、CIは `check:support` とChrome ZIP内のCSS存在確認で欠落・乖離を拒否する。共有部品を更新するときは依存versionを更新してから `pnpm run sync:support` と両variantのbuildを実行する。
 
@@ -114,17 +115,17 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 │      `__REPLACE_FONT_BASE__` 等を実値解決し <style data-replace-font="fallback"> 注入│
 │   3. setupStyleSheetMonitor: サイト側の競合 @font-face (例: x.com の     │
 │      Chirp) を deleteRule で削除 → ブラウザは Chirp を解決できなくなり、│
-│      fallback chain で拡張機能の Noto Sans JP に到達                    │
+│      fallback chain で選択中の置換フォントに到達                       │
 │   4. open / closed Shadow DOM へ world 別の adoptedStyleSheets 共有    │
 │   5. 動的フォント検出 (Next.js next/font 等のハッシュ family)            │
-│      → ランタイム @font-face で対応する Noto Sans JP woff2 を注入       │
+│      → ランタイム @font-face で選択中の本文 / 等幅 woff2 を注入          │
 │   6. Regular weight (本文) の woff2 を <link rel=preload> (top frame のみ)│
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Path A と Path B の役割分担**:
 - **Path A (preset JS)** は **CSS 変数を使うモダンサイト** で効く。 サイトが `font-family: var(--font-sans), ...` のように記述してれば、 拡張機能の `--font-sans: "Noto Sans JP"` で上書きされる
-- **Path B (setupStyleSheetMonitor)** は **CSS 変数を使わない旧来型サイト** (x.com / Yahoo / 古い CMS 系) で効く。 サイトが `font-family: "Chirp", sans-serif` のように直接指定してても、 `@font-face Chirp` を deleteRule で削除 → ブラウザは Chirp を解決できず fallback → 拡張機能の `@font-face` 経由で Noto Sans JP に到達
+- **Path B (setupStyleSheetMonitor)** は **CSS 変数を使わない旧来型サイト** (x.com / Yahoo / 古い CMS 系) で効く。 サイトが `font-family: "Chirp", sans-serif` のように直接指定してても、 `@font-face Chirp` を deleteRule で削除 → ブラウザは Chirp を解決できず fallback → 拡張機能の `@font-face` 経由で選択中の本文フォントに到達
 
 両方併用することで両サイト系統をカバーする。 **Path A / Path B のどちらも削除しない** — どちらか一方を削除すると、 対応する系統のサイトで置換が効かなくなる (過去事例: 2026-05-15 の v3.x 改修で Path B + setupStyleSheetMonitor を削除した結果、 x.com 等で置換が壊れ v3.0.3 戦略へ巻き戻し)。
 
@@ -217,7 +218,7 @@ Shadow DOM の注入順序を変更するときは、[DESIGN.md の world別Shad
 
 1. `src/fonts/` に TTF を置き `pnpm run convert-fonts` で woff2 化。追加・再生成した WOFF2 には [同梱フォントの描画設定](src/fonts/README.md#同梱フォントの描画設定)を適用して確認する（変換スクリプトは描画設定を自動統一しない）。
 2. `FONT_REGISTRY` (`src/content/font-config.js`) の `body` か `mono` にエントリ追加
-3. `pnpm run generate-css` で template CSS + 42 preset JS を再生成
+3. `pnpm run generate-css` で template CSS + 本文 × 等幅 × weight の全組み合わせ preset JS (現在 42 個) を再生成
 4. popup / content / background は `FONT_REGISTRY` を動的読みするので他ファイル変更不要
 
 ⚠️ **既存フォントキー (`noto-sans-jp` / `udev-gothic-jpdoc`) はそのまま維持する** — `variants/notosans.json` の `lockedFonts` がそのキー名を参照しているので、 既存キーは固定で運用し、 新しいフォントは別キーで追加する。
@@ -244,7 +245,7 @@ node scripts/release.js --yes    # 直接呼び（確認プロンプト省略、
 
 ```bash
 # 例: 3.0.5 から 3.1.0 に minor bump する場合
-# variants/default.json と package.json の "version" を 3.1.0 に手で書き換え
+# variants/*.json の全ファイルと package.json の "version" を 3.1.0 に手で書き換え
 git add variants/ package.json
 git commit -m "release: v3.1.0"
 git push origin main
@@ -298,7 +299,7 @@ Chrome の重複エラーログを避けたい / 履歴をクリーンに保ち�
 #### Build / 認証エラー等で全 job 失敗のケース
 
 - ストアへの upload が **一度も成功していない** ことを確認した上で、 同じ `release/<X.Y.Z>` に修正 commit を追加 push して OK
-- `matrix.fail-fast: false` なので失敗した variant のみ再実行される (default と notosans が独立に retry 可能)
+- 同じ release branch へ新しい push を行うと両 variant の job が再実行される。`matrix.fail-fast: false` により、一方の失敗で他方の実行が打ち切られることはない
 - 判定基準: GitHub Actions ログで「Chrome Web Store にアップロード & 公開」「Firefox AMO に submission API でアップロード」ステップに到達せず、 その前 (build / package step) で失敗していること
 
 ### Local Packaging (手動 Web Store アップロード用)
