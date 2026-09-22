@@ -4,6 +4,12 @@ Git のバージョン記録・コミット差分と既存の変更履歴をも�
 
 ## 未リリース
 
+## [3.1.0] — Git 記録日: 2026-09-22
+
+- **同梱フォントを更新**: IBM Plex Sans JP 1.004、LINE Seed JP 1.016、M PLUS 2 1.100、PlemolJP 3.1.0、UDEV Gothic JPDOC 2.2.0へ更新し、各書体の最新の字形・修正を反映
+
+出典: [変更差分](https://github.com/1llum1n4t1s/ReplaceFontSelect/compare/release/3.0.17...release/3.1.0) / [フォント選択版の詳細](changelog/default.md) / [Noto Sans 固定版の詳細](changelog/notosans.md)。
+
 ## [3.0.17] — Git 記録日: 2026-09-05
 
 - **フォントの描画設定を統一**: 同梱フォントの滑らかさ・輪郭補正に関する設定を揃え、表示環境に応じた描画を調整

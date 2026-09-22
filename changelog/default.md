@@ -3,6 +3,11 @@
 「目に優しいフォント置換」(Chrome / Firefox 拡張、 フォント選択 UI 付き) のリリース履歴。
 version の真実の源泉は `variants/default.json` の `version` フィールド。
 
+## [3.1.0] - 2026-09-22
+
+### Changed
+- **同梱フォントを更新**: IBM Plex Sans JP 1.004、LINE Seed JP 1.016、M PLUS 2 1.100、PlemolJP 3.1.0、UDEV Gothic JPDOC 2.2.0へ更新し、各書体の最新の字形・修正を反映
+
 ## [3.0.17] - 2026-09-05
 
 ### Changed
