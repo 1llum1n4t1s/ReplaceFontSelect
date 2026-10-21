@@ -1,6 +1,6 @@
 # 目に優しいフォント置換
 
-[![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com/1llum1n4t1s/ReplaceFontSelect)
+[![Version](https://img.shields.io/badge/version-3.1.1-blue.svg)](https://github.com/1llum1n4t1s/ReplaceFontSelect)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ウェブサイト上の読みづらいフォントを、好みのフォントに自動で置き換える Chrome / Firefox 拡張機能です。
@@ -16,6 +16,14 @@
 | **Noto Sans JP 固定版** | [Chrome Web Store](https://chromewebstore.google.com/detail/ipfbjlmjgfobhnncbggaaiknhdgkcdfe) | [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/replacefontselectnotosans/) |
 
 > Firefox desktop 140 以降、Firefox Android 142 以降に対応しています。
+
+## 使い方
+
+1. インストール後、ブラウザの拡張機能メニューからポップアップを開きます。
+2. 通常版では本文・等幅フォントと本文の太さを選びます。Noto Sans JP固定版はNoto Sans JP + UDEV Gothic JPDOC、本文Regular固定で、フォント選択欄はありません。
+3. 設定は自動保存されます。変更やオン/オフ切り替え後は、対象ページを再読み込みしてください。
+
+ブラウザの設定画面や拡張機能を実行できないページ、一部の編集・デザインサービスは置換対象外です。フォントが変わらない場合は、有効になっていることを確認して対象ページを再読み込みしてください。
 
 ## ✨ 特徴
 
@@ -90,6 +98,12 @@ Characters are replaced only within the glyph coverage of the selected font; unc
 | **Noto Sans JP fixed** | [Chrome Web Store](https://chromewebstore.google.com/detail/ipfbjlmjgfobhnncbggaaiknhdgkcdfe) | [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/replacefontselectnotosans/) |
 
 > Requires Firefox desktop 140+ or Firefox Android 142+.
+
+### Usage
+
+Open the popup from the browser's extensions menu. In the default edition, select body and monospace fonts and the body weight. The fixed edition uses Noto Sans JP + UDEV Gothic JPDOC with Regular body weight and has no font selector. Settings save automatically; reload the page after changing settings or toggling the extension.
+
+Browser settings pages, pages where extensions cannot run, and some editing/design services are excluded. If fonts do not change, check that the extension is enabled and reload the page.
 
 ### Features
 - 🎨 **Font Selection**: Choose from 7 body fonts and 3 monospace fonts via popup dropdown. Settings auto-save.

@@ -91,128 +91,17 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 
 システム全体の責務・境界・データフロー・設計判断は [`DESIGN.md`](DESIGN.md) を正本とし、以下ではエージェントが変更時に守る実装契約を補足する。
 
-### Runtime — Two-Path Injection (Path A 同期 + Path B fetch)
+### ランタイム変更時の制約
 
-ちらつきゼロを保ちつつ「CSS 変数派サイト」 と「直接 family 指定派サイト」 の両方をカバーするため、 2 経路を併用する設計:
+構造・保存スキーマ・テーマの責務は [DESIGN.md](DESIGN.md#ランタイムデータフロー) を参照する。
 
-```
-┌─ Path A: Preset JS (同期注入、 document_start 同期実行) ───────────────┐
-│ src/background/background.js (Service Worker)                          │
-│   chrome.scripting.updateContentScripts で、有効時だけ次の2本を動的登録   │
-│   - preset JS: ISOLATED world                                          │
-│   - inject.js: MAIN world (Shadow DOM attachShadow フック)              │
-│   (初回 / ID 不在時は registerContentScripts でフォールバック)            │
-│   ↓                                                                    │
-│ src/css/preset-{body}-{mono}-w{weight}.js (42 個から 1 個選択)          │
-│   IIFE 内で CSS 変数 override (`--font-sans` / `--font-mono` 等を !important)│
-│   → <style data-replace-font="preset"> を <head> に同期注入             │
-│   (CSS 変数を使うモダンサイト = Anthropic / Tailwind / Next.js 系で効く)│
-└────────────────────────────────────────────────────────────────────────┘
-
-┌─ Path B: preload-fonts.js (ISOLATED world、 document_start 同期ロード) ─┐
-│   1. settings をロード (selectedBodyFont / selectedMonoFont)            │
-│   2. replacefont-extension.css を fetch + replaceFontPlaceholders で    │
-│      `__REPLACE_FONT_BASE__` 等を実値解決し <style data-replace-font="fallback"> 注入│
-│   3. setupStyleSheetMonitor: サイト側の競合 @font-face (例: x.com の     │
-│      Chirp) を deleteRule で削除 → ブラウザは Chirp を解決できなくなり、│
-│      fallback chain で選択中の置換フォントに到達                       │
-│   4. open / closed Shadow DOM へ world 別の adoptedStyleSheets 共有    │
-│   5. 動的フォント検出 (Next.js next/font 等のハッシュ family)            │
-│      → ランタイム @font-face で選択中の本文 / 等幅 woff2 を注入          │
-│   6. Regular weight (本文) の woff2 を <link rel=preload> (top frame のみ)│
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-**Path A と Path B の役割分担**:
-- **Path A (preset JS)** は **CSS 変数を使うモダンサイト** で効く。 サイトが `font-family: var(--font-sans), ...` のように記述してれば、 拡張機能の `--font-sans: "Noto Sans JP"` で上書きされる
-- **Path B (setupStyleSheetMonitor)** は **CSS 変数を使わない旧来型サイト** (x.com / Yahoo / 古い CMS 系) で効く。 サイトが `font-family: "Chirp", sans-serif` のように直接指定してても、 `@font-face Chirp` を deleteRule で削除 → ブラウザは Chirp を解決できず fallback → 拡張機能の `@font-face` 経由で選択中の本文フォントに到達
-
-両方併用することで両サイト系統をカバーする。 **Path A / Path B のどちらも削除しない** — どちらか一方を削除すると、 対応する系統のサイトで置換が効かなくなる (過去事例: 2026-05-15 の v3.x 改修で Path B + setupStyleSheetMonitor を削除した結果、 x.com 等で置換が壊れ v3.0.3 戦略へ巻き戻し)。
-
-### Service Worker のライフサイクル
-
-`background.js` は `setTimeout` ベースの debounce / retry で動作:
-
-- **debounce**: `chrome.storage.onChanged` listener が 0.15 秒の `setTimeout` で連続変更を集約し、 最新値でプリセット JS と MAIN world フックの登録状態を同期する
-- **atomic update**: 既存の各登録は `chrome.scripting.updateContentScripts` 1 回で原子的に更新し、 unregister + register 間の race を避ける
-- **retry**: 各 ID の `updateContentScripts` 失敗時は `registerContentScripts` でフォールバックし、 ID 不在 / 初回登録ケースをカバー
-- **永続化**: `persistAcrossSessions: true` + `chrome.runtime.onStartup` 二重ガードで SW evict 後も復活
-- **SW evict 注意**: Chrome MV3 の SW は 30 秒 idle で evict され、 evict 時に `setTimeout` の timer が失われる。 storage 変更直後に user が他タブへ移動 + 30 秒 idle した場合、 debounce timer 消失で設定が反映されない race window が極小に残る (受容可能リスク、 `onStartup` で復旧)
-
-### Two-Stage CSS — テンプレート + プレースホルダー
-
-`scripts/generate-css.js` が以下を生成 (`.gitignore` 対象):
-- `src/css/replacefont-extension.css` テンプレート (約 75 KB、 ASCII case-insensitive dedupe で約 330 個の `@font-face`)
-- 42 個の preset JS (各約 68 KB、 CSS 変数 override の静的埋め込み)
-
-**preset JS (Path A)** は CSS 変数 override の静的埋め込みで `__REPLACE_FONT_BASE__` 等のプレースホルダーを含まない。 ファイル URL 解決が不要 (CSS 変数戦略のため)。
-
-**replacefont-extension.css (Path B)** は `__REPLACE_FONT_BASE__` / `__BODY_FONT_NAME__` 等のプレースホルダーを含んだまま `web_accessible_resources` で配布され、 ランタイムで `preload-fonts.js` が fetch + `replaceFontPlaceholders` で実値解決して注入する。
-
-代表的なプレースホルダー (ランタイム解決):
-
-| Placeholder | 解決値の例 |
-|---|---|
-| `__REPLACE_FONT_BASE__` | `chrome.runtime.getURL('')` |
-| `__BODY_FONT_NAME__` | `Noto Sans JP` |
-| `__BODY_LOCAL_REGULAR__` | `local("Noto Sans JP"), local("Noto Sans CJK Variable")` |
-| `__BODY_WOFF2_REGULAR__` | `NotoSansJP-Regular.woff2` (weight=500 時は Medium) |
-| `__MONO_FONT_NAME__` | `UDEV Gothic JPDOC` |
-
-⚠️ **preset 生成で不可視 ASCII 制御文字を区切り文字に使わない** — 過去に `const MARKER = '\x01'` (SOH、 目視で空文字に見える) を split/join 区切りに使った中間実装が、 エディタの自動正規化 / git の `core.autocrlf` / 一部 linter で剥がれて 36 preset 全壊する時限爆弾を仕込んでいた。 現状は静的埋め込みで MARKER 概念を使わない設計。 将来 preset JS のテンプレートリテラル化等で区切り文字が必要になっても、 `${B}` のような目視可能なトークン or 明示的な `\\u0001` 等 escape 表現を使い、 `''` に見える文字は採用しない。
-
-### Single Source of Truth
-
-| 概念 | 場所 |
-|---|---|
-| フォント定義 (`FONT_REGISTRY`) | `src/content/font-config.js` — content / popup / background / Node スクリプト全てから共有 (CommonJS export 付き) |
-| 設定マージ (`mergeFontSettings`) | `src/content/font-config.js` — validator 経由の白リスト検証 + lockedFonts override を一元化 |
-| バリアント設定 (`VARIANT`) | `src/content/variant.js` (ビルド生成物) |
-| マニフェスト | `manifest.template.json` + `variants/<name>.json` → `manifest.json` (ビルド生成物) |
-
-### Popup Theme System — 4 テーマ体制
-
-popup (`src/popup/`) は **variant × prefers-color-scheme** で 4 テーマ:
-
-| variant | light | dark |
-|---|---|---|
-| `default` | **Editorial Day** (紙のクリーム + 墨色 + 印章の朱) | **Editorial Night** (革表紙 + 銅色アクセント) |
-| `notosans` | **Lab Day** (Blueprint / ラボ配色) | **Cyber Night** (夜空 + ネオン) |
-
-notosans の Lab Day / Cyber Night ブロックは `body[data-variant="notosans"]` 経由で notosans variant の popup に実際に適用される **生きた CSS** (2026-07 検証済み。 dead CSS ではないので削除しないこと)。
-
-実装の中核:
-- **`body[data-variant="default"]` / `body[data-variant="notosans"]`**: `popup.js` が `VARIANT.name` から設定。 CSS 変数のスコープがこのセレクタで variant 別に切り替わる
-- **`@media (prefers-color-scheme: dark)`**: OS の light/dark テーマに自動追従
-- **Self-hosted woff2**: popup.html から拡張機能同梱の woff2 (`../fonts/...`) を `@font-face` で参照 (Zen Kaku Gothic New / IBM Plex Sans JP / UDEV Gothic JPDOC)。 外部 CDN 依存ゼロ
-- **アクセシビリティ**: `prefers-reduced-motion: reduce` で点滅・パルス停止、 `:focus-visible` でキーボード操作時アウトライン
-
-### Shadow DOM 戦略
-
-1. **`src/content/inject.js`** (page context / MAIN world) — 拡張機能が有効なときだけ `background.js` が動的登録する。`Element.prototype.attachShadow` をフックし、 **open root** は host 要素に `data-rfs-shadow` 属性を `queueMicrotask` で遅延設定 (カスタム要素コンストラクタとの互換性のため)。**closed root** は `host.shadowRoot` から再取得できず ISOLATED world にも渡せないため、返り値を MAIN world 内で保持し、preset / fallback CSS 出現後に直接注入する。無効化後は登録を解除し、開いているページを再読み込みするとフックも存在しなくなる。
-2. **`shadowHostObserver`** (ISOLATED world / open root) — `attributeFilter: ['data-rfs-shadow']` の MutationObserver で `document` を subtree 監視し、 `MutationRecord.target` から host を直接得て `injectCSS(host.shadowRoot)` → 属性を即削除。旧実装のイベント受信ごとの `querySelectorAll` 全 DOM 走査 (O(DOM要素数)/回) を O(新規shadow数) に削減。切断状態の host への属性付与は mutation が飛ばないため、接続時に `findShadowRoots` が属性を回収する。
-3. **`setupShadowDOMObserver()`** (ISOLATED world / open root) — MutationObserver (`subtree: true`) + 初回 TreeWalker scan で既存 Shadow DOM をカバー (`inject.js` のフックを補完するセーフティネット)。
-
-CSS 注入は `adoptedStyleSheets` (Constructable Stylesheets) で **MAIN / ISOLATED の各 world ごとに単一の `CSSStyleSheet` インスタンスを共有**してメモリ効率化する。adopt が拒否される root だけ `<style>` 注入へフォールバックする。open root は `_replaceFontApplied` フラグで重複注入を防ぎ、MAIN → ISOLATED world 間は属性 (`data-rfs-shadow`) で通信する (`CustomEvent.detail` は構造化クローンで `null` になるため)。
-
-Shadow DOM の注入順序を変更するときは、[DESIGN.md の world別Shadow DOM処理](DESIGN.md#world別shadow-dom処理)に従い、上記 Local Testing の回帰検証で同期初期化後の CSS 保持とページ破棄後の注入停止を確認する。
-
-### Storage Schema
-
-`chrome.storage.local` キー `fontSettings`:
-```json
-{
-  "enabled": true,
-  "bodyFont": "ibm-plex-sans-jp",
-  "monoFont": "udev-gothic-jpdoc",
-  "bodyFontWeight": "400"
-}
-```
-
-- `mergeFontSettings()` で validate されない値はサイレントに defaults に戻る
-- notosans variant では `VARIANT.lockedFonts` が `bodyFont` / `monoFont` / `bodyFontWeight` を上書きするため、 上記 storage 値は実質無視される (popup 側も Typography UI が `VARIANT.showFontSelector: false` で完全非表示)
-
-`chrome.storage.local` キー `prebuiltCSSRegistered` (boolean) — `src/background/background.js` がプリセット JS 登録の成否を `src/content/preload-fonts.js` へ伝えるシグナル。 Path A 注入が成功してるなら Path B fetch を skip するためのヒントとして使う (preload-fonts.js の checkPresetCSSInDOM と組み合わせて二重注入を回避)。
+- Path A（同期preset）とPath B（fallbackと競合font-face監視）を両方維持する。presetがある場合も競合font-face監視は必要。
+- presetには解決済みフォント設定とCSS全体を埋め込み、拡張URLの `__REPLACE_FONT_BASE__` だけを実行時に解決する。生成物を直接修正しない。
+- preset生成の区切りには不可視ASCII制御文字を使わず、目視できるトークンまたは明示的なescapeを使う。
+- 保存値は `mergeFontSettings()` で検証し、固定版の `lockedFonts` を優先する。フォント定義・検証を別の実装へ複製しない。
+- 宣言的・動的content scriptの除外を一致させ、有効時だけMAIN worldフックを登録する。
+- Shadow DOMの注入順序を変更したら、[world別Shadow DOM処理](DESIGN.md#world別shadow-dom処理) とLocal Testingの回帰検証により、同期初期化後のCSS保持とページ破棄後の注入停止を確認する。
+- popupの変更は両variant × light/darkの4テーマを実画面で確認する。notosansのテーマも利用中なので維持し、reduced motionとキーボードfocusの表示を保つ。
 
 ### Adding a New Font
 
@@ -391,7 +280,8 @@ WebExtError: Submission failed (2): Unknown Error
 # 1. ローカルでビルド
 pnpm run build:<variant>
 
-# 2. firefox-build/ ディレクトリ構築 (CI と同じホワイトリスト)
+# 2. Firefox用manifestへ切替後、firefox-build/ ディレクトリ構築 (CI と同じホワイトリスト)
+node scripts/build-variant.js <variant> --firefox
 firefox_dir="firefox-build"
 variant_icons_dir="icons/<variant>"
 rm -rf "$firefox_dir" && mkdir -p "$firefox_dir/icons"

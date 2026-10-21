@@ -20,7 +20,7 @@
 | `src/content/font-config.js` | `FONT_REGISTRY`、既定値、保存値の検証、`lockedFonts`を含む設定マージを一元管理 |
 | `scripts/generate-css.js` | fallback CSSテンプレートと42通りのpreset JSを生成 |
 | `src/background/background.js` | 保存設定を読み、preset JSとShadow DOMフックの動的content script登録を同期 |
-| `src/content/preload-fonts.js` | fallback CSSの解決・注入、競合font-face除去、動的フォント検出、open Shadow DOM適用、フォントpreloadを担当 |
+| `src/content/preload-fonts.js` | preset CSSの再利用またはfallback CSSの解決・注入、競合font-face除去、動的フォント検出、open Shadow DOM適用、フォントpreloadを担当 |
 | `src/content/inject.js` | MAIN worldで`attachShadow`を捕捉し、open rootを通知しつつclosed rootへ直接CSSを適用 |
 | `src/popup/` | 有効状態・フォント・weightの設定UI。`chrome.storage.local`へ保存 |
 | `@kagayoi/support-extension` / `src/shared/kagayoi-support-*` | 共有パッケージを正本として問い合わせUIのJS/CSS 5資産を同梱し、Kagayoi Supportへの送信境界を形成。Firefoxでは個人識別・認証情報をrequiredとして申告し、通信内容のoptional permissionを送信前に取得 |
@@ -33,7 +33,7 @@
 3. `FONT_REGISTRY`から、ランタイム置換用CSSと本文・等幅・weightの全42presetを生成する。
 4. variant別SVGからPNGアイコンを生成する。
 5. Chrome成果物には`background.service_worker`を使用する。Firefox成果物はAMO validatorとの互換性のため`background.scripts`を追加する。
-6. 固定フォント版の配布物には、`lockedFonts`に一致するpresetだけを残す。
+6. `scripts/package-source.js`がCI・Windows・Linuxの同梱資産を選定する。完全かつ有効な`lockedFonts`を持つ固定版は、一致するpresetとレジストリで解決した置換用WOFF2、およびpopup・共有UIなどのCSSが実参照するWOFF2を残す。通常版や不完全・不正な固定設定は全preset・WOFF2を保持する。ソース資産、Path B用CSS、ライセンスは削除しない。
 7. CIは共有資産の正本との一致とChrome ZIP内の必須CSSを検査し、問い合わせUIが不完全な成果物の公開を拒否する。
 
 `manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/preset-*.js`、生成PNGはビルド成果物であり、直接編集しない。
@@ -42,11 +42,28 @@
 
 1. `document_start`で`variant.js`、`font-config.js`、`preload-fonts.js`をISOLATED worldへ宣言的に読み込む。
 2. Service Workerは`fontSettings`を検証・マージし、有効時だけ選択presetをISOLATED world、`inject.js`をMAIN worldへ全frame対象で動的登録する。
-3. **Path A**はpreset JSがCSS変数を同期上書きし、CSS変数を使うモダンサイトをちらつきなく置換する。
-4. **Path B**は`preload-fonts.js`がfallback CSSのプレースホルダーを実URL・選択フォントへ解決して注入する。直接font-familyを指定するサイトでは、競合する`@font-face`を除去してfallback chainを置換フォントへ導く。
+3. **Path A**はpreset JSが選択設定を解決済みのCSS全体（`@font-face`、置換規則、CSS変数override）を同期注入する。`__REPLACE_FONT_BASE__`だけは実行時に`chrome.runtime.getURL('')`で解決し、headがなければdocumentElementへ置く。
+4. **Path B**は`preload-fonts.js`がpresetの登録成功フラグとDOM上の存在を確認し、presetがあればCSSを再利用し、なければfallback CSSをfetchして実URL・選択フォントへ解決して注入する。どちらの場合も競合する`@font-face`の監視・除去を行い、直接font-familyを指定するサイトのfallback chainを置換フォントへ導く。
 5. open Shadow DOMはISOLATED world側の監視と共有`CSSStyleSheet`で処理する。closed Shadow DOMはMAIN world側が`attachShadow`の返り値を保持して直接処理する。Constructable Stylesheetを採用できないrootでは`<style>`へフォールバックする。
 6. popupの変更は`chrome.storage.local.fontSettings`へ保存され、Service Workerが150msでデバウンスして動的登録を原子的に更新する。
 7. 無効化時は動的登録と登録成功フラグを解除する。既に開いているページからMAIN worldフックを取り除くにはページ再読み込みが必要になる。
+
+## 保存設定とpopup
+
+`chrome.storage.local.fontSettings`は次の形式で保存する。
+
+```json
+{
+  "enabled": true,
+  "bodyFont": "ibm-plex-sans-jp",
+  "monoFont": "udev-gothic-jpdoc",
+  "bodyFontWeight": "400"
+}
+```
+
+`mergeFontSettings()`は不正な値を既定値へ戻し、最後に`VARIANT.lockedFonts`を適用する。固定版ではフォント選択UIも非表示になる。`prebuiltCSSRegistered`は動的preset登録の成否を示すbooleanであり、そのページへの注入成功を保証しないためDOMも確認する。popupは設定を自動保存し、開いているページへの反映には再読み込みが必要となる。
+
+popupは`body[data-variant]`と`prefers-color-scheme`でテーマを切り替える。defaultはEditorial Day / Editorial Night、notosansはLab Day / Cyber Nightを使用する。フォントは同梱WOFF2から読み込み、外部CDNへ依存しない。`prefers-reduced-motion`でアニメーションを停止し、`:focus-visible`でキーボード操作を示す。
 
 ## 責務の境界
 
@@ -71,7 +88,9 @@
 
 ### 二経路のフォント注入
 
-同期presetは初期表示のちらつきを抑えられる一方、直接指定されたfont-familyだけでは不十分である。fallback CSSと競合font-face監視を併用し、初期表示と対応範囲を両立する代わりに、生成物とランタイム監視の複雑さを受け入れている。
+同期presetは初期表示のちらつきを抑えられる一方、サイト側の競合font-faceへの対処や、動的登録が間に合わない場合の代替経路も必要になる。fallback CSSと競合font-face監視を併用し、初期表示と対応範囲を両立する代わりに、生成物とランタイム監視の複雑さを受け入れている。
+
+動的に生成されたハッシュ付きfamilyにも本文・等幅の選択WOFF2を割り当てる。top frameでは本文Regular用WOFF2だけをpreloadし、Boldと等幅は遅延ロードに委ねる。
 
 競合font-faceの走査は、グループ規則の内側と読み取り可能な`@import`先も対象とする。`document.adoptedStyleSheets`は初回・BFCache復帰・style/link追加時に確認する。DOM変化を伴わないCSSOMだけの変更は常時監視しない。
 
@@ -84,6 +103,8 @@
 ### world別Shadow DOM処理
 
 open rootはISOLATED worldで安全に扱えるが、closed rootは`host.shadowRoot`から再取得できない。そのためMAIN worldで返り値を捕捉する責務を分け、共有sheetと`<style>` fallbackで互換性とメモリ効率を両立する。
+
+open rootのhost属性通知はmicrotaskへ遅延し、カスタム要素のコンストラクタと両立させる。ISOLATED worldは属性変更のtargetからhostを取得し、処理後に属性を削除する。未接続hostや既存rootは、接続時の走査と初回TreeWalkerで補完する。
 
 closed rootへの注入はmicrotaskへ遅延し、`attachShadow`呼び出し元による同期的な`adoptedStyleSheets` / `innerHTML`初期化で拡張CSSが消えることを防ぐ。preset / fallback CSSが未到着ならrootを保留して出現後に注入する。BFCacheへ保存しない`pagehide`では保留rootと監視を解放し、予約済みmicrotaskからも注入しない。
 
