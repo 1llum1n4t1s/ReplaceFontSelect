@@ -70,13 +70,20 @@ if [ ! -d "$VARIANT_ICONS_DIR" ]; then
   exit 1
 fi
 
+# 同梱資産の選定はCI・Windowsと同じ処理を使う。失敗はset -eで伝播する。
+excluded_assets=$(node scripts/package-source.js "$VARIANT")
+extra_excludes=()
+while IFS= read -r file; do
+  [ -z "$file" ] || extra_excludes+=("$file")
+done <<< "$excluded_assets"
+
 echo "📦 Chrome Web Store用のZIPファイルを作成中..."
 # preview.html はストア配信物に不要なので exclude
 zip -r "$ZIP_PATH" \
   manifest.json \
   "$VARIANT_ICONS_DIR" \
   src/ \
-  -x "*.DS_Store" "*.swp" "*~" "*/preview.html"
+  -x "*.DS_Store" "*.swp" "*~" "*/preview.html" "${extra_excludes[@]}"
 
 echo "✅ ZIPファイルを作成しました: $ZIP_PATH"
 echo ""

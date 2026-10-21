@@ -109,18 +109,13 @@ async function generateScreenshot(browser, htmlPath, outputPath, width, height) 
         height: height
       }
     });
-
-    console.log(`✅ 生成完了: ${outputPath} (${width}x${height})`);
-  } catch (error) {
-    console.error(`❌ エラー: ${htmlPath} -> ${outputPath}`);
-    console.error(error);
   } finally {
     await page.close();
   }
 }
 
 /**
- * メイン処理：出力ディレクトリの準備と各画像の並列生成
+ * メイン処理：出力ディレクトリの準備と各画像の順次生成
  */
 async function main() {
   console.log(`🎨 Chrome Web Store用スクリーンショットを生成中 (variant=${variantName})...\n`);
@@ -145,6 +140,8 @@ async function main() {
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
     protocolTimeout: 120000
   });
+  const generatedFiles = [];
+  const failedInputs = [];
 
   try {
     // 全画像を順次生成（並列だとタイムアウトしやすいため）
@@ -152,25 +149,38 @@ async function main() {
       const inputPath = config.input;
       const outputPath = path.join(OUTPUT_DIR, config.output);
 
-      // HTMLファイルの存在確認（存在しない場合はスキップ）
+      // 入力欠落も失敗に含め、残りの画像は引き続き試行する。
       if (!fs.existsSync(inputPath)) {
         console.error(`❌ HTMLファイルが見つかりません: ${inputPath}`);
+        failedInputs.push(inputPath);
         continue;
       }
 
-      await generateScreenshot(browser, inputPath, outputPath, config.width, config.height);
+      try {
+        await generateScreenshot(browser, inputPath, outputPath, config.width, config.height);
+        generatedFiles.push(config.output);
+        console.log(`✅ 生成完了: ${outputPath} (${config.width}x${config.height})`);
+      } catch (error) {
+        failedInputs.push(inputPath);
+        console.error(`❌ エラー: ${inputPath} -> ${outputPath}`);
+        console.error(error);
+      }
     }
   } finally {
     await browser.close();
   }
 
-  console.log('\n✨ すべての画像生成が完了しました！');
+  if (failedInputs.length > 0) {
+    console.error(`\n❌ 画像生成: ${generatedFiles.length}/${IMAGE_CONFIGS.length} 件成功、${failedInputs.length} 件失敗しました。`);
+    process.exitCode = 1;
+  } else {
+    console.log('\n✨ すべての画像生成が完了しました！');
+  }
   console.log(`\n📂 生成された画像は ${OUTPUT_DIR} ディレクトリにあります。`);
   console.log('\n📋 生成された画像一覧:');
   
-  // 生成されたファイルのサイズを確認して表示
-  const files = fs.readdirSync(OUTPUT_DIR);
-  files.forEach(file => {
+  // 今回生成に成功したファイルだけ、サイズを確認して表示する。
+  generatedFiles.forEach(file => {
     const filePath = path.join(OUTPUT_DIR, file);
     const stats = fs.statSync(filePath);
     const sizeKB = (stats.size / 1024).toFixed(2);

@@ -281,6 +281,7 @@
     try {
       if (root instanceof ShadowRoot) {
         const sheet = await getSharedStyleSheet();
+        if (disposed) return;
         if (sheet) {
           try {
             root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
@@ -293,6 +294,7 @@
       }
 
       const cssText = await getCSSText();
+      if (disposed) return;
       if (!cssText) {
         root._replaceFontRetryCount = (root._replaceFontRetryCount || 0) + 1;
         if (root._replaceFontRetryCount >= 3) root._replaceFontApplied = true;
@@ -314,12 +316,22 @@
     }
   }
 
-  function findShadowRoots(node) {
+  function findShadowRoots(node, visited) {
     if (node.nodeType !== Node.ELEMENT_NODE) return;
+    if (visited?.has(node)) return;
+    visited?.add(node);
     // 切断状態で attachShadow された host は属性 mutation が観測できないため、接続時にここで属性を回収する
     if (node.hasAttribute(SHADOW_HOST_ATTR)) node.removeAttribute(SHADOW_HOST_ATTR);
     if (node.isConnected && node.shadowRoot) injectCSS(node.shadowRoot);
-    const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
+    // 同じbatchで走査済みのsubtreeは、最初の処理順を保ったまま除外する。
+    const filter = visited ? {
+      acceptNode(element) {
+        if (visited.has(element)) return NodeFilter.FILTER_REJECT;
+        visited.add(element);
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    } : null;
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT, filter);
     let currentNode;
     while ((currentNode = walker.nextNode())) {
       if (currentNode.hasAttribute(SHADOW_HOST_ATTR)) currentNode.removeAttribute(SHADOW_HOST_ATTR);
@@ -336,9 +348,10 @@
       microtaskScheduled = false;
       const nodes = Array.from(pendingNodes);
       pendingNodes.clear();
+      const visited = nodes.length > 1 ? new WeakSet() : null;
       for (const node of nodes) {
         if (!node.isConnected) continue;
-        findShadowRoots(node);
+        findShadowRoots(node, visited);
       }
     };
     const observer = new MutationObserver((mutations) => {

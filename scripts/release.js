@@ -35,12 +35,6 @@ const DRY_RUN = flags.has('--dry-run') || flags.has('-n');
 const AUTO_YES = flags.has('--yes') || flags.has('-y');
 const PRUNE_OLD = flags.has('--prune-old');
 
-function usage() {
-  console.error('使い方: node scripts/release.js [--dry-run] [--yes] [--prune-old]');
-  console.error('  patch +1 専用。全 variant に同じ version を反映し release/<X.Y.Z> ブランチを切ります。');
-  console.error('  minor/major bump は variants/*.json を手で書き換えてから実行してください。');
-}
-
 function fail(msg) {
   console.error(`❌ ${msg}`);
   process.exit(1);
@@ -202,7 +196,7 @@ async function main() {
     ...variants.map(v => `variants/${v.name}.json`),
     ...(pkgUpdated ? ['package.json'] : [])
   ].join(' ');
-  const commitMsg = `release: v${newVersion}`;
+  const commitMsg = `v${newVersion} をリリース`;
   run(`git add ${stagedFiles}`, { modifyState: true });
   run(`git commit -m "${commitMsg}"`, { modifyState: true });
   run('git push origin main', { modifyState: true });

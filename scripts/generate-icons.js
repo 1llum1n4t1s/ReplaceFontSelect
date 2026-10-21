@@ -80,7 +80,7 @@ async function generateIcons() {
       const page = await browser.newPage();
       await page.setViewport({ width: size, height: size, deviceScaleFactor: 1 });
       const html = buildHtml(svgText, fontBase64, size);
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: 'load' });
       // @font-face 埋め込みフォントの load 完了を待機
       await page.evaluate(() => document.fonts.ready);
       await page.screenshot({

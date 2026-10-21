@@ -40,7 +40,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // VARIANT.showFontSelector=false の場合は Typography UI を完全非表示。
   const variantShowsFontSelector = (typeof VARIANT === 'undefined' || !VARIANT) ? true : VARIANT.showFontSelector !== false;
-  if (settingsSection) settingsSection.hidden = !variantShowsFontSelector;
+  if (settingsSection) {
+    settingsSection.hidden = !variantShowsFontSelector;
+    // 保存通知は、フォント設定を非表示にする固定版でも表示する。
+    if (!variantShowsFontSelector && saveNotice) settingsSection.after(saveNotice);
+  }
 
   // ドロップダウンの選択肢を FONT_REGISTRY から動的生成
   function populateSelect(selectEl, registry) {
@@ -59,6 +63,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     statusDot.className = enabled ? 'dot active' : 'dot inactive';
     statusText.textContent = enabled ? '動作中' : '無効';
     settingsSection.classList.toggle('disabled', !enabled);
+    bodyFontSelect.disabled = !enabled;
+    bodyWeightSelect.disabled = !enabled;
+    monoFontSelect.disabled = !enabled;
   }
 
   function applySettingsToUI(settings) {
@@ -113,7 +120,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   enabledToggle.addEventListener('change', () => {
-    updateToggleUI(enabledToggle.checked);
     saveSettings();
   });
   bodyFontSelect.addEventListener('change', saveSettings);

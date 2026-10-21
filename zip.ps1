@@ -10,6 +10,35 @@ param(
     [string]$Variant = "default"
 )
 
+
+# 検証済みの作業対象だけを標準APIで削除する。
+function Remove-LocalWorkItem {
+    param([string[]]$LiteralPath, [string]$AllowedRoot, [switch]$IgnoreMissing, [switch]$AllowLeafJunction)
+    if ([string]::IsNullOrWhiteSpace($AllowedRoot) -or -not [IO.Path]::IsPathRooted($AllowedRoot)) { throw 'Cleanup root must be absolute.' }
+    $boundary = [IO.Path]::GetFullPath($AllowedRoot).TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
+    foreach ($target in $LiteralPath) {
+        if ([string]::IsNullOrWhiteSpace($target) -or -not [IO.Path]::IsPathRooted($target)) { throw 'Cleanup target must be absolute.' }
+        $resolved = [IO.Path]::GetFullPath($target)
+        if (-not $resolved.StartsWith($boundary, [StringComparison]::OrdinalIgnoreCase)) { throw 'Cleanup target is outside the allowed root.' }
+        $ancestor = $resolved
+        while ($ancestor) {
+            if (Test-Path -LiteralPath $ancestor) {
+                $item = Get-Item -LiteralPath $ancestor -Force -ErrorAction Stop
+                if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -and -not ($AllowLeafJunction -and $ancestor -eq $resolved -and $item.LinkType -eq 'Junction')) { throw 'Cleanup path contains a reparse point.' }
+            }
+            $ancestor = Split-Path $ancestor -Parent
+        }
+        if (-not (Test-Path -LiteralPath $resolved)) { if ($IgnoreMissing) { continue }; throw "Cleanup target is missing: $resolved" }
+        $item = Get-Item -LiteralPath $resolved -Force -ErrorAction Stop
+        $leafLink = [bool]($item.Attributes -band [IO.FileAttributes]::ReparsePoint)
+        if ($item.PSIsContainer -and -not $leafLink) {
+            if (@(Get-ChildItem -LiteralPath $resolved -Recurse -Force -ErrorAction Stop | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }).Count) { throw 'Cleanup directory contains a reparse point.' }
+        }
+        Remove-Item -LiteralPath $resolved -Recurse:($item.PSIsContainer -and -not $leafLink) -Force -ErrorAction Stop
+        if (Test-Path -LiteralPath $resolved) { throw "Cleanup target remains: $resolved" }
+    }
+}
+
 $ErrorActionPreference = "Stop"
 
 # バリアント設定を読み込む
@@ -87,11 +116,11 @@ $zipPath = "./$zipBase-chrome.zip"
 $xpiPath = "./$zipBase-firefox.xpi"
 
 # 古いZIPファイルを削除
-if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+if (Test-Path $zipPath) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($zipPath)) -AllowedRoot $PSScriptRoot }
 
 # 一時ディレクトリを作成
 $tempDir = "./temp-build"
-if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
+if (Test-Path $tempDir) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($tempDir)) -AllowedRoot $PSScriptRoot }
 New-Item -ItemType Directory -Path $tempDir | Out-Null
 
 # 必要なファイルをコピー (icons は対象 variant のみ同梱して別ブランドのアイコンが混入しないようにする)
@@ -104,17 +133,18 @@ if (-not (Test-Path $variantIconsSrc)) {
 }
 New-Item -ItemType Directory -Path "$tempDir/icons/$Variant" -Force | Out-Null
 Copy-Item "$variantIconsSrc/*" -Destination "$tempDir/icons/$Variant/" -Recurse
-Copy-Item "src" -Destination $tempDir -Recurse
+node scripts/package-source.js $Variant --copy "$tempDir/src"
+if ($LASTEXITCODE -ne 0) { throw "Chrome用ソースのコピーに失敗しました" }
 
 # 不要なファイルを除外
 # - preview.html はストア配信に不要 (SVG はインストール時不要だが残してもOK)
 # - replacefont-extension.css は Path B (preload-fonts.js の TEMPLATE_CSS_URL fetch) が
 #   web_accessible_resources 経由で参照するため配布に含める (publish.yml と同じ方針)
-Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html" | Remove-Item -Force
+Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html" | ForEach-Object {  Remove-LocalWorkItem -LiteralPath $_.FullName -AllowedRoot $PSScriptRoot -IgnoreMissing }
 
 # ZIPファイルを作成
 Compress-Archive -Path "$tempDir/*" -DestinationPath $zipPath -Force
-Remove-Item $tempDir -Recurse -Force
+ Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($tempDir)) -AllowedRoot $PSScriptRoot
 
 if (-not (Test-Path $zipPath)) {
     Write-Host "❌ ZIPファイルの作成に失敗しました" -ForegroundColor Red
@@ -137,7 +167,7 @@ Write-Host "   https://chrome.google.com/webstore/devconsole" -ForegroundColor B
 # (publish.yml の「Firefox 用ソースディレクトリを準備」ステップと同じ構成)。
 Write-Host ""
 Write-Host "🦊 Firefox AMO用のXPIファイルを作成中..." -ForegroundColor Cyan
-if (Test-Path $xpiPath) { Remove-Item $xpiPath -Force }
+if (Test-Path $xpiPath) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($xpiPath)) -AllowedRoot $PSScriptRoot }
 
 node scripts/build-variant.js $Variant --firefox
 if ($LASTEXITCODE -ne 0) {
@@ -146,20 +176,21 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $firefoxDir = "./firefox-build"
-if (Test-Path $firefoxDir) { Remove-Item $firefoxDir -Recurse -Force }
+if (Test-Path $firefoxDir) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($firefoxDir)) -AllowedRoot $PSScriptRoot }
 New-Item -ItemType Directory -Path $firefoxDir | Out-Null
 Copy-Item "manifest.json" -Destination $firefoxDir
 New-Item -ItemType Directory -Path "$firefoxDir/icons/$Variant" -Force | Out-Null
 Copy-Item "$variantIconsSrc/*" -Destination "$firefoxDir/icons/$Variant/" -Recurse
-Copy-Item "src" -Destination $firefoxDir -Recurse
+node scripts/package-source.js $Variant --copy "$firefoxDir/src"
+if ($LASTEXITCODE -ne 0) { throw "Firefox用ソースのコピーに失敗しました" }
 # Chrome ZIP と同じ除外ポリシー + TTF 除外 (AMO はソース由来の TTF を配信物に含めない)
-Get-ChildItem -Path $firefoxDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html","*.ttf" | Remove-Item -Force
+Get-ChildItem -Path $firefoxDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html","*.ttf" | ForEach-Object {  Remove-LocalWorkItem -LiteralPath $_.FullName -AllowedRoot $PSScriptRoot -IgnoreMissing }
 
 # Compress-Archive は .zip 前提なので一旦 zip で固めてから .xpi へリネームする
 $xpiTempZip = "./$zipBase-firefox-temp.zip"
-if (Test-Path $xpiTempZip) { Remove-Item $xpiTempZip -Force }
+if (Test-Path $xpiTempZip) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($xpiTempZip)) -AllowedRoot $PSScriptRoot }
 Compress-Archive -Path "$firefoxDir/*" -DestinationPath $xpiTempZip -Force
-Remove-Item $firefoxDir -Recurse -Force
+ Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($firefoxDir)) -AllowedRoot $PSScriptRoot
 Move-Item $xpiTempZip $xpiPath -Force
 
 # manifest.json を Chrome 版へ戻す (Firefox 版のまま残すと "Load unpacked" が壊れる)
