@@ -21,7 +21,7 @@
     "release": "node scripts/release.js"
   },
   "devDependencies": {
-    "@kagayoi/support-extension": "1.0.6",
+    "@kagayoi/support-extension": "1.0.8",
     "chrome-webstore-upload-cli": "4.0.2",
     "puppeteer": "^25.15.0",
     "ttf2woff2": "^8.0.1",
