@@ -3,7 +3,7 @@ name: Publish to Chrome Web Store & Firefox AMO
 # ブランチ命名規約:
 #   release/X.Y.Z (例: release/3.0.0)
 #
-# `release/<X.Y.Z>` への push で variant matrix を並列実行 (default + notosans)。
+# `release/<X.Y.Z>` の新規作成時の初回 push で variant matrix を並列実行 (default + notosans)。
 # 全 variant が同じ version を共有し、 matrix strategy で並列公開する。
 # variants/<name>.json の version とブランチ末尾の X.Y.Z が一致する必要がある。
 #
@@ -15,12 +15,36 @@ on:
   push:
     branches:
       - 'release/**'
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 再開する variant
+        type: choice
+        required: true
+        options: [default, notosans]
+      target:
+        description: 再開するストア
+        type: choice
+        required: true
+        options: [chrome, firefox]
+      expected_sha:
+        description: 照合済みの release source SHA（修復後は FIX_SHA）
+        type: string
+        required: true
 
 permissions:
   contents: read
 
+# 同一リポジトリの全 release branch と手動実行を直列化する。
+concurrency:
+  group: ${{ github.repository }}-replacefont-publish
+  cancel-in-progress: false
+  queue: max
+
 jobs:
   publish:
+    # 修復 push や GitHub rerun は自動提出しない。再開は対象を指定する。
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.created == true)) }}
     name: Publish ${{ matrix.variant }}
     runs-on: ubuntu-latest
     # matrix で全 variant を並列実行。1 variant が失敗しても他は続行。
@@ -29,11 +53,62 @@ jobs:
       matrix:
         variant: [default, notosans]
     steps:
+      - name: 対象を選択
+        id: select
+        env:
+          EVENT: ${{ github.event_name }}
+          VARIANT: ${{ matrix.variant }}
+          SELECTED_VARIANT: ${{ inputs.variant }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          if [ "$EVENT" = push ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "chrome=true" >> "$GITHUB_OUTPUT"
+            echo "firefox=true" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" = workflow_dispatch ]; then
+            case "$SELECTED_VARIANT" in
+              default|notosans) ;;
+              *) echo "::error::未対応の variant: $SELECTED_VARIANT"; exit 1 ;;
+            esac
+            case "$TARGET" in
+              chrome|firefox) ;;
+              *) echo "::error::未対応のストア: $TARGET"; exit 1 ;;
+            esac
+            if [ "$SELECTED_VARIANT" = "$VARIANT" ]; then
+              echo "enabled=true" >> "$GITHUB_OUTPUT"
+              echo "$TARGET=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "variant=$VARIANT は今回の対象外です"
+            fi
+          else
+            echo "::error::未対応のイベント: $EVENT"
+            exit 1
+          fi
       - name: リポジトリをチェックアウト
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         # actions/checkout v7.0.1 (SHA pinned for supply chain security)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
+      - name: 再開対象の source SHA を照合
+        id: head_check
+        if: ${{ success() && steps.select.outputs.enabled == 'true' && github.event_name == 'workflow_dispatch' }}
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_sha }}
+          EVENT_HEAD_SHA: ${{ github.sha }}
+        run: |
+          if [[ ! "$EXPECTED_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::expected_sha には照合済みの完全な source SHA を指定してください"
+            exit 1
+          fi
+          checkout_sha=$(git rev-parse HEAD)
+          if [ "$checkout_sha" != "$EXPECTED_HEAD_SHA" ] || [ "$EVENT_HEAD_SHA" != "$EXPECTED_HEAD_SHA" ]; then
+            echo "::error::指定 source SHA と checkout または実行対象の SHA が一致しません"
+            exit 1
+          fi
+          echo "再開対象 source SHA: $checkout_sha"
+
       - name: ブランチ名から version を抽出
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         id: parse
         env:
           BRANCH: ${{ github.ref_name }}
@@ -48,6 +123,7 @@ jobs:
           echo "🎯 version=$version (variant=${{ matrix.variant }})"
 
       - name: バリアントの version とブランチ version の整合性チェック
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         env:
           VARIANT: ${{ matrix.variant }}
           BRANCH_VERSION: ${{ steps.parse.outputs.version }}
@@ -64,11 +140,13 @@ jobs:
           echo "✅ variants/${VARIANT}.json の version とブランチ一致: $variant_version"
 
       - name: pnpm セットアップ
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413  # v6.1.0
         with:
           version: 11
 
       - name: Node セットアップ
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         # actions/setup-node v7.1.0 (SHA pinned)
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
@@ -77,17 +155,21 @@ jobs:
           cache: 'pnpm'
 
       - name: 依存インストール
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         run: pnpm install --frozen-lockfile
 
       - name: 共通サポート部品の同期を確認
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         run: pnpm run check:support
 
       - name: アイコン生成
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         env:
           VARIANT: ${{ matrix.variant }}
         run: node scripts/generate-icons.js "$VARIANT"
 
       - name: フォント変換（TTFがある場合）
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         run: |
           if ls src/fonts/*.ttf >/dev/null 2>&1; then
             node scripts/convert-fonts.js
@@ -96,14 +178,18 @@ jobs:
           fi
 
       - name: CSS生成
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         run: node scripts/generate-css.js
 
       - name: variant manifest / variant.js を生成
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         env:
           VARIANT: ${{ matrix.variant }}
         run: node scripts/build-variant.js "$VARIANT"
 
       - name: 生成された manifest の version を確認
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
+        id: common_ready
         env:
           BRANCH_VERSION: ${{ steps.parse.outputs.version }}
         run: |
@@ -115,6 +201,7 @@ jobs:
           echo "✅ manifest.json の version: $manifest_version"
 
       - name: zip パッケージを作成
+        if: ${{ success() && steps.select.outputs.enabled == 'true' && steps.select.outputs.chrome == 'true' }}
         env:
           VARIANT: ${{ matrix.variant }}
         run: |
@@ -125,29 +212,20 @@ jobs:
             echo "::error::variant 用のアイコンディレクトリが見つかりません: $variant_icons_dir"
             exit 1
           fi
-          # v3.0.3 戦略: replacefont-extension.css を WAR から fetch するので配布に含める。
-          # ローカル包装と同じ選定処理で、固定版の未使用資産を除外する。
-          excluded_assets=$(node scripts/package-source.js "$VARIANT")
-          extra_excludes=()
-          while IFS= read -r file; do
-            [ -z "$file" ] || extra_excludes+=("$file")
-          done <<< "$excluded_assets"
-          zip -r "$zip_path" manifest.json "$variant_icons_dir" src \
-            -x "*.DS_Store" "*.swp" "*~" "*/preview.html" "${extra_excludes[@]}"
-          archive_entries=$(unzip -Z1 "$zip_path")
-          for asset in \
-            kagayoi-support-footer.css \
-            kagayoi-support-form.css \
-            kagayoi-support-popup.css; do
-            if ! grep -Fxq "src/shared/$asset" <<< "$archive_entries"; then
-              echo "::error::Chrome ZIP に必須サポート資産がありません: src/shared/$asset"
-              exit 1
-            fi
-          done
+          # 配布内容を ZIP と照合するため専用ディレクトリに固定する。
+          chrome_dir="chrome-build"
+          mkdir -p "$chrome_dir/icons"
+          cp manifest.json "$chrome_dir/"
+          cp -r "$variant_icons_dir" "$chrome_dir/icons/${VARIANT}"
+          node scripts/package-source.js "$VARIANT" --copy "$chrome_dir/src"
+          find "$chrome_dir" \( -name "*.DS_Store" -o -name "*.swp" -o -name "*~" -o -name "preview.html" \) -delete
+          (cd "$chrome_dir" && zip -r "$GITHUB_WORKSPACE/$zip_path" manifest.json "icons/${VARIANT}" src)
+          echo "CHROME_SOURCE_DIR=$chrome_dir" >> "$GITHUB_ENV"
           ls -lh "$zip_path"
           echo "ZIP_PATH=$zip_path" >> "$GITHUB_ENV"
 
       - name: variant に対応する EXTENSION_ID を決定
+        if: ${{ success() && steps.select.outputs.enabled == 'true' && steps.select.outputs.chrome == 'true' }}
         id: ext
         env:
           VARIANT: ${{ matrix.variant }}
@@ -173,6 +251,7 @@ jobs:
           echo "extension_id=$extension_id" >> "$GITHUB_OUTPUT"
 
       - name: Chrome Web Store にアップロード & 公開
+        if: ${{ success() && steps.select.outputs.enabled == 'true' && steps.select.outputs.chrome == 'true' }}
         # chrome-webstore-upload-cli v4: 認証情報は CLI フラグ廃止・環境変数のみ
         # (CLIENT_ID / CLIENT_SECRET / REFRESH_TOKEN / PUBLISHER_ID / EXTENSION_ID)。
         # サブコマンドなしで upload + publish を一括実行 (--auto-publish は v4 で削除)。
@@ -182,17 +261,17 @@ jobs:
           REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
           PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
           EXTENSION_ID: ${{ steps.ext.outputs.extension_id }}
-        # chrome-webstore-upload-cli は devDependencies に固定し、pnpm install --frozen-lockfile で
-        # pnpm-lock.yaml の integrity hash 検証済みのローカル版を pnpm exec で呼ぶ
+          VARIANT: ${{ matrix.variant }}
+          BRANCH_VERSION: ${{ steps.parse.outputs.version }}
+        # integrity 検証済みの固定 CLI に、検証した同じ ZIP path を渡す。
         run: |
-          pnpm exec chrome-webstore-upload --source "$ZIP_PATH"
+          node scripts/verify-release-archive.js chrome "$VARIANT" "$BRANCH_VERSION" "$CHROME_SOURCE_DIR" "$ZIP_PATH"
           echo "🎉 ${{ matrix.variant }} → Chrome Web Store への公開リクエスト送信完了"
 
       - name: Firefox 用ソースディレクトリを準備
-        # Chrome step が失敗 (同 version 再 upload 等) しても Firefox AMO は独立して
-        # 実行する必要があるので、success() に加え failure() の場合も実行する
-        # (cancelled 時は skip)。
-        if: ${{ success() || failure() }}
+        id: firefox_source
+        # 前段の失敗後は停止し、Firefox 単独の手動再開で進める。
+        if: ${{ success() && steps.select.outputs.enabled == 'true' && steps.select.outputs.firefox == 'true' && steps.common_ready.outcome == 'success' }}
         env:
           VARIANT: ${{ matrix.variant }}
         # web-ext sign の --source-dir に渡すための、Chrome ZIP と同じ内容を持つ
@@ -208,7 +287,6 @@ jobs:
             exit 1
           fi
           node scripts/build-variant.js "${VARIANT}" --firefox
-          rm -rf "$firefox_dir"
           mkdir -p "$firefox_dir/icons"
           cp manifest.json "$firefox_dir/"
           cp -r "$variant_icons_dir" "$firefox_dir/icons/${VARIANT}"
@@ -227,13 +305,15 @@ jobs:
           ls -la "$firefox_dir"
 
       - name: Firefox AMO に submission API でアップロード
-        # Chrome 失敗時も実行する (前 step の Firefox ディレクトリ準備が success なら OK)。
-        if: ${{ success() || failure() }}
+        # Firefox ソース準備失敗時は提出しない。
+        if: ${{ success() && steps.firefox_source.outcome == 'success' }}
         env:
           # web-ext は WEB_EXT_API_KEY / WEB_EXT_API_SECRET を環境変数から読む
           # AMO API キーは全 variant 共通（同一 Mozilla アカウントの JWT）
           WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+          VARIANT: ${{ matrix.variant }}
+          BRANCH_VERSION: ${{ steps.parse.outputs.version }}
         # web-ext は devDependencies に固定し、pnpm install --frozen-lockfile で integrity 検証済みの
         # ローカル版を pnpm exec で呼ぶ（Chrome 側と同じサプライチェーン方針）
         run: |
@@ -243,8 +323,10 @@ jobs:
           fi
           # web-ext 10+ では submission API がデフォルト動作。
           # --use-submission-api フラグは廃止されたので渡さない。
-          pnpm exec web-ext sign \
+          # 提出後の人手審査は待たず、提出・検証・登録の失敗はそのまま失敗させる。
+          node scripts/verify-release-archive.js firefox "$VARIANT" "$BRANCH_VERSION" "$FIREFOX_SOURCE_DIR" \
             --source-dir="$FIREFOX_SOURCE_DIR" \
             --artifacts-dir="web-ext-artifacts" \
-            --channel=listed
+            --channel=listed \
+            --approval-timeout=0
           echo "🦊 ${{ matrix.variant }} → Firefox AMO への submission 送信完了 (レビュー待ち)"
