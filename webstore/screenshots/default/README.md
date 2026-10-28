@@ -12,22 +12,20 @@
 
 ## 🚀 自動生成（推奨）
 
-`zip.ps1`（Windows）または`zip.sh`（Mac/Linux）を実行すると、自動的にすべての画像が生成されます：
+リポジトリのルートで、依存関係と Puppeteer の Chrome を準備してから生成します。`zip.ps1` / `zip.sh` は画像を生成しません。
 
 ```bash
-# Windows PowerShell
-.\zip.ps1
-
-# Mac / Linux
-./zip.sh
+pnpm install --frozen-lockfile
+pnpm exec puppeteer browsers install chrome
+pnpm run generate-screenshots:default
 ```
 
 生成される画像：
-- **スクリーンショット**: 1280x800 および 640x400（最大5枚）
+- **スクリーンショット**: 1280x800（3枚）
 - **プロモーションタイル（小）**: 440x280
 - **マーキープロモーションタイル**: 1400x560
 
-すべての画像は `webstore/images/` ディレクトリに PNG 形式（24ビット、アルファなし）で保存されます。
+すべての画像は `webstore/images/default/` ディレクトリに PNG 形式（24ビット、アルファなし）で保存されます。
 
 ## 🎯 手動でスクリーンショットを作成する方法
 

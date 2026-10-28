@@ -18,7 +18,7 @@
 | `variants/*.json` | 名前、version、Gecko ID、固定フォント、UI表示、除外サイト、成果物名を定義するバリアント正本 |
 | `manifest.template.json` / `scripts/build-variant.js` | バリアント設定から対象ブラウザ用の `manifest.json` と `src/content/variant.js` を生成 |
 | `src/content/font-config.js` | `FONT_REGISTRY`、既定値、保存値の検証、`lockedFonts`を含む設定マージを一元管理 |
-| `scripts/generate-css.js` | fallback CSSテンプレートと42通りのpreset JSを生成 |
+| `scripts/generate-css.js` | fallback・YouTube用CSSテンプレートと42通りのpreset JSを生成 |
 | `src/background/background.js` | 保存設定を読み、preset JSとShadow DOMフックの動的content script登録を同期 |
 | `src/content/preload-fonts.js` | preset CSSの再利用またはfallback CSSの解決・注入、競合font-face除去、動的フォント検出、open Shadow DOM適用、フォントpreloadを担当 |
 | `src/content/inject.js` | MAIN worldで`attachShadow`を捕捉し、open rootを通知しつつclosed rootへ直接CSSを適用 |
@@ -36,17 +36,19 @@
 6. `scripts/package-source.js`がCI・Windows・Linuxの同梱資産を選定する。完全かつ有効な`lockedFonts`を持つ固定版は、一致するpresetとレジストリで解決した置換用WOFF2、およびpopup・共有UIなどのCSSが実参照するWOFF2を残す。通常版や不完全・不正な固定設定は全preset・WOFF2を保持する。ソース資産、Path B用CSS、ライセンスは削除しない。
 7. CIは共有資産の正本との一致とChrome ZIP内の必須CSSを検査し、問い合わせUIが不完全な成果物の公開を拒否する。
 
-`manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/preset-*.js`、生成PNGはビルド成果物であり、直接編集しない。
+`manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js`、生成PNGはビルド成果物であり、直接編集しない。
 
 ## ランタイムデータフロー
 
-1. `document_start`で`variant.js`、`font-config.js`、`preload-fonts.js`をISOLATED worldへ宣言的に読み込む。
+1. `document_start`で`youtube-target.js`、`variant.js`、`font-config.js`、`preload-fonts.js`をISOLATED worldへ宣言的に読み込む。動的presetにも同じ対象判定を先行させる。
 2. Service Workerは`fontSettings`を検証・マージし、有効時だけ選択presetをISOLATED world、`inject.js`をMAIN worldへ全frame対象で動的登録する。
 3. **Path A**はpreset JSが選択設定を解決済みのCSS全体（`@font-face`、置換規則、CSS変数override）を同期注入する。`__REPLACE_FONT_BASE__`だけは実行時に`chrome.runtime.getURL('')`で解決し、headがなければdocumentElementへ置く。
 4. **Path B**は`preload-fonts.js`がpresetの登録成功フラグとDOM上の存在を確認し、presetがあればCSSを再利用し、なければfallback CSSをfetchして実URL・選択フォントへ解決して注入する。どちらの場合も競合する`@font-face`の監視・除去を行い、直接font-familyを指定するサイトのfallback chainを置換フォントへ導く。
 5. open Shadow DOMはISOLATED world側の監視と共有`CSSStyleSheet`で処理する。closed Shadow DOMはMAIN world側が`attachShadow`の返り値を保持して直接処理する。Constructable Stylesheetを採用できないrootでは`<style>`へフォールバックする。
 6. popupの変更は`chrome.storage.local.fontSettings`へ保存され、Service Workerが150msでデバウンスして動的登録を原子的に更新する。
 7. 無効化時は動的登録と登録成功フラグを解除する。既に開いているページからMAIN worldフックを取り除くにはページ再読み込みが必要になる。
+
+ChromeのYouTubeドメインでは例外としてpresetを注入せず、Path BだけがCSSを所有する。Service Workerは保存設定を再確認し、レジストリにある選択フォント、通常テンプレート、YouTube用の追加CSSを取得して同一frameへ渡す。追加CSSは確認済みの説明文とチャンネル名だけを対象とし、編集・等幅・アイコンの対象自身と祖先を除外する。frame内でWOFF2をBlob URL化し、全CSS・preload・force loadで共有する。初期設定取得から期限を設け、設定の変更を監視し、注入直前にも再確認する。Blobの準備やCSSが受理される前に失敗したときは競合font-faceを除去せず元の表示を維持する。CSS適用後の初期化例外は部分適用としてコンソールへ記録し、使用中のBlob URLは非永続のpagehideまで保持する。通常のページ破棄ではURLを解放し、BFCacheでは維持する。この経路は非同期のため初期表示のちらつきゼロは保証しない。Firefoxと対象外サイトは従来の同期presetを使う。
 
 ## 保存設定とpopup
 
@@ -75,7 +77,7 @@ popupは`body[data-variant]`と`prefers-color-scheme`でテーマを切り替え
 ## 重要な不変条件
 
 - Path AとPath Bは異なるサイト実装を補完するため、両方を維持する。
-- content scriptの順序は`variant.js` → `font-config.js` → `preload-fonts.js`とする。
+- 宣言的content scriptの順序は`youtube-target.js` → `variant.js` → `font-config.js` → `preload-fonts.js`、動的presetは`youtube-target.js` → presetとする。
 - `FONT_REGISTRY`をフォント定義と設定検証の単一の正本にする。
 - `@font-face`の`unicode-range`は指定せず、選択フォントにない文字をブラウザのfont fallbackへ委ねる。
 - default / notosansの公開済みIDと並行運用を維持する。
@@ -106,7 +108,7 @@ open rootはISOLATED worldで安全に扱えるが、closed rootは`host.shadowR
 
 open rootのhost属性通知はmicrotaskへ遅延し、カスタム要素のコンストラクタと両立させる。ISOLATED worldは属性変更のtargetからhostを取得し、処理後に属性を削除する。未接続hostや既存rootは、接続時の走査と初回TreeWalkerで補完する。
 
-closed rootへの注入はmicrotaskへ遅延し、`attachShadow`呼び出し元による同期的な`adoptedStyleSheets` / `innerHTML`初期化で拡張CSSが消えることを防ぐ。preset / fallback CSSが未到着ならrootを保留して出現後に注入する。BFCacheへ保存しない`pagehide`では保留rootと監視を解放し、予約済みmicrotaskからも注入しない。
+closed rootへの注入はmicrotaskへ遅延し、`attachShadow`呼び出し元による同期的な`adoptedStyleSheets` / `innerHTML`初期化で拡張CSSが消えることを防ぐ。preset / fallback CSSが未到着ならrootを弱参照で保留し、`document`・`documentElement`・`head`の直下と、必要な空styleの変化だけを監視する。弱参照を使えない環境では従来の保持方式へ戻す。一方のvariantが失敗しても、共有されるMAIN worldのフックは他方の遅延CSSを待てる。open rootの通知属性は他のvariantも受け取れるようmicrotaskで片付ける。BFCacheへ保存しない`pagehide`では保留rootと監視を解放し、予約済みmicrotaskからも注入しない。CSSが現れない場合は、管理用の弱参照と限定された監視がページ破棄まで残り得る。
 
 ### バリアント方式
 

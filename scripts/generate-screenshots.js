@@ -23,29 +23,26 @@ if (!/^[a-z][a-z0-9_-]*$/.test(variantName)) {
 const INPUT_DIR = `webstore/screenshots/${variantName}`;
 const OUTPUT_DIR = `webstore/images/${variantName}`;
 
-// 生成する画像の各設定項目（入力パス、出力名、サイズ、タイプ）
+// 生成する画像の各設定項目（入力パス、出力名、サイズ）
 const IMAGE_CONFIGS = [
   // スクリーンショット：1280x800
   {
     input: `${INPUT_DIR}/01-popup-ui.html`,
     output: '01-popup-ui-1280x800.png',
     width: 1280,
-    height: 800,
-    type: 'screenshot'
+    height: 800
   },
   {
     input: `${INPUT_DIR}/02-before-after.html`,
     output: '02-before-after-1280x800.png',
     width: 1280,
-    height: 800,
-    type: 'screenshot'
+    height: 800
   },
   {
     input: `${INPUT_DIR}/03-hero-promo.html`,
     output: '03-hero-promo-1280x800.png',
     width: 1280,
-    height: 800,
-    type: 'screenshot'
+    height: 800
   },
 
   // プロモーション タイル（小）：440x280
@@ -53,8 +50,7 @@ const IMAGE_CONFIGS = [
     input: `${INPUT_DIR}/04-promo-small.html`,
     output: 'promo-small-440x280.png',
     width: 440,
-    height: 280,
-    type: 'promo-small'
+    height: 280
   },
 
   // マーキー プロモーション タイル：1400x560
@@ -62,8 +58,7 @@ const IMAGE_CONFIGS = [
     input: `${INPUT_DIR}/05-promo-marquee.html`,
     output: 'promo-marquee-1400x560.png',
     width: 1400,
-    height: 560,
-    type: 'promo-marquee'
+    height: 560
   }
 ];
 

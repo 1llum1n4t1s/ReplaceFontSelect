@@ -51,8 +51,9 @@ cxcx-out/
 # cxcx のシナリオ YAML (ローカル計測用、 配布対象外)
 cxcx-scenarios.yaml
 
-# CSS テンプレート (generate-css.js が生成、 preset JS の元データだが配布物には不要)
+# 生成 CSS（ランタイムで使用するため配布物には含める）
 src/css/replacefont-extension.css
+src/css/youtube-override.css
 
 # 生成された preset JS 42 個 (generate-css.js が生成、 ビルド時に毎回再生成)
 src/css/preset-*.js

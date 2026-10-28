@@ -23,19 +23,8 @@
   // mono 系と判定するキーワード
   const MONO_KEYWORD_PATTERN = /mono|code|menlo|consolas|courier/i;
 
-  /**
-   * @font-face ルールからフォントファミリー名を正規化して返す
-   * (P1-4) WeakMap キャッシュで同じ rule への再 query を回避。
-   * @font-face ルールは原則 immutable なので Symbol で再計算を抑える。
-   */
+  // 同じ rule のファミリー名を監視の再実行間でも再利用する。
   const _fontFamilyCache = new WeakMap();
-  function getFontFamilyName(rule) {
-    const cached = _fontFamilyCache.get(rule);
-    if (cached !== undefined) return cached;
-    const name = rule.style.getPropertyValue('font-family').replace(/['"]/g, '').trim().toLowerCase();
-    _fontFamilyCache.set(rule, name);
-    return name;
-  }
 
   // 拡張機能のベースURL取得
   const getExtensionBaseURL = () => {
@@ -52,6 +41,21 @@
   const FONT_BASE_URL = `${BASE_URL}src/fonts/`;
   const CSS_BASE_URL = `${BASE_URL}src/css/`;
   const TEMPLATE_CSS_URL = `${CSS_BASE_URL}replacefont-extension.css`;
+  const youtubeTarget = globalThis.__replaceFontYouTubeTarget === true;
+  const blobUrls = new Set();
+  let youtubeCSS = null;
+  let youtubeUrls = null;
+  let youtubeHeadReady = false;
+  let youtubeDiagnosticShown = false;
+  let youtubeFailureCode = 'settings_load';
+  function reportYouTubeFailure(code, afterInjection = false) {
+    if (youtubeDiagnosticShown) return;
+    youtubeDiagnosticShown = true;
+    const message = afterInjection
+      ? '[フォント置換] YouTube 用フォントが部分的に適用されました。ページを再読み込みしてください。'
+      : '[フォント置換] YouTube 用フォントを準備できませんでした。元の表示を維持します。';
+    console.warn(message, code);
+  }
 
   // ── 状態管理 ──
   const fixedCSSCache = new Map();
@@ -71,13 +75,27 @@
   // ページ離脱時のクリーンアップ関数（MutationObserver / Listener 等のリーク防止）
   const disposers = [];
   let disposed = false;
-  const runDisposers = () => {
+  const releaseBlobUrls = () => {
+    for (const url of blobUrls) URL.revokeObjectURL(url);
+    blobUrls.clear();
+  };
+  const runDisposers = (preserveBlobUrls = false) => {
     if (disposed) return;
     disposed = true;
+    pendingRoots.clear();
     for (const dispose of disposers) {
       try { dispose(); } catch (e) {}
     }
     disposers.length = 0;
+    if (!preserveBlobUrls) releaseBlobUrls();
+  };
+  const preserveBlobUrlsUntilPagehide = () => {
+    const releaseOnPagehide = (e) => {
+      if (e.persisted) return;
+      window.removeEventListener('pagehide', releaseOnPagehide);
+      releaseBlobUrls();
+    };
+    window.addEventListener('pagehide', releaseOnPagehide);
   };
   // bfcache 入場 (persisted: true) では破棄しない。content script は bfcache 復元時に
   // 再注入されないため、ここで observer と復帰用 pageshow を外すと戻る/進むの後に
@@ -122,6 +140,7 @@
       getPromise = chrome.storage.local.get([FONT_REGISTRY.storageKey, presetKey]);
     } catch (e) {
       log('[フォント置換] 設定読み込み例外:', e && e.message);
+      if (youtubeTarget) return Promise.reject(e);
       return Promise.resolve(defaults);
     }
 
@@ -136,11 +155,12 @@
     return getPromise.then((result) => {
       clearTimeout(timeoutId);
       const stored = result[FONT_REGISTRY.storageKey] || {};
-      prebuiltCSSRegistered = result[presetKey] === true;
+      prebuiltCSSRegistered = !youtubeTarget && result[presetKey] === true;
       return mergeFontSettings(stored);
     }, (e) => {
       clearTimeout(timeoutId);
       log('[フォント置換] 設定読み込み失敗:', e && e.message);
+      if (youtubeTarget) throw e;
       return defaults;
     });
   }
@@ -148,10 +168,10 @@
   function buildFontConfig(bodyFontInfo, monoFontInfo, bodyFontWeight) {
     const bodyWoff2 = getBodyWoff2(bodyFontInfo, bodyFontWeight);
     return [
-      { weight: 'Regular', fontFamily: bodyFontInfo.name, fontWeight: bodyFontWeight, fontUrl: `${FONT_BASE_URL}${bodyWoff2}` },
-      { weight: 'Bold', fontFamily: bodyFontInfo.name, fontWeight: 'bold', fontUrl: `${FONT_BASE_URL}${bodyFontInfo.woff2Bold}` },
-      { weight: 'MonoRegular', fontFamily: monoFontInfo.name, fontWeight: '400', fontUrl: `${FONT_BASE_URL}${monoFontInfo.woff2Regular}` },
-      { weight: 'MonoBold', fontFamily: monoFontInfo.name, fontWeight: 'bold', fontUrl: `${FONT_BASE_URL}${monoFontInfo.woff2Bold}` }
+      { weight: 'Regular', fontFamily: bodyFontInfo.name, fontWeight: bodyFontWeight, fontUrl: youtubeUrls?.[0] || `${FONT_BASE_URL}${bodyWoff2}` },
+      { weight: 'Bold', fontFamily: bodyFontInfo.name, fontWeight: 'bold', fontUrl: youtubeUrls?.[1] || `${FONT_BASE_URL}${bodyFontInfo.woff2Bold}` },
+      { weight: 'MonoRegular', fontFamily: monoFontInfo.name, fontWeight: '400', fontUrl: youtubeUrls?.[2] || `${FONT_BASE_URL}${monoFontInfo.woff2Regular}` },
+      { weight: 'MonoBold', fontFamily: monoFontInfo.name, fontWeight: 'bold', fontUrl: youtubeUrls?.[3] || `${FONT_BASE_URL}${monoFontInfo.woff2Bold}` }
     ];
   }
 
@@ -174,6 +194,7 @@
    * CSS テキストを取得する（引数なし、クロージャ変数を直接参照）
    */
   function getCSSText() {
+    if (youtubeTarget) return Promise.resolve(youtubeCSS);
     const cacheKey = prebuiltCSSRegistered ? 'preset' : 'template';
     if (fixedCSSCache.has(cacheKey)) return fixedCSSCache.get(cacheKey);
 
@@ -240,10 +261,16 @@
   //   setupShadowDOMObserver (childList 監視) → findShadowRoots が回収する (従来と同じ経路)。
 
   const SHADOW_HOST_ATTR = 'data-rfs-shadow';
+  const cleanupShadowHostMarker = (el) => {
+    if (!el.hasAttribute || !el.hasAttribute(SHADOW_HOST_ATTR)) return;
+    // 同じ通知を受けた別 variant の observer に先に読ませる。
+    queueMicrotask(() => {
+      try { el.removeAttribute(SHADOW_HOST_ATTR); } catch (_) {}
+    });
+  };
   const processShadowHost = (el) => {
-    if (!el.hasAttribute || !el.hasAttribute(SHADOW_HOST_ATTR)) return; // removeAttribute 由来の発火を無視
-    // 処理済みマーカーではなく即座に属性を外す（DOM 汚染回避）
-    el.removeAttribute(SHADOW_HOST_ATTR);
+    // 別 variant が先に属性を削除しても、mutation の対象から root を処理する。
+    cleanupShadowHostMarker(el);
     if (el.shadowRoot) injectCSS(el.shadowRoot);
   };
   const shadowHostObserver = new MutationObserver((records) => {
@@ -260,6 +287,10 @@
     if (!root) return;
     if (disposed) return; // 無効化確定 / ページ破棄後は pendingRoots に溜めない (ShadowRoot 参照リーク防止)
     if (root._replaceFontApplied || root._replaceFontInProgress) return;
+    if (youtubeTarget && root !== document.head && !youtubeHeadReady) {
+      pendingRoots.add(root);
+      return;
+    }
     if (!settingsReady) {
       pendingRoots.add(root);
       return;
@@ -304,6 +335,12 @@
       style.textContent = cssText;
       style.dataset[RFS_ATTR] = RFS_FALLBACK;
       root.appendChild(style);
+      if (youtubeTarget && root === document.head && !style.sheet) {
+        style.remove();
+        reportYouTubeFailure('stylesheet');
+        runDisposers();
+        return;
+      }
       root._replaceFontApplied = true;
 
       if (root === document.head) {
@@ -321,7 +358,7 @@
     if (visited?.has(node)) return;
     visited?.add(node);
     // 切断状態で attachShadow された host は属性 mutation が観測できないため、接続時にここで属性を回収する
-    if (node.hasAttribute(SHADOW_HOST_ATTR)) node.removeAttribute(SHADOW_HOST_ATTR);
+    cleanupShadowHostMarker(node);
     if (node.isConnected && node.shadowRoot) injectCSS(node.shadowRoot);
     // 同じbatchで走査済みのsubtreeは、最初の処理順を保ったまま除外する。
     const filter = visited ? {
@@ -334,7 +371,7 @@
     const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT, filter);
     let currentNode;
     while ((currentNode = walker.nextNode())) {
-      if (currentNode.hasAttribute(SHADOW_HOST_ATTR)) currentNode.removeAttribute(SHADOW_HOST_ATTR);
+      cleanupShadowHostMarker(currentNode);
       if (currentNode.isConnected && currentNode.shadowRoot) injectCSS(currentNode.shadowRoot);
     }
   }
@@ -445,7 +482,7 @@
     if (!root) return;
     const fragment = document.createDocumentFragment();
     for (const config of fontConfig) {
-      if (!config.fontUrl || !config.fontUrl.startsWith(FONT_BASE_URL)) continue;
+      if (!config.fontUrl || !(youtubeTarget ? blobUrls.has(config.fontUrl) : config.fontUrl.startsWith(FONT_BASE_URL))) continue;
       // (P1-3) 本文 Regular の woff2 のみ preload。 Bold / Mono は font-display:swap 任せで FOUT 許容。
       // 起動クリティカルパスで preload が効くのは「最初に表示される本文文字」 で、 Bold / Mono は CSS parse 後の遅延ロードでも体感差が小さい。
       if (config.weight !== 'Regular') continue;
@@ -467,13 +504,13 @@
     // サブフレームでは top frame の HTTP キャッシュが効くため重複 FontFace 生成は不要
     if (window !== window.top) return;
     for (const config of fontConfig) {
-      if (!config.fontUrl || !config.fontUrl.startsWith(FONT_BASE_URL)) continue;
+      if (!config.fontUrl || !(youtubeTarget ? blobUrls.has(config.fontUrl) : config.fontUrl.startsWith(FONT_BASE_URL))) continue;
       const fontName = config.fontFamily || config.weight;
       const fontWeight = config.fontWeight || 'normal';
       try {
         const fontFace = new FontFace(fontName, `url("${config.fontUrl}")`, { display: 'swap', weight: fontWeight });
         fontFace.load().then(loaded => {
-          if (document.fonts) document.fonts.add(loaded);
+          if (!disposed && document.fonts) document.fonts.add(loaded);
         }).catch(() => {});
       } catch (e) {}
     }
@@ -488,15 +525,14 @@
 
   function buildDynamicRuleSet(families) {
     if (!selectedBodyFont || !selectedMonoFont) return '';
-    const safeLocal = (list) => list.map(f => `local("${String(f).replace(/"/g, '')}")`).join(', ');
-    const bodyRegUrl = `${FONT_BASE_URL}${getBodyWoff2(selectedBodyFont, selectedBodyFontWeight)}`;
-    const bodyBoldUrl = `${FONT_BASE_URL}${selectedBodyFont.woff2Bold}`;
-    const monoRegUrl = `${FONT_BASE_URL}${selectedMonoFont.woff2Regular}`;
-    const monoBoldUrl = `${FONT_BASE_URL}${selectedMonoFont.woff2Bold}`;
-    const bodyLocalReg = safeLocal(selectedBodyFont.localFontsRegular);
-    const bodyLocalBold = safeLocal(selectedBodyFont.localFontsBold);
-    const monoLocalReg = safeLocal(selectedMonoFont.localFontsRegular);
-    const monoLocalBold = safeLocal(selectedMonoFont.localFontsBold);
+    const bodyRegUrl = fontConfig[0].fontUrl;
+    const bodyBoldUrl = fontConfig[1].fontUrl;
+    const monoRegUrl = fontConfig[2].fontUrl;
+    const monoBoldUrl = fontConfig[3].fontUrl;
+    const bodyLocalReg = formatLocalFontSources(selectedBodyFont.localFontsRegular);
+    const bodyLocalBold = formatLocalFontSources(selectedBodyFont.localFontsBold);
+    const monoLocalReg = formatLocalFontSources(selectedMonoFont.localFontsRegular);
+    const monoLocalBold = formatLocalFontSources(selectedMonoFont.localFontsBold);
 
     const rules = [];
     for (const name of families) {
@@ -531,7 +567,7 @@
   let lastScannedFontsSize = -1;
 
   function scanDynamicFontFamilies() {
-    if (!document.fonts || !selectedBodyFont) return;
+    if (disposed || !document.fonts || !selectedBodyFont) return;
     // (P0-1) document.fonts.size が前回と同じなら短絡: 既知の family しか含まれていないので scan 不要
     const currentSize = document.fonts.size;
     if (currentSize === lastScannedFontsSize) return;
@@ -558,17 +594,20 @@
 
   // (P0-1) requestIdleCallback ベースの debounce で loadingdone burst を 1 回にまとめる。
   // ride-out: idle で発火、 cap 200ms で確実に呼び出し。
-  let _scanIdleHandle = 0;
+  let _scanIdleHandle = null;
+  let _scanUsesIdle = false;
   function scheduleScan() {
-    if (_scanIdleHandle) return;
+    if (disposed || _scanIdleHandle !== null) return;
     if (typeof requestIdleCallback === 'function') {
+      _scanUsesIdle = true;
       _scanIdleHandle = requestIdleCallback(() => {
-        _scanIdleHandle = 0;
+        _scanIdleHandle = null;
         scanDynamicFontFamilies();
       }, { timeout: 200 });
     } else {
+      _scanUsesIdle = false;
       _scanIdleHandle = setTimeout(() => {
-        _scanIdleHandle = 0;
+        _scanIdleHandle = null;
         scanDynamicFontFamilies();
       }, 32);
     }
@@ -586,67 +625,80 @@
     const onLoadingDone = () => scheduleScan();
     try {
       document.fonts.addEventListener('loadingdone', onLoadingDone);
-      disposers.push(() => {
-        try { document.fonts.removeEventListener('loadingdone', onLoadingDone); } catch (e) {}
-      });
     } catch (e) {}
+    disposers.push(() => {
+      try { document.fonts.removeEventListener('loadingdone', onLoadingDone); } catch (e) {}
+      if (_scanIdleHandle !== null) {
+        if (_scanUsesIdle) {
+          if (typeof cancelIdleCallback === 'function') cancelIdleCallback(_scanIdleHandle);
+        } else {
+          clearTimeout(_scanIdleHandle);
+        }
+        _scanIdleHandle = null;
+      }
+    });
   }
 
   // ── 競合 @font-face 無効化 ──
 
   let styleSheetMonitorActive = false;
 
-  // 置換先 (= 削除してはいけない) フォント名の小文字 Set を構築
-  function getReplacementNameSet() {
-    const set = new Set();
-    if (selectedBodyFont) set.add(selectedBodyFont.name.toLowerCase());
-    if (selectedMonoFont) set.add(selectedMonoFont.name.toLowerCase());
-    return set;
-  }
-
-  function buildTargetFamiliesFromRegistry() {
-    // 空のときのフォールバック: FONT_REGISTRY から name を直接構築
-    const set = new Set();
-    if (typeof FONT_REGISTRY === 'undefined') return set;
-    const replacement = getReplacementNameSet();
-    for (const key of Object.keys(FONT_REGISTRY.body || {})) {
-      const name = FONT_REGISTRY.body[key].name.toLowerCase();
-      if (!replacement.has(name)) set.add(name);
-    }
-    for (const key of Object.keys(FONT_REGISTRY.mono || {})) {
-      const name = FONT_REGISTRY.mono[key].name.toLowerCase();
-      if (!replacement.has(name)) set.add(name);
-    }
-    return set;
-  }
-
-  function collectTargetFamilies(rules, replacementNames, targetFamilies) {
-    if (!rules) return;
-    for (const rule of rules) {
-      if (rule.type !== CSSRule.FONT_FACE_RULE) continue;
-      const family = getFontFamilyName(rule);
-      if (family && !replacementNames.has(family)) targetFamilies.add(family);
-    }
-  }
-
-  function collectTargetFamiliesFromExtensionText(extStyles, replacementNames, targetFamilies) {
-    if (typeof CSSStyleSheet !== 'function') return;
-    for (const node of extStyles) {
-      if (!node.textContent) continue;
-      try {
-        // node.sheet.cssRules が参照できない環境でも、拡張機能自身が生成した CSS 文字列は
-        // Constructable Stylesheet へ再パースできる。FONT_REGISTRY の置換先名だけに
-        // 退化させず、Chirp などの source alias をすべて回収する。
-        const parsed = new CSSStyleSheet();
-        parsed.replaceSync(node.textContent);
-        collectTargetFamilies(parsed.cssRules, replacementNames, targetFamilies);
-      } catch (e) {}
-    }
-  }
-
   function setupStyleSheetMonitor() {
     if (styleSheetMonitorActive || !document.head) return;
     styleSheetMonitorActive = true;
+
+    function getFontFamilyName(rule) {
+      const cached = _fontFamilyCache.get(rule);
+      if (cached !== undefined) return cached;
+      const name = rule.style.getPropertyValue('font-family').replace(/['"]/g, '').trim().toLowerCase();
+      _fontFamilyCache.set(rule, name);
+      return name;
+    }
+
+    // 置換先 (= 削除してはいけない) フォント名の小文字 Set を構築
+    function getReplacementNameSet() {
+      const set = new Set();
+      if (selectedBodyFont) set.add(selectedBodyFont.name.toLowerCase());
+      if (selectedMonoFont) set.add(selectedMonoFont.name.toLowerCase());
+      return set;
+    }
+
+    function buildTargetFamiliesFromRegistry(replacement, targetFamilies) {
+      // 空のときのフォールバック: FONT_REGISTRY から name を直接構築
+      if (typeof FONT_REGISTRY === 'undefined') return;
+      for (const key of Object.keys(FONT_REGISTRY.body || {})) {
+        const name = FONT_REGISTRY.body[key].name.toLowerCase();
+        if (!replacement.has(name)) targetFamilies.add(name);
+      }
+      for (const key of Object.keys(FONT_REGISTRY.mono || {})) {
+        const name = FONT_REGISTRY.mono[key].name.toLowerCase();
+        if (!replacement.has(name)) targetFamilies.add(name);
+      }
+    }
+
+    function collectTargetFamilies(rules, replacementNames, targetFamilies) {
+      if (!rules) return;
+      for (const rule of rules) {
+        if (rule.type !== CSSRule.FONT_FACE_RULE) continue;
+        const family = getFontFamilyName(rule);
+        if (family && !replacementNames.has(family)) targetFamilies.add(family);
+      }
+    }
+
+    function collectTargetFamiliesFromExtensionText(extStyles, replacementNames, targetFamilies) {
+      if (typeof CSSStyleSheet !== 'function') return;
+      for (const node of extStyles) {
+        if (!node.textContent) continue;
+        try {
+          // node.sheet.cssRules が参照できない環境でも、拡張機能自身が生成した CSS 文字列は
+          // Constructable Stylesheet へ再パースできる。FONT_REGISTRY の置換先名だけに
+          // 退化させず、Chirp などの source alias をすべて回収する。
+          const parsed = new CSSStyleSheet();
+          parsed.replaceSync(node.textContent);
+          collectTargetFamilies(parsed.cssRules, replacementNames, targetFamilies);
+        } catch (e) {}
+      }
+    }
 
     // 置換対象フォントファミリーを「拡張機能のCSS」から収集
     const targetFamilies = new Set();
@@ -676,8 +728,7 @@
 
     // CSS の再パースも使えない古い環境だけ FONT_REGISTRY を最終フォールバックにする。
     if (targetFamilies.size === 0) {
-      const fallback = buildTargetFamiliesFromRegistry();
-      for (const name of fallback) targetFamilies.add(name);
+      buildTargetFamiliesFromRegistry(replacementNames, targetFamilies);
     }
 
     if (targetFamilies.size === 0) {
@@ -688,6 +739,27 @@
     const processedSheets = new WeakSet();
     const pendingStyleLoads = new WeakSet();
     const styleNodeSelector = 'style, link[rel~="stylesheet" i], link[as="style" i]';
+    let styleObserver = null;
+
+    function onStylePagehide() {
+      styleObserver?.disconnect();
+    }
+    function onStylePageshow(e) {
+      if (!disposed && e.persisted && document.documentElement) {
+        styleObserver?.observe(document.documentElement, { childList: true, subtree: true });
+        for (const node of document.querySelectorAll(styleNodeSelector)) {
+          processStyleNode(node);
+        }
+        runInitialScan();
+      }
+    }
+    // 監視の途中で例外が起きても、登録済みの listener や observer を解除できるよう先に登録する。
+    disposers.push(() => {
+      try { styleObserver?.disconnect(); } catch (e) {}
+      try { document.removeEventListener('DOMContentLoaded', runInitialScan); } catch (e) {}
+      try { window.removeEventListener('pagehide', onStylePagehide); } catch (e) {}
+      try { window.removeEventListener('pageshow', onStylePageshow); } catch (e) {}
+    });
 
     // 初回・遅延ロードのどちらでも、読めない競合 CSS には後勝ちで対応する。
     // 同じターンの失敗はまとめ、自分の style 移動は下の observer で除外する。
@@ -793,21 +865,22 @@
     // document_start 時点の `document.styleSheets` は通常空〜数枚で初回走査の体感メリットが薄い一方、 大規模サイトでは
     // ロード中シートを早期 access すると CPU を奪うため、 ready 段階に揃ってから 1 回だけ走査する方が効率的。
     // styleObserver は直後に documentElement 全体へ設置し、ready より前の後続シートも捕捉する。
-    const runInitialScan = () => {
+    function runInitialScan() {
+      if (disposed) return;
       for (const sheet of document.styleSheets) {
         if (!sheet.ownerNode?.dataset?.[RFS_ATTR]) {
           neutralizeCompetingFontFaces(sheet);
         }
       }
       scanAdoptedStyleSheets();
-    };
+    }
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', runInitialScan, { once: true });
     } else {
       runInitialScan();
     }
 
-    const styleObserver = new MutationObserver((mutations) => {
+    styleObserver = new MutationObserver((mutations) => {
       let foundStyle = false;
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
@@ -820,23 +893,8 @@
     });
 
     styleObserver.observe(document.documentElement, { childList: true, subtree: true });
-    const onStylePagehide = () => styleObserver.disconnect();
-    const onStylePageshow = (e) => {
-      if (e.persisted && document.documentElement) {
-        styleObserver.observe(document.documentElement, { childList: true, subtree: true });
-        for (const node of document.querySelectorAll(styleNodeSelector)) {
-          processStyleNode(node);
-        }
-        runInitialScan();
-      }
-    };
     window.addEventListener('pagehide', onStylePagehide);
     window.addEventListener('pageshow', onStylePageshow);
-    disposers.push(() => {
-      styleObserver.disconnect();
-      window.removeEventListener('pagehide', onStylePagehide);
-      window.removeEventListener('pageshow', onStylePageshow);
-    });
   }
 
   function flushPendingRoots() {
@@ -872,14 +930,147 @@
   // IIFE スコープのクロージャ変数で二重初期化を防ぐ（DOM 属性は使わない）
   let initialized = false;
 
+  function requestYouTubeAssets(settings) {
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.runtime.sendMessage({
+          type: 'replace-font-youtube-assets', bodyFont: settings.bodyFont,
+          monoFont: settings.monoFont, bodyFontWeight: settings.bodyFontWeight
+        }, response => {
+          const error = chrome.runtime.lastError;
+          if (error) reject(new Error(error.message));
+          else resolve(response);
+        });
+      } catch (error) { reject(error); }
+    });
+  }
+
+  class YouTubeProbeTimeout extends Error {}
+
+  function probePageFontLoad(url, head) {
+    return new Promise((resolve, reject) => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'font';
+      link.type = 'font/woff2';
+      link.crossOrigin = 'anonymous';
+      link.href = url;
+      let finished = false;
+      const finish = (error) => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+        link.onload = null;
+        link.onerror = null;
+        link.remove();
+        if (error) reject(error); else resolve();
+      };
+      const timer = setTimeout(() => finish(new YouTubeProbeTimeout('page font preload timeout')), CSS_FETCH_TIMEOUT_MS);
+      link.onload = () => finish();
+      link.onerror = () => finish(new Error('page font preload failed'));
+      disposers.push(() => finish(new Error('page disposed')));
+      try { head.appendChild(link); } catch (error) { finish(error); }
+    });
+  }
+
+  async function prepareYouTubeAssets(settings, head) {
+    youtubeFailureCode = 'asset_message';
+    const response = await requestYouTubeAssets(settings);
+    if (disposed) return false;
+    if (response?.error) {
+      youtubeFailureCode = 'asset_background';
+      throw new Error('asset request failed');
+    }
+    youtubeFailureCode = 'asset_response';
+    const expected = [getBodyWoff2(selectedBodyFont, selectedBodyFontWeight), selectedBodyFont.woff2Bold,
+      selectedMonoFont.woff2Regular, selectedMonoFont.woff2Bold];
+    if (!response || !Array.isArray(response.names) ||
+        response.names.length !== expected.length || response.names.some((name, i) => name !== expected[i]) ||
+        typeof response.css !== 'string' || !response.data) throw new Error('invalid asset response');
+    const byName = new Map();
+    for (const name of new Set(expected)) {
+      youtubeFailureCode = 'asset_response';
+      const encoded = response.data[name];
+      if (typeof encoded !== 'string' || encoded.length > 8 * 1024 * 1024) throw new Error('invalid font');
+      youtubeFailureCode = 'asset_decode';
+      let bytes = null;
+      if (typeof Uint8Array.fromBase64 === 'function') {
+        try { bytes = Uint8Array.fromBase64(encoded); } catch (_) {}
+      }
+      if (!bytes) {
+        // 未対応ブラウザや復号方式の差異がある場合は従来の経路を使う。
+        const binary = atob(encoded);
+        if (!binary.length || binary.length > 6 * 1024 * 1024) throw new Error('invalid font size');
+        bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      }
+      if (!bytes.length || bytes.length > 6 * 1024 * 1024) throw new Error('invalid font size');
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'font/woff2' }));
+      blobUrls.add(url);
+      byName.set(name, url);
+    }
+    youtubeUrls = expected.map(name => byName.get(name));
+    // FontFace.load はページの font-src に従う。使えない場合は CSS 注入前に止める。
+    let timeout;
+    youtubeFailureCode = 'font_probe';
+    try {
+      await Promise.race([
+        Promise.all([...blobUrls].flatMap((url, i) => [
+          new FontFace(`__rfs_probe_${i}`, `url("${url}")`).load(),
+          probePageFontLoad(url, head)
+        ])),
+        new Promise((_, reject) => { timeout = setTimeout(() => reject(new YouTubeProbeTimeout('font load timeout')), CSS_FETCH_TIMEOUT_MS); })
+      ]);
+    } catch (error) {
+      if (error instanceof YouTubeProbeTimeout) youtubeFailureCode = 'font_probe_timeout';
+      throw error;
+    } finally { clearTimeout(timeout); }
+    if (disposed) return false;
+    youtubeFailureCode = 'stylesheet';
+    const marker = '__RFS_BLOB_BASE__/';
+    const map = buildPlaceholderMap(selectedBodyFont, selectedMonoFont, selectedBodyFontWeight, marker);
+    let css = response.css.replace(new RegExp(PLACEHOLDER_REGEX_SOURCE, 'g'), match =>
+      Object.prototype.hasOwnProperty.call(map, match) ? map[match] : match);
+    for (const [name, url] of byName) css = css.split(`${marker}src/fonts/${name}`).join(url);
+    if (css.includes(marker) || css.includes('__REPLACE_FONT_BASE__') || /(?:chrome|moz)-extension:\/\//.test(css)) {
+      throw new Error('unresolved font URL');
+    }
+    youtubeCSS = css;
+    return true;
+  }
+
   async function initialize() {
-    if (initialized) return;
+    if (disposed || initialized) return;
     initialized = true;
     log('[フォント置換] 初期化開始', location.href.substring(0, 80));
 
+    let youtubeDeadline = null;
+    let onYouTubeSettingsChanged = null;
+    if (youtubeTarget) {
+      youtubeDeadline = setTimeout(() => {
+        if (!disposed) reportYouTubeFailure('deadline');
+        runDisposers();
+      }, 15000);
+      onYouTubeSettingsChanged = (changes, area) => {
+        if (area !== 'local' || !changes[FONT_REGISTRY.storageKey]) return;
+        pendingRoots.clear();
+        runDisposers();
+      };
+      chrome.storage.onChanged.addListener(onYouTubeSettingsChanged);
+      disposers.push(() => {
+        clearTimeout(youtubeDeadline);
+        chrome.storage.onChanged.removeListener(onYouTubeSettingsChanged);
+      });
+    }
     setupShadowDOMObserver();
 
-    const settings = await loadFontSettings();
+    let settings;
+    try { settings = await loadFontSettings(); } catch (_) {
+      if (youtubeTarget && !disposed) reportYouTubeFailure('settings_load');
+      runDisposers();
+      return;
+    }
+    if (disposed) return;
     log('[フォント置換] 設定読み込み完了:', settings, 'プリセットモード:', prebuiltCSSRegistered);
 
     if (!settings.enabled) {
@@ -903,12 +1094,63 @@
     selectedMonoFont = monoFontInfo;
     selectedBodyFontWeight = settings.bodyFontWeight;
 
+    if (youtubeTarget) {
+      let youtubeStyleApplied = false;
+      try {
+        const head = await new Promise(resolve => {
+          const watcher = whenNodeReady(() => document.head, document.documentElement, () => resolve(document.head));
+          if (watcher) disposers.push(() => { watcher.disconnect(); resolve(null); });
+        });
+        if (disposed || !head) return;
+        if (!await prepareYouTubeAssets(settings, head) || disposed) return;
+        youtubeFailureCode = 'settings_load';
+        const latest = await loadFontSettings();
+        if (disposed) return;
+        if (!latest.enabled || latest.bodyFont !== settings.bodyFont ||
+            latest.monoFont !== settings.monoFont || latest.bodyFontWeight !== settings.bodyFontWeight) {
+          pendingRoots.clear();
+          runDisposers();
+          return;
+        }
+        prebuiltCSSRegistered = false;
+        youtubeFailureCode = 'stylesheet';
+        fontConfig = buildFontConfig(selectedBodyFont, selectedMonoFont, selectedBodyFontWeight);
+        settingsReady = true;
+        const style = document.createElement('style');
+        style.textContent = youtubeCSS;
+        style.dataset[RFS_ATTR] = RFS_FALLBACK;
+        head.appendChild(style);
+        if (!style.sheet) {
+          style.remove();
+          throw new Error('style blocked');
+        }
+        youtubeStyleApplied = true;
+        youtubeFailureCode = 'post_injection';
+        head._replaceFontApplied = true;
+        youtubeHeadReady = true;
+        clearTimeout(youtubeDeadline);
+        chrome.storage.onChanged.removeListener(onYouTubeSettingsChanged);
+        setupStyleSheetMonitor();
+        flushPendingRoots();
+        setupFontForceLoad();
+        setupDynamicFontWatcher();
+        createPreloadTag();
+        return;
+      } catch (_) {
+        if (!disposed) reportYouTubeFailure(youtubeFailureCode, youtubeStyleApplied);
+        pendingRoots.clear();
+        if (youtubeStyleApplied) preserveBlobUrlsUntilPagehide();
+        runDisposers(youtubeStyleApplied);
+        return;
+      }
+    }
+
     fontConfig = buildFontConfig(selectedBodyFont, selectedMonoFont, selectedBodyFontWeight);
     settingsReady = true;
 
     const performInjections = () => {
       const head = document.head;
-      if (!head) return;
+      if (!head || disposed) return;
       injectCSS(head);
       createPreloadTag();
     };
@@ -923,6 +1165,7 @@
     log(`[フォント置換] 初期化完了: body=${selectedBodyFont.name} (weight=${selectedBodyFontWeight}), mono=${selectedMonoFont.name}, preset=${prebuiltCSSRegistered}`);
   }
 
-  // 実行開始 (initialize は必ず走らせたいので disposers には登録しない)
-  whenNodeReady(() => document.documentElement, document, initialize);
+  // documentElement 待機中もページ破棄時には監視を解除する。
+  const initializationWatcher = whenNodeReady(() => document.documentElement, document, initialize);
+  if (initializationWatcher) disposers.push(() => initializationWatcher.disconnect());
 })();

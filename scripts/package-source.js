@@ -18,6 +18,10 @@ function sourceFiles(directory, prefix = 'src') {
 
 function getExcludedFiles(variant, sourceRoot = root) {
   const files = sourceFiles(path.join(sourceRoot, 'src'));
+  for (const file of ['src/css/replacefont-extension.css', 'src/css/youtube-override.css']) {
+    if (!files.includes(file)) throw new Error(`必要な資産がありません: ${file}`);
+    if (fs.statSync(path.join(sourceRoot, file)).size === 0) throw new Error(`必要な資産が空です: ${file}`);
+  }
   const locked = variant.lockedFonts;
   // 一部の設定だけが固定される将来のvariantでは、選択可能な資産を削らない。
   const fullyLocked = locked && ['bodyFont', 'monoFont', 'bodyFontWeight'].every(key =>

@@ -166,21 +166,25 @@ function getBodyWoff2(fontInfo, weight) {
 // CSS プレースホルダー置換用のマップを構築する（fallback 経路とビルド経路で共有）
 // CSS 構造破壊を防ぐため、family 名内の " は除去する
 // eslint-disable-next-line no-unused-vars
+function formatLocalFontSources(list) {
+  return list.map(f => `local("${String(f).replace(/"/g, '')}")`).join(', ');
+}
+
+// eslint-disable-next-line no-unused-vars
 function buildPlaceholderMap(bodyFont, monoFont, weight, baseUrl) {
-  const safeLocal = (list) => list.map(f => `local("${String(f).replace(/"/g, '')}")`).join(', ');
   const bodyWoff2 = getBodyWoff2(bodyFont, weight);
   return {
     '__REPLACE_FONT_BASE__': baseUrl,
     '__BODY_FONT_NAME__': bodyFont.name,
     '__BODY_FONT_FALLBACK__': bodyFont.fallback,
-    '__BODY_LOCAL_REGULAR__': safeLocal(bodyFont.localFontsRegular),
-    '__BODY_LOCAL_BOLD__': safeLocal(bodyFont.localFontsBold),
+    '__BODY_LOCAL_REGULAR__': formatLocalFontSources(bodyFont.localFontsRegular),
+    '__BODY_LOCAL_BOLD__': formatLocalFontSources(bodyFont.localFontsBold),
     '__BODY_WOFF2_REGULAR__': bodyWoff2,
     '__BODY_WOFF2_BOLD__': bodyFont.woff2Bold,
     '__MONO_FONT_NAME__': monoFont.name,
     '__MONO_FONT_FALLBACK__': monoFont.fallback,
-    '__MONO_LOCAL_REGULAR__': safeLocal(monoFont.localFontsRegular),
-    '__MONO_LOCAL_BOLD__': safeLocal(monoFont.localFontsBold),
+    '__MONO_LOCAL_REGULAR__': formatLocalFontSources(monoFont.localFontsRegular),
+    '__MONO_LOCAL_BOLD__': formatLocalFontSources(monoFont.localFontsBold),
     '__MONO_WOFF2_REGULAR__': monoFont.woff2Regular,
     '__MONO_WOFF2_BOLD__': monoFont.woff2Bold
   };

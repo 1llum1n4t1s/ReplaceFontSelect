@@ -119,9 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  enabledToggle.addEventListener('change', () => {
-    saveSettings();
-  });
+  enabledToggle.addEventListener('change', saveSettings);
   bodyFontSelect.addEventListener('change', saveSettings);
   bodyWeightSelect.addEventListener('change', saveSettings);
   monoFontSelect.addEventListener('change', saveSettings);

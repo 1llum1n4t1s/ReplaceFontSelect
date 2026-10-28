@@ -4,7 +4,7 @@ This file provides guidance to Codex and other coding agents working in this rep
 
 ## Project Overview
 
-**目に優しいフォント置換** — Chrome / Firefox desktop (140+) / Firefox Android (142+) 拡張機能 (Manifest V3) で、 ウェブサイト上の読みづらいフォントを、 ユーザーが選んだ日本語フォントへ自動置換する。 本文 7 種 × 等幅 3 種 × Weight (400/500) = 42 通りのプリセットを `document_start` で同期注入することでちらつきゼロを実現している。
+**目に優しいフォント置換** — Chrome / Firefox desktop (140+) / Firefox Android (142+) 拡張機能 (Manifest V3) で、 ウェブサイト上の読みづらいフォントを、 ユーザーが選んだ日本語フォントへ自動置換する。本文 7 種 × 等幅 3 種 × Weight (400/500) = 42 通りのプリセットを通常は `document_start` で同期注入する。Chrome の YouTube では非同期 Blob 経路を使い、ちらつきゼロは保証しない。
 
 このリポジトリは **単一コードベース** から複数の派生版 (variant) を別々の拡張機能として公開できる「バリアント方式」を採用している。 現在 `default` (フォント選択 UI 付き) と `notosans` (Noto Sans JP + UDEV Gothic JPDOC 固定版) の 2 variant が定義されており、 それぞれ独立した拡張機能 ID として Chrome Web Store / Firefox AMO に並行リリースされている。 ユーザーの使い分け:
 - **default**: フォント選択 UI で好きなフォントを 42 プリセットから選ぶ通常版
@@ -26,7 +26,7 @@ pnpm run build:notosans             # icons + CSS + preset JS + variant=notosans
 pnpm run build                      # = build:default
 pnpm run build-variant <name>       # manifest.json + src/content/variant.js だけ再生成 (variant 切替時)
 
-pnpm run generate-css               # src/css/replacefont-extension.css + 42 個の preset-*.js を再生成 (variant 非依存)
+pnpm run generate-css               # fallback / YouTube 用 CSS + 42 個の preset-*.js を再生成 (variant 非依存)
 pnpm run convert-fonts              # src/fonts/*.ttf → *.woff2 変換 (フォント追加時のみ手動実行、 variant 非依存)
 pnpm run generate-icons:default     # icons/default/icon.svg から PNG (16/48/128) を再生成
 pnpm run generate-icons:notosans    # icons/notosans/icon.svg から PNG (16/48/128) を再生成
@@ -36,7 +36,7 @@ pnpm run sync:support                  # 共有パッケージ正本から問い
 pnpm run check:support                 # 同梱資産が共有パッケージ正本と一致することを読み取り専用で検査
 ```
 
-`manifest.json` と `src/content/variant.js` と `src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。初回 checkout 後と `pnpm-lock.yaml` の変更後は `pnpm install --frozen-lockfile` で依存を同期する。"Load unpacked" の前には対象 variant のフルビルドを 1 回走らせる。`node --test scripts/verify-style-injection.cjs` はソースを直接読み込むためフルビルドは前提にしない。Node.js 22 系を推奨 (CI が `node-version: '22'` で固定。 pnpm 11 が Node 22.13+ を要求するため)。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
+`manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。初回 checkout 後と `pnpm-lock.yaml` の変更後は `pnpm install --frozen-lockfile` で依存を同期する。"Load unpacked" の前には対象 variant のフルビルドを 1 回走らせる。`node --test scripts/verify-style-injection.cjs` はソースを直接読み込むためフルビルドは前提にしない。Node.js 22 系を推奨 (CI が `node-version: '22'` で固定。 pnpm 11 が Node 22.13+ を要求するため)。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
 
 Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-extension` を正本とし、`src/shared/` の `kagayoi-support-footer.{js,css}`、`kagayoi-support-popup.{js,css}`、`kagayoi-support-form.css` へ逐語同期する。これら5資産を拡張側で直接改変しない。`build:default` / `build:notosans` と `zip.ps1` は実行前に自動同期し、CIは `check:support` とChrome ZIP内のCSS存在確認で欠落・乖離を拒否する。共有部品を更新するときは依存versionを更新してから `pnpm run sync:support` と両variantのbuildを実行する。
 
@@ -96,6 +96,7 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 構造・保存スキーマ・テーマの責務は [DESIGN.md](DESIGN.md#ランタイムデータフロー) を参照する。
 
 - Path A（同期preset）とPath B（fallbackと競合font-face監視）を両方維持する。presetがある場合も競合font-face監視は必要。
+- Chrome の YouTube ドメインだけは Path A を注入せず、Path B が Blob URL と CSS を準備する。取得・CSP 失敗時は競合 font-face を変更せず元の表示を保つ。
 - presetには解決済みフォント設定とCSS全体を埋め込み、拡張URLの `__REPLACE_FONT_BASE__` だけを実行時に解決する。生成物を直接修正しない。
 - preset生成の区切りには不可視ASCII制御文字を使わず、目視できるトークンまたは明示的なescapeを使う。
 - 保存値は `mergeFontSettings()` で検証し、固定版の `lockedFonts` を優先する。フォント定義・検証を別の実装へ複製しない。
@@ -348,12 +349,13 @@ https://addons.mozilla.org/ja/developers/ で「Submit a New Add-on」から XPI
 宣言的 content script は `manifest.template.json` で定義され、 `build-variant.js` が exclude_matches を注入する。MAIN world の `inject.js` とプリセット JS は `background.js` が同じ excludeMatches で動的登録する:
 
 ```
+src/content/youtube-target.js — ISOLATED world  (静的・動的 preset に先行する対象判定)
 src/content/variant.js        — ISOLATED world  (VARIANT を font-config 前に定義)
 src/content/font-config.js    — ISOLATED world  (mergeFontSettings は VARIANT に依存)
 src/content/preload-fonts.js  — ISOLATED world  (main script)
 
 動的: src/content/inject.js   — MAIN world      (有効時のみ Shadow DOM intercept)
-動的: src/css/preset-*.js     — ISOLATED world  (有効時のみ選択プリセット)
+動的: youtube-target.js → src/css/preset-*.js — ISOLATED world  (有効時のみ選択プリセット)
 ```
 
 Service Worker (`background.js`) も同様の順序で `importScripts('/src/content/variant.js', '/src/content/font-config.js')` を呼ぶ。

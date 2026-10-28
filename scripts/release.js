@@ -84,11 +84,24 @@ function runQuiet(cmd) {
 function ensureCleanMain() {
   const branch = runQuiet('git rev-parse --abbrev-ref HEAD');
   if (branch !== 'main') fail(`main ブランチで実行してください (現在: ${branch})`);
-  const status = runQuiet('git status --porcelain');
+  const status = runQuiet(DRY_RUN ? 'git --no-optional-locks status --porcelain' : 'git status --porcelain');
   if (status) fail(`作業ディレクトリが clean ではありません:\n${status}`);
-  runQuiet('git fetch origin main --quiet');
+  let remote;
+  if (DRY_RUN) {
+    let output;
+    try {
+      output = runQuiet('git ls-remote --exit-code origin refs/heads/main');
+    } catch (error) {
+      fail(`リモートの main を取得できません: ${error.message}`);
+    }
+    const match = /^([0-9a-f]{40}|[0-9a-f]{64})\trefs\/heads\/main$/i.exec(output);
+    if (!match) fail('リモートの main の応答が空または不正です。');
+    remote = match[1];
+  } else {
+    runQuiet('git fetch origin main --quiet');
+    remote = runQuiet('git rev-parse origin/main');
+  }
   const local = runQuiet('git rev-parse main');
-  const remote = runQuiet('git rev-parse origin/main');
   if (local !== remote) {
     fail('main がリモートと同期していません。git pull --rebase origin main してください。');
   }

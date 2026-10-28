@@ -44,6 +44,7 @@
     {
       "matches": ["<all_urls>"],
       "js": [
+        "src/content/youtube-target.js",
         "src/content/variant.js",
         "src/content/font-config.js",
         "src/content/preload-fonts.js"

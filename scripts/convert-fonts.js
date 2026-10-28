@@ -19,6 +19,7 @@ console.log(`🔍 ${ttfFiles.length}個のTTFファイルが見つかりまし�
 
 let convertedCount = 0;
 let skippedCount = 0;
+let failedCount = 0;
 
 for (const ttfFile of ttfFiles) {
   const ttfPath = path.join(fontsDir, ttfFile);
@@ -51,6 +52,7 @@ for (const ttfFile of ttfFiles) {
     console.log(`✅ 完了: ${woff2File} (${ttfSize}MB → ${woff2Size}MB, ${reduction}%削減)`);
     convertedCount++;
   } catch (error) {
+    failedCount++;
     console.error(`❌ エラー: ${ttfFile} の変換に失敗しました:`, error.message);
   }
 }
@@ -58,6 +60,8 @@ for (const ttfFile of ttfFiles) {
 console.log('\n📊 変換結果:');
 console.log(`  ✅ 変換: ${convertedCount}個`);
 console.log(`  ⏭️  スキップ: ${skippedCount}個`);
+console.log(`  ❌ 失敗: ${failedCount}個`);
+if (failedCount > 0) process.exitCode = 1;
 
 if (convertedCount > 0) {
   console.log('\n💡 TTFファイルを削除する場合は、以下のコマンドを実行してください:');

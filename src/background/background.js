@@ -15,12 +15,86 @@ const SHADOW_INTERCEPT_SCRIPT_ID = 'replace-font-shadow-intercept';
 const MANAGED_SCRIPT_IDS = [PRESET_SCRIPT_ID, SHADOW_INTERCEPT_SCRIPT_ID];
 const STORAGE_DEBOUNCE_MS = 150;
 
-let _storageDebounceTimer = null;
-let _pendingSettings = null;
-
 // ensureRegistration の並行実行防止用ロック
 // onInstalled + onStartup が同一 SW 起動で両方発火した場合の競合を避ける
 let _registrationLock = Promise.resolve();
+
+// Chrome のメッセージは旧版でも JSON シリアライズされるため、バイナリは base64 で渡す。
+// 指定可能なパスは registry から導出し、送信元からの任意パスは受け取らない。
+const youtubeAssetCache = new Map();
+const youtubeAssetPending = new Map();
+const YOUTUBE_CACHE_LIMIT = 24 * 1024 * 1024;
+const YOUTUBE_ASSET_LIMIT = 6 * 1024 * 1024;
+let youtubeCacheSize = 0;
+
+async function getYouTubeAsset(path, binary) {
+  if (youtubeAssetCache.has(path)) {
+    const value = youtubeAssetCache.get(path);
+    youtubeAssetCache.delete(path);
+    youtubeAssetCache.set(path, value);
+    return value;
+  }
+  if (youtubeAssetPending.has(path)) return youtubeAssetPending.get(path);
+  const pending = (async () => {
+    const response = await fetch(chrome.runtime.getURL(path));
+    if (!response.ok) throw new Error('asset fetch failed');
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (!bytes.length || bytes.length > (binary ? YOUTUBE_ASSET_LIMIT : 1024 * 1024)) {
+      throw new Error('asset size invalid');
+    }
+    let value;
+    if (binary) {
+      let data = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) {
+        data += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      }
+      value = btoa(data);
+    } else {
+      value = new TextDecoder().decode(bytes);
+    }
+    const size = value.length * 2;
+    if (size <= YOUTUBE_CACHE_LIMIT) {
+      while (youtubeCacheSize + size > YOUTUBE_CACHE_LIMIT && youtubeAssetCache.size) {
+        const oldest = youtubeAssetCache.keys().next().value;
+        youtubeCacheSize -= youtubeAssetCache.get(oldest).length * 2;
+        youtubeAssetCache.delete(oldest);
+      }
+      youtubeAssetCache.set(path, value);
+      youtubeCacheSize += size;
+    }
+    return value;
+  })();
+  youtubeAssetPending.set(path, pending);
+  try { return await pending; } finally { youtubeAssetPending.delete(path); }
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type !== 'replace-font-youtube-assets') return;
+  let url;
+  try { url = new URL(sender.url); } catch { return; }
+  if (sender.id !== chrome.runtime.id || !Number.isInteger(sender.tab?.id) ||
+      !Number.isInteger(sender.frameId) || !['http:', 'https:'].includes(url.protocol) ||
+      !(url.hostname === 'youtube.com' || url.hostname.endsWith('.youtube.com'))) return;
+  (async () => {
+    const stored = await chrome.storage.local.get(FONT_REGISTRY.storageKey);
+    const settings = mergeFontSettings(stored[FONT_REGISTRY.storageKey] || {});
+    if (!settings.enabled || settings.bodyFont !== message.bodyFont ||
+        settings.monoFont !== message.monoFont || settings.bodyFontWeight !== message.bodyFontWeight) {
+      throw new Error('settings changed');
+    }
+    const body = FONT_REGISTRY.body[settings.bodyFont];
+    const mono = FONT_REGISTRY.mono[settings.monoFont];
+    const names = [getBodyWoff2(body, settings.bodyFontWeight), body.woff2Bold, mono.woff2Regular, mono.woff2Bold];
+    const uniqueNames = [...new Set(names)];
+    const data = await Promise.all(uniqueNames.map(name => getYouTubeAsset(`src/fonts/${name}`, true)));
+    const [css, youtubeOverride] = await Promise.all([
+      getYouTubeAsset('src/css/replacefont-extension.css', false),
+      getYouTubeAsset('src/css/youtube-override.css', false)
+    ]);
+    return { names, data: Object.fromEntries(uniqueNames.map((name, i) => [name, data[i]])), css: `${css}\n${youtubeOverride}` };
+  })().then(sendResponse, () => sendResponse({ error: true }));
+  return true;
+});
 
 function getPresetPath(settings) {
   return `src/css/${getPresetFileName(settings.bodyFont, settings.monoFont, settings.bodyFontWeight)}`;
@@ -52,7 +126,8 @@ async function isRegistrationUpToDate(desired) {
       desiredExcl.length === currentExcl.length &&
       desiredExcl.every((v, i) => v === currentExcl[i]);
     return (
-      Array.isArray(reg.js) && reg.js.length === 1 && reg.js[0] === desired.js[0] &&
+      Array.isArray(reg.js) && reg.js.length === desired.js.length &&
+      reg.js.every((path, i) => path === desired.js[i]) &&
       reg.runAt === desired.runAt &&
       reg.allFrames === desired.allFrames &&
       reg.world === desired.world &&
@@ -109,7 +184,7 @@ async function _doEnsureRegistration(settings) {
   const presetConfig = {
     ...commonConfig,
     id: PRESET_SCRIPT_ID,
-    js: [jsPath],
+    js: ['src/content/youtube-target.js', jsPath],
     world: 'ISOLATED'
   };
   const shadowConfig = {
@@ -151,16 +226,20 @@ chrome.runtime.onStartup.addListener(async () => {
 });
 
 // 設定変更の監視 (連続更新をデバウンスして registerContentScripts の無駄打ちを避ける)
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local') return;
-  // 我々自身が書いた presetRegisteredKey の変更は無視（無限ループ防止）
-  if (!changes[FONT_REGISTRY.storageKey]) return;
-  _pendingSettings = mergeFontSettings(changes[FONT_REGISTRY.storageKey].newValue || {});
-  if (_storageDebounceTimer) clearTimeout(_storageDebounceTimer);
-  _storageDebounceTimer = setTimeout(async () => {
-    _storageDebounceTimer = null;
-    const toApply = _pendingSettings;
-    _pendingSettings = null;
-    if (toApply) await ensureRegistration(toApply);
-  }, STORAGE_DEBOUNCE_MS);
-});
+(() => {
+  let _storageDebounceTimer = null;
+  let _pendingSettings = null;
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    // 我々自身が書いた presetRegisteredKey の変更は無視（無限ループ防止）
+    if (!changes[FONT_REGISTRY.storageKey]) return;
+    _pendingSettings = mergeFontSettings(changes[FONT_REGISTRY.storageKey].newValue || {});
+    if (_storageDebounceTimer) clearTimeout(_storageDebounceTimer);
+    _storageDebounceTimer = setTimeout(async () => {
+      _storageDebounceTimer = null;
+      const toApply = _pendingSettings;
+      _pendingSettings = null;
+      if (toApply) await ensureRegistration(toApply);
+    }, STORAGE_DEBOUNCE_MS);
+  });
+})();
