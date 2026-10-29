@@ -10,13 +10,9 @@ on:
     types: [completed]
   status:
   workflow_dispatch:
+  push:
 
-permissions:
-  contents: write
-  pull-requests: write
-  actions: read
-  checks: read
-  statuses: read
+permissions: {}
 
 concurrency:
   group: dependabot-auto-merge-${{ github.repository }}
@@ -24,9 +20,16 @@ concurrency:
 
 jobs:
   auto-merge:
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+      checks: read
+      statuses: read
     if: >-
       github.repository_owner == '1llum1n4t1s' &&
       (github.event_name != 'pull_request_target' || github.event.pull_request.user.id == 49699333) &&
+      (github.event_name != 'push' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) &&
       (github.event_name != 'status' || github.event.state == 'success') &&
       (github.event_name != 'check_run' || github.event.check_run.app.slug != 'github-actions')
     runs-on: ubuntu-latest
@@ -110,6 +113,9 @@ jobs:
               workflows.push((await github.rest.actions.getWorkflow({owner, repo, workflow_id: path.split('/').pop()})).data);
             }
             
+            const dispatchedConditions = new Set();
+            for (let pass = 0; pass <= prs.length; pass++) {
+              let mergedThisPass = false;
             for (const item of prs) {
               let pr = (await github.rest.pulls.get({owner, repo, pull_number: item.number})).data;
               if (pr.state !== 'open' || pr.draft || pr.user?.id !== botId || pr.head.repo?.id !== repository.id || pr.base.ref !== branch) continue;
@@ -136,14 +142,50 @@ jobs:
                 continue;
               }
               let verified = true;
+              const verifiedRuns = [];
               for (const workflow of workflows) {
-                const runs = (await github.rest.actions.listWorkflowRuns({owner, repo, workflow_id: workflow.id, head_sha: sha, per_page: 100})).data.workflow_runs;
-                const latest = runs.filter(run => ['pull_request', 'workflow_dispatch'].includes(run.event))
-                  .sort((a, b) => b.id - a.id || b.run_attempt - a.run_attempt)[0];
+                const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {owner, repo, workflow_id: workflow.id, head_sha: sha, event: 'pull_request', per_page: 100});
+                const latest = runs.sort((a, b) => b.id - a.id)[0];
                 if (!latest || latest.status !== 'completed' || latest.conclusion !== 'success') {
                   held(pr, `${workflow.name}: ${latest ? latest.conclusion ?? latest.status : '当該headのCI未実行'} のため待機`);
                   verified = false;
                   break;
+                }
+                const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {owner, repo, run_id: latest.id, attempt_number: latest.run_attempt, per_page: 100});
+                const provenance = `検証基点 pr=${pr.number} base=${baseSha} head=${sha}`;
+                const matching = jobs.filter(job => job.name === 'validate' && job.status === 'completed' && job.conclusion === 'success')
+                  .flatMap(job => job.steps || []).filter(step => step.name === provenance && step.status === 'completed' && step.conclusion === 'success');
+                if (matching.length !== 1) {
+                  const title = `dependency-validation pr=${pr.number} base=${baseSha} head=${sha}`;
+                  const dispatched = await github.paginate(github.rest.actions.listWorkflowRuns, {owner, repo, workflow_id: workflow.id, event: 'workflow_dispatch', per_page: 100});
+                  const existing = dispatched.filter(run => run.display_title === title && run.head_sha === baseSha && run.head_branch === branch).sort((a, b) => b.id - a.id)[0];
+                  if (!existing) {
+                    const condition = `${workflow.id}:${pr.number}:${baseSha}:${sha}`;
+                    if (!dispatchedConditions.has(condition)) {
+                      await github.rest.actions.createWorkflowDispatch({owner, repo, workflow_id: workflow.id, ref: branch, inputs: {pr: String(pr.number), base: baseSha, head: sha}});
+                      dispatchedConditions.add(condition);
+                      held(pr, `${workflow.name}: 現在の結合結果の再検証を要求`);
+                    } else {
+                      held(pr, `${workflow.name}: 要求済みの再検証を待機`);
+                    }
+                    verified = false;
+                    break;
+                  }
+                  if (existing.status !== 'completed' || existing.conclusion !== 'success') {
+                    held(pr, `${workflow.name}: 再検証 ${existing.conclusion ?? existing.status} のため保留`);
+                    verified = false;
+                    break;
+                  }
+                  const retryJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {owner, repo, run_id: existing.id, attempt_number: existing.run_attempt, per_page: 100});
+                  const retryMatching = retryJobs.filter(job => job.name === 'validate' && job.status === 'completed' && job.conclusion === 'success').flatMap(job => job.steps || []).filter(step => step.name === provenance && step.status === 'completed' && step.conclusion === 'success');
+                  if (retryMatching.length !== 1) {
+                    held(pr, `${workflow.name}: 再検証の基点を確認できないため保留`);
+                    verified = false;
+                    break;
+                  }
+                  verifiedRuns.push({workflow, id: existing.id, attempt: existing.run_attempt, event: 'workflow_dispatch', title});
+                } else {
+                  verifiedRuns.push({workflow, id: latest.id, attempt: latest.run_attempt, event: 'pull_request'});
                 }
               }
               if (!verified) continue;
@@ -160,6 +202,16 @@ jobs:
                 held(pr, `commit statusが${statuses.state}のため保留`);
                 continue;
               }
+              for (const verifiedRun of verifiedRuns) {
+                const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {owner, repo, workflow_id: verifiedRun.workflow.id, event: verifiedRun.event, per_page: 100});
+                const latest = runs.filter(run => verifiedRun.event === 'pull_request' ? run.head_sha === sha : run.display_title === verifiedRun.title && run.head_sha === baseSha && run.head_branch === branch).sort((a, b) => b.id - a.id)[0];
+                if (!latest || latest.id !== verifiedRun.id || latest.run_attempt !== verifiedRun.attempt || latest.status !== 'completed' || latest.conclusion !== 'success') {
+                  held(pr, `${verifiedRun.workflow.name}: 検証 run が更新されたため待機`);
+                  verified = false;
+                  break;
+                }
+              }
+              if (!verified) continue;
               const currentBase = (await github.rest.repos.getBranch({owner, repo, branch})).data.commit.sha;
               pr = (await github.rest.pulls.get({owner, repo, pull_number: pr.number})).data;
               if (pr.state !== 'open' || pr.head.sha !== sha || currentBase !== baseSha || pr.mergeable !== true) {
@@ -169,10 +221,13 @@ jobs:
               const mergeMethod = repository.allow_squash_merge ? 'squash' : repository.allow_merge_commit ? 'merge' : 'rebase';
               try {
                 const result = (await github.rest.pulls.merge({owner, repo, pull_number: pr.number, sha, merge_method: mergeMethod})).data;
+                if (result.merged) mergedThisPass = true;
                 held(pr, result.merged ? `CI成功後にマージ済み (${result.sha})` : 'GitHubのマージ要件を満たすまで保留');
               } catch (error) {
                 if (![403, 405, 409, 422].includes(error.status)) throw error;
                 held(pr, `GitHubのマージ要件により保留 (${error.status})`);
               }
+            }
+              if (!mergedThisPass) break;
             }
             await core.summary.addHeading('Dependabot auto-merge').addRaw(report.join('\n') || '対象PRなし').write();

@@ -155,42 +155,15 @@ publish.yml はブランチ末尾 `X.Y.Z` と variant の `version` が一致す
 
 `release/<X.Y.Z>` push 後の CI で一部のストア publish が失敗した場合の対処。
 
-#### Step 間の連鎖 skip 解除 (matrix.fail-fast: false の落とし穴) ⭐ 必読
+#### 対象を指定して再開
 
-`matrix.fail-fast: false` は **matrix 間の job レベル** にのみ作用し、 **同一 job 内の step 間** では「前 step 失敗 → 後続 step 自動 skip」が GitHub Actions のデフォルト挙動になる。
+新規 release branch の初回 push だけが両 variant の自動提出を開始する。同一 job の Chrome が失敗すると後続の Firefox は skip される。修復 push や GitHub の rerun は提出を開始しない。
 
-publish.yml では Chrome step が失敗 (例: 同 version 重複 upload) しても Firefox AMO step を独立実行したいので、 Firefox 関連 step に `if: ${{ success() || failure() }}` を明示する (`cancelled()` 時のみ skip)。 これがないと「Chrome 失敗 → Firefox AMO 連鎖 skip」で**リカバリーフロー全体が機能しなく**なる。
+1. 各 variant・ストアの提出状態をストアと Actions で確認し、未提出または再提出が必要な対象を特定する。受付済みか不明な場合は確認が済むまで再提出しない。
+2. 修正が必要なら main と該当 release branch に反映し、release branch の完全な 40 桁 SHA を確認する。
+3. Actions の Publish workflow を該当 release branch で手動実行し、`variant`（default / notosans）、`target`（chrome / firefox）、`expected_sha`（確認した release branch の SHA）を指定する。対象ごとに実行し、結果とストア側の状態を確認する。
 
-**過去事例**: release/3.0.3 retry #1 (manifest 修正の fast-forward push) で踏んだ。 Chrome 失敗 (v3.0.3 既公開済) → Firefox AMO step が `skipped` で意図せずスキップ → 「if 条件追加」で解決 → retry #2 で Firefox AMO default が submission 成功して AMO 上で v3.0.3 即時公開達成。
-
-#### 同 version 再 push でリカバリー (推奨)
-
-`if:` 条件が整っていれば、 同じ `release/<X.Y.Z>` ブランチに修正を fast-forward push するだけでバージョンを消費せずリカバリーできる:
-
-```bash
-# main で修正 commit & push
-git commit -m "fix(ci): ..."
-git push origin main
-
-# release/<X.Y.Z> に fast-forward (force push 不要)
-git checkout release/<X.Y.Z>
-git merge main --ff-only
-git push origin release/<X.Y.Z>
-git checkout main
-```
-
-- Chrome 側は同 version 再 upload で重複エラーになるが、 既公開分には影響なし (`if:` 条件で Firefox AMO は独立続行)
-- Firefox AMO 側は初回 submit or 修正後の挙動で再試行
-
-#### v+1 で再リリース (代替案)
-
-Chrome の重複エラーログを避けたい / 履歴をクリーンに保ちたい場合は `/vava` で v+1 を発行。 Chrome は新バージョン公開、 Firefox は修正後の挙動で再試行。
-
-#### Build / 認証エラー等で全 job 失敗のケース
-
-- ストアへの upload が **一度も成功していない** ことを確認した上で、 同じ `release/<X.Y.Z>` に修正 commit を追加 push して OK
-- 同じ release branch へ新しい push を行うと両 variant の job が再実行される。`matrix.fail-fast: false` により、一方の失敗で他方の実行が打ち切られることはない
-- 判定基準: GitHub Actions ログで「Chrome Web Store にアップロード & 公開」「Firefox AMO に submission API でアップロード」ステップに到達せず、 その前 (build / package step) で失敗していること
+全 job が build / 認証等で失敗した場合も同じ手順で未提出対象ごとに再開する。新しい version を公開する場合は /vava を使う。
 
 ### Local Packaging (手動 Web Store アップロード用)
 - `.\zip.ps1 [-Variant <name>]` (Windows): `pnpm install --frozen-lockfile` → アイコン / CSS 生成 → variant 適用 → `<zipBaseName>-chrome.zip` + `<zipBaseName>-firefox.xpi` 生成。 引数省略時は `default`
@@ -236,7 +209,7 @@ Error: Bad Request
 1. https://chrome.google.com/webstore/devconsole にアクセス
 2. 拡張機能を選択 → 左メニュー「Privacy practices」タブ
 3. single-purpose / data usage / data collection を全て入力 → 保存
-4. CI を fast-forward 再 push で retry (バージョン消費なし)
+4. 提出状況を確認し、上記の手動再開手順で対象 variant・chrome・照合済み SHA を指定する
 
 **過去事例**: v3.0.4 リリース (run #25952259808) で踏んだ。 v3.0.3 までは Privacy practices タブが必須化される前にリリースされていたため通過していたが、 Google が Manifest V3 ポリシー強化 (2024-2026) で必須化。
 
@@ -250,7 +223,7 @@ Error: Bad Request
 
 ##### AMO API rate limit の落とし穴 ⚠️
 
-AMO submission API は **アカウント単位で厳格な rate limit** がある。 短時間で複数バージョン or 同 version 再 push を繰り返すと throttle 発動:
+AMO submission API は **アカウント単位で厳格な rate limit** がある。 短時間で複数バージョンの提出や同 version の再提出を繰り返すと throttle 発動:
 
 ```
 WebExtError: Submission failed (2): Unknown Error
@@ -260,7 +233,7 @@ WebExtError: Submission failed (2): Unknown Error
 48547 秒 ≒ **13.5 時間**。 解除されるまで待つしかない (Mozilla 側でリセット手段なし)。
 
 **対処**:
-1. **時間を置いて retry**: 表示秒数を待ってから fast-forward 再 push
+1. **時間を置いて retry**: 表示秒数を待ち、提出状況を確認して上記の手動再開手順で対象 variant・firefox・照合済み SHA を指定
 2. **手動 submission に切替**: https://addons.mozilla.org/ja/developers/ → 該当 add-on → 「新しいバージョンを送信」から XPI を手動 upload (rate limit 別枠の可能性あり、 未検証)
 3. **1 回失敗したらクールダウン**: 同セッションで連続再 fire する代わりに、 1 回目の失敗原因 (Chrome 側など) を解消してから 1 回だけ retry する
 

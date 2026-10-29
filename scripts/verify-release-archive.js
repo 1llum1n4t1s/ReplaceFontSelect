@@ -179,6 +179,7 @@ async function runFirefox({ variant, version, argv, submit, expectedSource }) {
 }
 async function main() {
   const [mode, variant, version, source, ...rest] = process.argv.slice(2);
+  if (mode === 'check-web-ext') { assert(process.argv.length === 3, 'check-web-ext は引数を取りません'); return checkWebExt(); }
   if (mode === 'firefox') return runFirefox({variant,version,expectedSource:source,argv:['sign', ...rest]});
   assert(mode === 'chrome' && rest.length === 1, '使い方: chrome <variant> <version> <source> <zip> / firefox <variant> <version> <source> [web-ext options]');
   const record = await verifyArchive({archive:rest[0],source,variant,version,platform:'chrome'});
@@ -191,4 +192,4 @@ async function main() {
   assert(child.status === 0, 'Chrome upload が失敗: ' + (child.status ?? child.signal));
 }
 if (require.main === module) main().catch(e => { console.error(e.stack); process.exitCode = 1; });
-module.exports = { verifyArchive, runFirefox };
+module.exports = { verifyArchive, runFirefox, checkWebExt };

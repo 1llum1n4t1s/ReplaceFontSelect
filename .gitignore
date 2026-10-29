@@ -8,6 +8,8 @@ node_modules/
 *.xpi
 webstore/images/
 temp-build/
+# Node.js のコンパイルキャッシュ
+/node-compile-cache/
 
 # Variant build outputs (生成: scripts/build-variant.js)
 # manifest.json は manifest.template.json + variants/<name>.json から生成される。
