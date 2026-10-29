@@ -8,7 +8,7 @@ minimumReleaseAgeExclude:
   - puppeteer-core@25.15.0
   - puppeteer@25.15.0
 
-# CVE-2026-85393: 上流PR #1152に加え、不正なNULL内容も拒否する。
-# https://github.com/digitalbazaar/forge/pull/1152 （公式修正版の公開後に再評価）
-patchedDependencies:
-  node-forge@1.4.0: patches/node-forge@1.4.0.patch
+# 推移的依存のセキュリティ修正版。親パッケージ側で解決できたら再評価する。
+overrides:
+  node-forge: 1.4.2
+  ip-address: 10.7.5
