@@ -4,7 +4,7 @@ allowBuilds:
   spawn-sync: true
   ttf2woff2: true
 minimumReleaseAgeExclude:
-  - '@kagayoi/support-extension@1.0.8'
+  - '@kagayoi/support-extension@1.0.9'
   - puppeteer-core@25.15.0
   - puppeteer@25.15.0
 
