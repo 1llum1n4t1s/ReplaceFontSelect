@@ -97,15 +97,15 @@ async function verifyArchive({archive, source, variant, version, platform}) {
   const files = sourceFiles(source);
   validateSource(files, variant, version, platform);
   const candidates = validateCandidates(files, variant, platform);
-  const archiveBytes = fs.readFileSync(archive);
+  const archiveSha = sha(fs.readFileSync(archive));
   // Python 標準 zipfile は同名の各 entry を保持して検査できる。
   const texts = Object.fromEntries([...files].filter(([name]) => name === 'manifest.json' || /\.(?:html|css)$/i.test(name)).map(([name, bytes]) => [name, bytes.toString('utf8')]));
   const input = JSON.stringify({archive:path.resolve(archive),files:[...files].map(([name, bytes]) => ({name,size:bytes.length,sha256:sha(bytes)})),texts,referenceCandidates:candidates});
   const python = spawnSync(process.env.RELEASE_ZIP_PYTHON || 'python3', [path.join(__dirname, 'verify-release-zip.py')], {input,encoding:'utf8',env:{...process.env,PYTHONIOENCODING:'utf-8'}});
   if (python.error) throw python.error;
   assert(python.status === 0, 'ZIP の検証に失敗: ' + (python.stderr || python.signal || python.status));
-  assert(sha(fs.readFileSync(archive)) === sha(archiveBytes), '検証中に成果物が変更されました');
-  const result = { sha256: sha(archiveBytes), sourceSha256: sourceSha(files), archive: path.resolve(archive), variant, version, platform };
+  assert(sha(fs.readFileSync(archive)) === archiveSha, '検証中に成果物が変更されました');
+  const result = { sha256: archiveSha, sourceSha256: sourceSha(files), archive: path.resolve(archive), variant, version, platform };
   console.log(`検証済み ${JSON.stringify(result)}`);
   return result;
 }

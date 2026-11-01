@@ -29,6 +29,9 @@ echo "📦 依存関係をインストール中（pnpm install --frozen-lockfile
 pnpm install --frozen-lockfile
 echo ""
 
+# 問い合わせUIの共有資産を正本から同期
+pnpm run sync:support
+
 # アイコン生成
 echo "🎨 アイコンを生成中..."
 node scripts/generate-icons.js "$VARIANT"

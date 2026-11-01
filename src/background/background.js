@@ -110,13 +110,11 @@ async function loadSettings() {
 }
 
 /**
- * 現在の登録内容を取得し、desired と一致するか判定
+ * 現在の登録内容が desired と一致するか判定
  */
-async function isRegistrationUpToDate(desired) {
+function isRegistrationUpToDate(desired, reg) {
   try {
-    const current = await chrome.scripting.getRegisteredContentScripts({ ids: [desired.id] });
-    if (!current || current.length === 0) return false;
-    const reg = current[0];
+    if (!reg) return false;
     // excludeMatches の同一性チェック: 順序非依存・要素一致で比較する。
     // 旧登録 (excludeMatches なし) が残っているとここで false 判定 → updateContentScripts が走り
     // 新しい除外リストで再登録される（修正後の挙動を確実に反映するため）。
@@ -138,8 +136,8 @@ async function isRegistrationUpToDate(desired) {
   }
 }
 
-async function ensureScriptRegistration(scriptConfig) {
-  if (await isRegistrationUpToDate(scriptConfig)) return true;
+async function ensureScriptRegistration(scriptConfig, currentRegistration) {
+  if (isRegistrationUpToDate(scriptConfig, currentRegistration)) return true;
 
   // 既登録なら原子的に更新し、ID がまだ無い初回だけ register へフォールバックする。
   try {
@@ -194,9 +192,13 @@ async function _doEnsureRegistration(settings) {
     world: 'MAIN'
   };
 
+  let currentRegistrations = [];
+  try {
+    currentRegistrations = await chrome.scripting.getRegisteredContentScripts({ ids: MANAGED_SCRIPT_IDS }) || [];
+  } catch {}
   const [presetRegistered] = await Promise.all([
-    ensureScriptRegistration(presetConfig),
-    ensureScriptRegistration(shadowConfig)
+    ensureScriptRegistration(presetConfig, currentRegistrations.find(reg => reg.id === PRESET_SCRIPT_ID)),
+    ensureScriptRegistration(shadowConfig, currentRegistrations.find(reg => reg.id === SHADOW_INTERCEPT_SCRIPT_ID))
   ]);
   try { await chrome.storage.local.set({ [presetKey]: presetRegistered }); } catch {}
 }

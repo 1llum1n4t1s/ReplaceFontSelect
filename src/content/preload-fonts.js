@@ -287,7 +287,7 @@
     if (!root) return;
     if (disposed) return; // 無効化確定 / ページ破棄後は pendingRoots に溜めない (ShadowRoot 参照リーク防止)
     if (root._replaceFontApplied || root._replaceFontInProgress) return;
-    if (youtubeTarget && root !== document.head && !youtubeHeadReady) {
+    if (youtubeTarget && !youtubeHeadReady) {
       pendingRoots.add(root);
       return;
     }
@@ -335,12 +335,6 @@
       style.textContent = cssText;
       style.dataset[RFS_ATTR] = RFS_FALLBACK;
       root.appendChild(style);
-      if (youtubeTarget && root === document.head && !style.sheet) {
-        style.remove();
-        reportYouTubeFailure('stylesheet');
-        runDisposers();
-        return;
-      }
       root._replaceFontApplied = true;
 
       if (root === document.head) {
@@ -849,6 +843,7 @@
     function processStyleSubtree(node) {
       if (node.nodeType !== Node.ELEMENT_NODE) return false;
       let foundStyle = node.matches(styleNodeSelector) && processStyleNode(node);
+      if (!node.firstElementChild) return foundStyle;
       for (const child of node.querySelectorAll(styleNodeSelector)) {
         foundStyle = processStyleNode(child) || foundStyle;
       }
