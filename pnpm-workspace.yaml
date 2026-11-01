@@ -1,3 +1,7 @@
+# GitHub dependency graph が読める単一document lockfileを維持する。
+# pnpmの版はpackageManagerとCIで指定し、pnpm自身の自動切替・lock記録は無効にする。
+pmOnFail: ignore
+
 # postinstall でネイティブビルドが必要な依存を明示許可（pnpm v10.12+ はここで管理）
 allowBuilds:
   puppeteer: true
@@ -12,3 +16,4 @@ minimumReleaseAgeExclude:
 overrides:
   node-forge: 1.4.2
   ip-address: 10.7.5
+  'cacache>glob': 14.0.2

@@ -36,7 +36,9 @@ pnpm run sync:support                  # 共有パッケージ正本から問い
 pnpm run check:support                 # 同梱資産が共有パッケージ正本と一致することを読み取り専用で検査
 ```
 
-`manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。初回 checkout 後と `pnpm-lock.yaml` の変更後は `pnpm install --frozen-lockfile` で依存を同期する。"Load unpacked" の前には対象 variant のフルビルドを 1 回走らせる。`node --test scripts/verify-style-injection.cjs` はソースを直接読み込むためフルビルドは前提にしない。Node.js 22 系を推奨 (CI が `node-version: '22'` で固定。 pnpm 11 が Node 22.13+ を要求するため)。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
+`manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。初回 checkout 後と `pnpm-lock.yaml` の変更後は `pnpm install --frozen-lockfile` で依存を同期する。"Load unpacked" の前には対象 variant のフルビルドを 1 回走らせる。`node --test scripts/verify-style-injection.cjs` はソースを直接読み込むためフルビルドは前提にしない。開発には Node.js 26.13.0 / pnpm 12.16.1 を使用する（package.json の Volta / packageManager と CI を同じ版に固定）。PowerShell のパッケージ処理には pwsh 7.6.9 以降を推奨する。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
+
+GitHub の dependency graph / Dependabot alerts が読める単一documentのlockfileを維持するため、`pnpm-workspace.yaml` の `pmOnFail: ignore` でpnpm自身の版切替・package managerのlock記録を無効にしている。手元では `pnpm --version` が `12.16.1` であることを確認する（CIは同版を明示導入する）。
 
 Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-extension` を正本とし、`src/shared/` の `kagayoi-support-footer.{js,css}`、`kagayoi-support-popup.{js,css}`、`kagayoi-support-form.css` へ逐語同期する。これら5資産を拡張側で直接改変しない。`build:default` / `build:notosans` と `zip.ps1` は実行前に自動同期し、CIは `check:support` とChrome ZIP内のCSS存在確認で欠落・乖離を拒否する。共有部品を更新するときは依存versionを更新してから `pnpm run sync:support` と両variantのbuildを実行する。
 
