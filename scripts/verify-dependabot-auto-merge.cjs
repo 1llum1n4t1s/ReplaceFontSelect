@@ -146,7 +146,7 @@ test('main 検証の checkout は SHA 固定で PR merge-parent 証跡を生成�
   const checkout = validationSteps.find(step => step.uses?.startsWith('actions/checkout@'));
   assert.match(checkout.with.ref, /inputs.mode == 'main'\) && github.sha/);
   const provenance = validationSteps.find(step => step.name?.startsWith('検証基点 pr='));
-  assert.equal(provenance.if, "github.event_name != 'workflow_dispatch' || inputs.mode != 'main'");
+  assert.equal(provenance.if, "inputs.mode != 'bun-security' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'main')");
   assert.match(provenance.run, /HEAD\^1/);
   assert.match(provenance.run, /HEAD\^2/);
 });
