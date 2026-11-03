@@ -20,39 +20,41 @@ This file provides guidance to Codex and other coding agents working in this rep
 ## Build Commands
 
 ```bash
-pnpm install --frozen-lockfile         # 初回 checkout 後・pnpm-lock.yaml 更新後の依存同期
-pnpm run build:default              # icons + CSS + preset JS + variant=default のフルビルド
-pnpm run build:notosans             # icons + CSS + preset JS + variant=notosans のフルビルド
-pnpm run build                      # = build:default
-pnpm run build-variant <name>       # manifest.json + src/content/variant.js だけ再生成 (variant 切替時)
+bun run deps         # 初回 checkout 後・bun.lock 更新後の依存同期
+bun --bun run build:default              # icons + CSS + preset JS + variant=default のフルビルド
+bun --bun run build:notosans             # icons + CSS + preset JS + variant=notosans のフルビルド
+bun --bun run build                      # = build:default
+bun --bun run build-variant <name>       # manifest.json + src/content/variant.js だけ再生成 (variant 切替時)
 
-pnpm run generate-css               # fallback / YouTube 用 CSS + 42 個の preset-*.js を再生成 (variant 非依存)
-pnpm run convert-fonts              # src/fonts/*.ttf → *.woff2 変換 (フォント追加時のみ手動実行、 variant 非依存)
-pnpm run generate-icons:default     # icons/default/icon.svg から PNG (16/48/128) を再生成
-pnpm run generate-icons:notosans    # icons/notosans/icon.svg から PNG (16/48/128) を再生成
-pnpm run generate-screenshots:default  # webstore/screenshots/default/*.html → webstore/images/default/*.png (要 puppeteer)
-pnpm run generate-screenshots:notosans # webstore/screenshots/notosans/*.html → webstore/images/notosans/*.png (要 puppeteer)
-pnpm run sync:support                  # 共有パッケージ正本から問い合わせUIの JS / CSS 5資産を同期
-pnpm run check:support                 # 同梱資産が共有パッケージ正本と一致することを読み取り専用で検査
+bun --bun run generate-css               # fallback / YouTube 用 CSS + 42 個の preset-*.js を再生成 (variant 非依存)
+bun --bun run convert-fonts              # src/fonts/*.ttf → *.woff2 変換 (フォント追加時のみ手動実行、 variant 非依存)
+bun --bun run generate-icons:default     # icons/default/icon.svg から PNG (16/48/128) を再生成
+bun --bun run generate-icons:notosans    # icons/notosans/icon.svg から PNG (16/48/128) を再生成
+bun --bun run generate-screenshots:default  # webstore/screenshots/default/*.html → webstore/images/default/*.png (要 puppeteer)
+bun --bun run generate-screenshots:notosans # webstore/screenshots/notosans/*.html → webstore/images/notosans/*.png (要 puppeteer)
+bun --bun run sync:support                  # 共有パッケージ正本から問い合わせUIの JS / CSS 5資産を同期
+bun --bun run check:support                 # 同梱資産が共有パッケージ正本と一致することを読み取り専用で検査
 ```
 
-`manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。初回 checkout 後と `pnpm-lock.yaml` の変更後は `pnpm install --frozen-lockfile` で依存を同期する。"Load unpacked" の前には対象 variant のフルビルドを 1 回走らせる。`node --test scripts/verify-style-injection.cjs` はソースを直接読み込むためフルビルドは前提にしない。開発には Node.js 26.13.0 / pnpm 12.16.1 を使用する（package.json の Volta / packageManager と CI を同じ版に固定）。PowerShell のパッケージ処理には pwsh 7.6.9 以降を推奨する。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
+`manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。初回 checkout 後と `bun.lock` の変更後は `bun run deps` で依存を同期する。"Load unpacked" の前には対象 variant のフルビルドを 1 回走らせる。`bun test ./scripts/verify-style-injection.cjs` はソースを直接読み込むためフルビルドは前提にしない。開発には Bun 1.4.4 を使用する（package.json の packageManager と CI を同じ版に固定）。PowerShell のパッケージ処理には pwsh 7.6.9 以降を推奨する。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
 
-GitHub の dependency graph / Dependabot alerts が読める単一documentのlockfileを維持するため、`pnpm-workspace.yaml` の `pmOnFail: ignore` でpnpm自身の版切替・package managerのlock記録を無効にしている。手元では `pnpm --version` が `12.16.1` であることを確認する（CIは同版を明示導入する）。
+`ttf2woff2@8.0.1` のフォント変換は Bun では同梱 WASM への自動フォールバックを使う。ネイティブ addon を必須にせず、実 TTF から WOFF2 が生成できることを確認する。
 
-Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-extension` を正本とし、`src/shared/` の `kagayoi-support-footer.{js,css}`、`kagayoi-support-popup.{js,css}`、`kagayoi-support-form.css` へ逐語同期する。これら5資産を拡張側で直接改変しない。`build:default` / `build:notosans` と `zip.ps1` は実行前に自動同期し、CIは `check:support` とChrome ZIP内のCSS存在確認で欠落・乖離を拒否する。共有部品を更新するときは依存versionを更新してから `pnpm run sync:support` と両variantのbuildを実行する。
+依存関係は `bun.lock` で固定し、`bun run deps` で再現する。`package.json` の overrides / trustedDependencies と `bunfig.toml` の公開後24時間待機・検証済み版の例外を維持する。
 
-アイコン / スクショ生成 (puppeteer) は headless Chrome バイナリが必要。 初回のみ `pnpm exec puppeteer browsers install chrome` を実行する (`~/.cache/puppeteer/` に保存され、 未導入だと `build:*` が ChromeLauncher の resolveExecutablePath エラーで落ちる)。 puppeteer は v25+ (ESM-only) のため、 `scripts/generate-icons.js` / `generate-screenshots.js` は CommonJS から動的 `import('puppeteer')` で読み込む。
+Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-extension` を正本とし、`src/shared/` の `kagayoi-support-footer.{js,css}`、`kagayoi-support-popup.{js,css}`、`kagayoi-support-form.css` へ逐語同期する。これら5資産を拡張側で直接改変しない。`build:default` / `build:notosans` と `zip.ps1` は実行前に自動同期し、CIは `check:support` とChrome ZIP内のCSS存在確認で欠落・乖離を拒否する。共有部品を更新するときは依存versionを更新してから `bun --bun run sync:support` と両variantのbuildを実行する。
+
+アイコン / スクショ生成 (puppeteer) は headless Chrome バイナリが必要。 初回のみ `bun --bun run puppeteer browsers install chrome` を実行する (`~/.cache/puppeteer/` に保存され、 未導入だと `build:*` が ChromeLauncher の resolveExecutablePath エラーで落ちる)。 puppeteer は v25+ (ESM-only) のため、 `scripts/generate-icons.js` / `generate-screenshots.js` は CommonJS から動的 `import('puppeteer')` で読み込む。
 
 ### Local Testing
 
-- **フォント注入の回帰検証**: `node --test scripts/verify-style-injection.cjs` — Puppeteer の実ブラウザで Shadow 初期化、遅延した外部 CSS / @import、DOM 更新時の再移動、ページの破棄・復帰イベントを検証する。拡張 API は fixture を使用し、Firefox 実機の代替にはしない。
+- **フォント注入の回帰検証**: `bun test ./scripts/verify-style-injection.cjs` — Puppeteer の実ブラウザで Shadow 初期化、遅延した外部 CSS / @import、DOM 更新時の再移動、ページの破棄・復帰イベントを検証する。拡張 API は fixture を使用し、Firefox 実機の代替にはしない。
 - **Chrome**: `chrome://extensions` → Developer mode ON → "Load unpacked" でリポジトリルートを選択
 - **Firefox**: `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on..." で `manifest.json` を選択 (desktop 140+ / Android 142+)
-- Firefox の読み込み前はフルビルド後に `node scripts/build-variant.js <variant> --firefox` を実行する。Chrome の検証へ戻るときは `pnpm run build-variant <variant>` で Chrome 用 manifest を再生成する。
+- Firefox の読み込み前はフルビルド後に `bun scripts/build-variant.js <variant> --firefox` を実行する。Chrome の検証へ戻るときは `bun --bun run build-variant <variant>` で Chrome 用 manifest を再生成する。
 - コード変更後は拡張機能リストで再読み込み+対象ページをリロード (preset JS / CSS は `document_start` 時にキャッシュされるため)
 
-問い合わせUIまたはFirefoxの権限申告を変更するときは、[DESIGN.md の送信境界](DESIGN.md#問い合わせuiの共有資産同期)に従い、`manifest.template.json` の申告と共有部品の要求対象、popupの `firefox-data-consent` 属性を照合する。両variantのビルドと `pnpm run check:support` に加え、Firefoxで任意許可を拒否・取得失敗した場合に確認コード送信・再送・認証・問い合わせ送信が止まり、フォント置換は利用できることを検証する。
+問い合わせUIまたはFirefoxの権限申告を変更するときは、[DESIGN.md の送信境界](DESIGN.md#問い合わせuiの共有資産同期)に従い、`manifest.template.json` の申告と共有部品の要求対象、popupの `firefox-data-consent` 属性を照合する。両variantのビルドと `bun --bun run check:support` に加え、Firefoxで任意許可を拒否・取得失敗した場合に確認コード送信・再送・認証・問い合わせ送信が止まり、フォント置換は利用できることを検証する。
 
 ## Variant System
 
@@ -108,9 +110,9 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 
 ### Adding a New Font
 
-1. `src/fonts/` に TTF を置き `pnpm run convert-fonts` で woff2 化。追加・再生成した WOFF2 には [同梱フォントの描画設定](src/fonts/README.md#同梱フォントの描画設定)を適用して確認する（変換スクリプトは描画設定を自動統一しない）。
+1. `src/fonts/` に TTF を置き `bun --bun run convert-fonts` で woff2 化。追加・再生成した WOFF2 には [同梱フォントの描画設定](src/fonts/README.md#同梱フォントの描画設定)を適用して確認する（変換スクリプトは描画設定を自動統一しない）。
 2. `FONT_REGISTRY` (`src/content/font-config.js`) の `body` か `mono` にエントリ追加
-3. `pnpm run generate-css` で template CSS + 本文 × 等幅 × weight の全組み合わせ preset JS (現在 42 個) を再生成
+3. `bun --bun run generate-css` で template CSS + 本文 × 等幅 × weight の全組み合わせ preset JS (現在 42 個) を再生成
 4. popup / content / background は `FONT_REGISTRY` を動的読みするので他ファイル変更不要
 
 ⚠️ **既存フォントキー (`noto-sans-jp` / `udev-gothic-jpdoc`) はそのまま維持する** — `variants/notosans.json` の `lockedFonts` がそのキー名を参照しているので、 既存キーは固定で運用し、 新しいフォントは別キーで追加する。
@@ -122,8 +124,8 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 `scripts/release.js` は `variants/*.json` の version を patch +1 し、 `release/<X.Y.Z>` ブランチを作って push する。 push が CI のトリガーになり、 GitHub Actions の matrix strategy が default + notosans を並列公開する。
 
 ```bash
-pnpm run release                 # variant patch +1 → release/<X.Y.Z> ブランチ
-node scripts/release.js --yes    # 直接呼び（確認プロンプト省略、CI / Codex から）
+bun --bun run release                 # variant patch +1 → release/<X.Y.Z> ブランチ
+bun scripts/release.js --yes    # 直接呼び（確認プロンプト省略、CI / Codex から）
 
 # フラグ
 --dry-run / -n  計画だけ表示。 書き込み・push しない
@@ -168,12 +170,12 @@ publish.yml はブランチ末尾 `X.Y.Z` と variant の `version` が一致す
 全 job が build / 認証等で失敗した場合も同じ手順で未提出対象ごとに再開する。新しい version を公開する場合は /vava を使う。
 
 ### Local Packaging (手動 Web Store アップロード用)
-- `.\zip.ps1 [-Variant <name>]` (Windows): `pnpm install --frozen-lockfile` → アイコン / CSS 生成 → variant 適用 → `<zipBaseName>-chrome.zip` + `<zipBaseName>-firefox.xpi` 生成。 引数省略時は `default`
+- `.\zip.ps1 [-Variant <name>]` (Windows): `bun run deps` → アイコン / CSS 生成 → variant 適用 → `<zipBaseName>-chrome.zip` + `<zipBaseName>-firefox.xpi` 生成。 引数省略時は `default`
 - `./zip.sh [<name>]` (Linux/Mac): Chrome ZIP のみ。 Firefox XPI を含むフルリリースは `zip.ps1` 必須
 
 ### `/vava` スキル経由の起動
 
-このプロジェクトに対して `/vava` スキルが起動された場合、Codex は **標準フローを使わず** `pnpm run release`（`scripts/release.js`）に委譲する。
+このプロジェクトに対して `/vava` スキルが起動された場合、Codex は **標準フローを使わず** `bun --bun run release`（`scripts/release.js`）に委譲する。
 
 `release.js` は:
 - `variants/<name>.json` の version → patch +1 → `package.json` の version も自動同期
@@ -193,11 +195,11 @@ minor / major bump は手作業 (上述「minor / major bump の運用」参照)
 #### Chrome Web Store
 - **拡張機能 ID の選択**: matrix の variant 値から `case` 文で `CWS_EXTENSION_ID_<UPPER>` シークレットを選ぶ (`default` → `CWS_EXTENSION_ID_DEFAULT`)
 - **共通シークレット**: `CWS_CLIENT_ID` / `CWS_CLIENT_SECRET` / `CWS_REFRESH_TOKEN` / `CWS_PUBLISHER_ID` は全 variant 共有 (同一 Google アカウントの OAuth 認証情報 + publisher ID。 publisher ID は secrets.json の `chrome_web_store.publisher_id` にも保管)
-- アップロードツール: `chrome-webstore-upload-cli` v4 exact pin。 **v4 から認証情報は CLI フラグ廃止・環境変数のみ** (`CLIENT_ID` / `CLIENT_SECRET` / `REFRESH_TOKEN` / `PUBLISHER_ID` / `EXTENSION_ID`)、 サブコマンドなし実行で upload + publish を一括 (`--auto-publish` フラグは v4 で削除済み)
+- アップロードは `scripts/Publish-Cws.ps1` のネイティブHTTP API v2を使う。既存OAuth secretsとpublisher/item IDを維持する。
 
 ##### Privacy practices タブの落とし穴 ⚠️
 
-Chrome Web Store は公開リクエスト時に **Developer Dashboard の「Privacy practices」タブの入力を必須**としている。 未入力だと `chrome-webstore-upload-cli` が HTTP 400 で失敗する:
+Chrome Web Store は公開リクエスト時に **Developer Dashboard の「Privacy practices」タブの入力を必須**としている。 未入力だと CWS API が HTTP 400 で失敗する:
 
 ```
 Error: Bad Request
@@ -216,7 +218,7 @@ Error: Bad Request
 **過去事例**: v3.0.4 リリース (run #25952259808) で踏んだ。 v3.0.3 までは Privacy practices タブが必須化される前にリリースされていたため通過していたが、 Google が Manifest V3 ポリシー強化 (2024-2026) で必須化。
 
 #### Firefox AMO (addons.mozilla.org)
-- **アップロードツール**: `web-ext sign --channel=listed` (exact pin、 Node 20 要件、 web-ext 10+ では submission API がデフォルト動作で `--use-submission-api` フラグは渡さない)
+- **提出ツール**: 最終XPIをverifierで照合後、receiptのSHA-256を `scripts/Publish-Amo.ps1` へ渡す。既存GUIDへのPUTで新versionを提出し、人手レビューの承認は待たない。
 - **ソースディレクトリ**: `firefox-build/` を CI 内で構築 (Chrome ZIP と同じ `manifest.json + icons/<variant> + src` 構成、 TTF / preview.html / OS メタファイル除外)
 - **gecko id (extension 識別子)**: `variants/<variant>.json` の `geckoId` から `build-variant.js` 経由で `manifest.json` の `browser_specific_settings.gecko.id` に注入される
 - **共通シークレット**: `AMO_JWT_ISSUER` / `AMO_JWT_SECRET` は全 variant 共有 (同一 Mozilla アカウントの JWT credentials)
@@ -243,56 +245,12 @@ WebExtError: Submission failed (2): Unknown Error
 
 #### AMO 初回登録 (CI 自動公開の前提条件)
 
-新 variant の初回登録は CI からは自動化できない (CI の `web-ext sign` は **既存 add-on への新バージョン提出のみ**)。 次のいずれかで事前に初回 submission を済ませる:
+新 variant の初回登録は AMO Developer Hub で行う。共通PowerShell publisherは登録済みGUIDの新version提出専用で、未登録GUIDの404では停止する。
 
 - **default variant**: 登録済み (`{ee49eeb2-93a9-4062-ba75-06610054323f}`)
-- **将来 variant**: 下記方法 A or B で初回登録
+- **将来 variant**: 下記 Developer Hub 手順で初回登録
 
-##### 方法 A: ローカル `web-ext sign` で API 経由初回登録 (推奨)
-
-`web-ext sign --channel=listed` は manifest の `gecko.id` が AMO 上に存在しない場合、 **新規 add-on として自動作成**する。 listed channel に必要な必須メタデータは `--amo-metadata=metadata.json` で渡す:
-
-```bash
-# 1. ローカルでビルド
-pnpm run build:<variant>
-
-# 2. Firefox用manifestへ切替後、firefox-build/ ディレクトリ構築 (CI と同じホワイトリスト)
-node scripts/build-variant.js <variant> --firefox
-firefox_dir="firefox-build"
-variant_icons_dir="icons/<variant>"
-rm -rf "$firefox_dir" && mkdir -p "$firefox_dir/icons"
-cp manifest.json "$firefox_dir/"
-cp -r "$variant_icons_dir" "$firefox_dir/icons/<variant>"
-cp -r src "$firefox_dir/src"
-find "$firefox_dir" \( -name "*.DS_Store" -o -name "*.swp" -o -name "*~" -o -name "preview.html" -o -name "*.ttf" \) -delete
-
-# 3. .amo-metadata.json を作成
-cat > .amo-metadata.json <<'EOF'
-{
-  "categories": ["appearance", "language-support"],
-  "version": { "license": "MIT" }
-}
-EOF
-
-# 4. web-ext sign で AMO に初回登録
-WEB_EXT_API_KEY=$AMO_JWT_ISSUER WEB_EXT_API_SECRET=$AMO_JWT_SECRET \
-  pnpm exec web-ext sign \
-    --source-dir=firefox-build \
-    --artifacts-dir=web-ext-artifacts \
-    --channel=listed \
-    --amo-metadata=.amo-metadata.json
-```
-
-実装上の罠:
-- `license` は `version.license` (nested) で渡す。 top-level だと無効 ("This field, or custom_license, is required for listed versions." エラー)
-- `web-ext sign` が `Approval: timeout exceeded` と表示しても、 **submission 自体は AMO で受理されている** (ローカル待ち時間切れだけ)
-- リスティング情報 (summary / description / privacy_policy / default_locale) は別途 API で PATCH 可能
-- `default_locale` を `ja` に切り替える時は `name: {ja: "..."}` も同じ PATCH に含めないと "A value in the default locale of \"ja\" is required." HTTP 400
-- screenshots は API 不対応 — AMO Developer Hub から手動 upload (`webstore/images/<variant>/*.png`)
-
-初回登録後、 `status: nominated` (Mozilla 人間レビュー待ち、 通常数日) になる。 既存 add-on の新バージョン提出は通常オート承認で即時公開。
-
-##### 方法 B: AMO Developer Hub で手動 submit
+##### AMO Developer Hub で初回登録
 
 https://addons.mozilla.org/ja/developers/ で「Submit a New Add-on」から XPI を upload → リスティング情報を手動入力。
 
@@ -309,7 +267,7 @@ https://addons.mozilla.org/ja/developers/ で「Submit a New Add-on」から XPI
 - **JWT 認証**: `Authorization: JWT <token>` ヘッダー、 HS256 で `{iss, jti, iat, exp}` を `AMO_JWT_SECRET` で署名 (`exp` は 60 秒程度の短命トークンが推奨)
 
 #### サプライチェーン対策
-- Actions は SHA pin、 `pnpm install --frozen-lockfile` 固定、 `chrome-webstore-upload-cli` / `web-ext` を devDependencies に exact pin して `pnpm exec` で integrity 検証済みのローカル版を呼ぶ
+- 公開workflowはネイティブgit・公式BunアーカイブとSHA-256検証・PowerShellのHTTP publisherを使う。製品build/lint用Bunとlockfile固定を維持し、公開専用CLI/NodeActionsは使わない。
 
 #### Secrets Rotation / Revocation (運用ノウハウ)
 
@@ -377,7 +335,7 @@ Error: Unsupported "/background/service_worker" manifest property used
        without "/background/scripts" property as Firefox-compatible fallback.
 ```
 
-[manifest.template.json](manifest.template.json) は `service_worker` のみを定義する。Firefox 用には `node scripts/build-variant.js <variant> --firefox` で、次のように `scripts` を併記した manifest を生成する (`zip.ps1` と CI もこの生成経路を使う):
+[manifest.template.json](manifest.template.json) は `service_worker` のみを定義する。Firefox 用には `bun scripts/build-variant.js <variant> --firefox` で、次のように `scripts` を併記した manifest を生成する (`zip.ps1` と CI もこの生成経路を使う):
 
 ```json
 "background": {
@@ -413,3 +371,22 @@ if (typeof importScripts === 'function') {
 - `manifest.json` の `run_at: "document_start"` で最早期に注入
 - popup でのフォント変更は **ページリロードが必要** — CSS は `document_start` 時に一度キャッシュされる
 - `chrome.scripting.registerContentScripts` で CSS ファイル内の相対 URL はページオリジンに解決される (拡張オリジンではない)。 そのため CSS ではなく JS を登録して `chrome.runtime.getURL()` で絶対 URL を構築する設計
+
+### AMO 公開のHTTP境界
+
+公開workflowは生成した最終XPIを既存の配布物検証へ通し、SHA-256・GUID・versionを `scripts/Publish-Amo.ps1`（PowerShell 7）へ渡す。旧web-ext sign/承認タイムアウトを成功化する手順に代えて、JWT認証・全ページの非公開listed版検査・upload検証・GUIDに対するPUT提出の受付応答まで確認する。XPIの同一snapshotをhash検証と送信に使い、保存UUIDの再利用・重複・不明な受付結果は停止する。CI成功は審査完了・ストア公開を意味しない。
+
+CWS公開workflowはrepository固定のconcurrency groupで直列化する。同期uploadの成功・ID・版を確認した場合だけpublishし、非同期uploadはAPI v2でdraft版を要求と結び付けられないため停止する。APIにはuploadとpublishの原子的なCASが無いため、提出中はDashboardや他の手動公開操作を並行しない。
+
+## Bun依存の脆弱性検出
+
+依存の固定復元は `bun run deps` を使う。lock欠落・破損を拒否し、`[run] bun=true` 経由で依存のpostinstallまでBunで実行する。Node.jsがあるPCでも通常の `bun install` を直接使う経路へ戻さない。
+
+日次と手動実行では `bun audit` でlock全体を監査する。ローカルでも同じコマンドで確認できる。BunはDependabotの通常の更新PRには対応するが、脆弱性起点の自動修正PRには未対応なので、監査失敗の調査と依存更新は別途必要。警告を除外して成功扱いにしない。
+
+
+### 依存の暫定セキュリティ修正
+
+minimatch は 11.0.4 以降、multimatch は named import 対応の 8 系へ override する。ESLint 設定の ESM 経路は @eslint/eslintrc@3.3.7 と @eslint/config-array@0.21.2 の最小 import patch で互換性を保つ。web-ext@10.8.0 の FileFilter は Windows で windowsPathsNoEscape を明示し、開発用ファイルやアーカイブの除外を維持する。
+
+CVE-2026-93753（GHSA-gcqx-w48m-w2h4）の deepmerge 4.3.1 は公式修正版が未公開のため、patches/deepmerge@4.3.1.patch で戻り値への書込みを own データ属性にし、__proto__ 経由の prototype 汚染を防ぐ。bun run test:dependencies で web-ext → addons-linter の実解決先の攻撃入力と通常 API を検証する。Bun 標準の patchedDependencies で適用し、公式修正版の採用時に patch の要否を再確認する。バージョンベースの bun audit 警告は残るため、警告を除外したり成功扱いにしない。

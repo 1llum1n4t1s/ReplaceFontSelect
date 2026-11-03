@@ -381,7 +381,7 @@ function generateCSS(outputConfig) {
 /* ============================================================================
  * DO NOT EDIT — このファイルは scripts/generate-css.js により自動生成されます。
  * 変更は scripts/generate-css.js か src/content/font-config.js を編集し、
- * npm run generate-css を実行してください。
+ * bun run generate-css を実行してください。
  * ============================================================================ */`;
 
   const variableOverrides = buildVariableOverrides();

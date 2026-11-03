@@ -18,40 +18,40 @@ if [ ! -f "$VARIANT_PATH" ]; then
   exit 1
 fi
 
-# node -p で JSON を読む（jq 依存を避ける）
-VERSION=$(node -p "require('$VARIANT_PATH').version")
-ZIP_BASE=$(node -p "require('$VARIANT_PATH').zipBaseName")
+# bun -p で JSON を読む（jq 依存を避ける）
+VERSION=$(bun -p "require('$VARIANT_PATH').version")
+ZIP_BASE=$(bun -p "require('$VARIANT_PATH').zipBaseName")
 echo "🎯 Variant: $VARIANT (version=$VERSION, zipBase=$ZIP_BASE)"
 echo ""
 
-# 依存関係のインストール（pnpm-lock.yaml の整合性チェック付き）
-echo "📦 依存関係をインストール中（pnpm install --frozen-lockfile）..."
-pnpm install --frozen-lockfile
+# 依存関係のインストール（bun.lock の整合性チェック付き）
+echo "📦 依存関係をインストール中（bun run deps）..."
+bun run deps
 echo ""
 
 # 問い合わせUIの共有資産を正本から同期
-pnpm run sync:support
+bun --bun run sync:support
 
 # アイコン生成
 echo "🎨 アイコンを生成中..."
-node scripts/generate-icons.js "$VARIANT"
+bun scripts/generate-icons.js "$VARIANT"
 echo ""
 
 # フォント変換（TTFがある場合）
 if ls src/fonts/*.ttf 1> /dev/null 2>&1; then
   echo "🔄 フォントを変換中..."
-  node scripts/convert-fonts.js
+  bun scripts/convert-fonts.js
   echo ""
 fi
 
 # CSS生成
 echo "🎨 CSSを生成中..."
-node scripts/generate-css.js
+bun scripts/generate-css.js
 echo ""
 
 # variant manifest / variant.js を生成
 echo "🧬 バリアント設定を適用中..."
-node scripts/build-variant.js "$VARIANT"
+bun scripts/build-variant.js "$VARIANT"
 echo ""
 
 # zipコマンドの確認
@@ -74,7 +74,7 @@ if [ ! -d "$VARIANT_ICONS_DIR" ]; then
 fi
 
 # 同梱資産の選定はCI・Windowsと同じ処理を使う。失敗はset -eで伝播する。
-excluded_assets=$(node scripts/package-source.js "$VARIANT")
+excluded_assets=$(bun scripts/package-source.js "$VARIANT")
 extra_excludes=()
 while IFS= read -r file; do
   [ -z "$file" ] || extra_excludes+=("$file")

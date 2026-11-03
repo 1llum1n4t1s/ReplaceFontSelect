@@ -58,7 +58,7 @@ function main(args) {
   const [name, option, destination] = args;
   if (!name || !/^[a-z][a-z0-9_-]*$/.test(name) ||
       (args.length !== 1 && !(args.length === 3 && option === '--copy' && destination))) {
-    throw new Error('使い方: node scripts/package-source.js <variant> [--copy <新規srcディレクトリ>]');
+    throw new Error('使い方: bun scripts/package-source.js <variant> [--copy <新規srcディレクトリ>]');
   }
   const variant = JSON.parse(fs.readFileSync(path.join(root, 'variants', `${name}.json`), 'utf8'));
   const excluded = getExcludedFiles(variant);

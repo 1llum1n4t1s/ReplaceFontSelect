@@ -1,9 +1,9 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // バリアント設定を読み込み、manifest.json と src/content/variant.js を生成する。
-// 使い方: node scripts/build-variant.js <variant-name> [--firefox]
-//   例:   node scripts/build-variant.js default
-//         node scripts/build-variant.js notosans
-//         node scripts/build-variant.js default --firefox  # Firefox AMO 向け
+// 使い方: bun scripts/build-variant.js <variant-name> [--firefox]
+//   例:   bun scripts/build-variant.js default
+//         bun scripts/build-variant.js notosans
+//         bun scripts/build-variant.js default --firefox  # Firefox AMO 向け
 //
 // --firefox を付けると background.scripts を併記する (AMO MV3 validator が
 // service_worker 単独を reject するため Firefox-compatible fallback として追加)。
@@ -115,7 +115,7 @@ function main() {
   const variantName = args[0];
   const isFirefox = args.includes('--firefox');
   if (!variantName) {
-    fail('使い方: node scripts/build-variant.js <variant-name> [--firefox]');
+    fail('使い方: bun scripts/build-variant.js <variant-name> [--firefox]');
   }
   if (!/^[a-z][a-z0-9_-]*$/.test(variantName)) {
     fail(`バリアント名は [a-z][a-z0-9_-]* の形式: "${variantName}"`);

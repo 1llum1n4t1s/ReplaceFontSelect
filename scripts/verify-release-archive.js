@@ -5,24 +5,9 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { isDeepStrictEqual } = require('util');
-const { pathToFileURL } = require('url');
 const root = path.resolve(__dirname, '..');
-const webExtRoot = path.dirname(require.resolve('web-ext'));
 const sha = data => crypto.createHash('sha256').update(data).digest('hex');
-const checks = {
-  'lib/program.js': 'ad78334f0c2952cfe3c5d7122cd779f423288687b71ebd410df502585be1b129',
-  'lib/cmd/index.js': 'fb5e78393ff261052006004ae1c2b6bb1fc560301f53ef59a5c026f8ac33369e',
-  'lib/cmd/sign.js': '19ea0162fd17e8907dbb1635fa2b0a25368fbaddf2f711cbeb48b5ca0c36f65e',
-  'lib/util/submit-addon.js': '37ac56146a52b5918d757819b2ac3bb756598fb4b50165741ceeb17bec40377d'
-};
 function assert(condition, message) { if (!condition) throw new Error(message); }
-function checkWebExt() {
-  const pkg = JSON.parse(fs.readFileSync(path.join(webExtRoot, 'package.json')));
-  assert(pkg.version === '10.8.0', `未対応の web-ext: ${pkg.version}`);
-  for (const [file, digest] of Object.entries(checks)) {
-    assert(sha(fs.readFileSync(path.join(webExtRoot, file))) === digest, `web-ext 注入契約の変更: ${file}`);
-  }
-}
 function sourceFiles(source) {
   const files = new Map();
   function walk(dir, prefix = '') {
@@ -109,87 +94,12 @@ async function verifyArchive({archive, source, variant, version, platform}) {
   console.log(`検証済み ${JSON.stringify(result)}`);
   return result;
 }
-async function runFirefox({ variant, version, argv, submit, expectedSource }) {
-  checkWebExt();
-  const webExt = (await import(pathToFileURL(require.resolve('web-ext')).href)).default;
-  const { signAddon, default: Client } = await import('web-ext/util/submit-addon');
-  let invoked = false, verified = false, submitted = false;
-  const commands = { ...webExt.cmd, sign: async args => {
-    assert(!invoked, 'sign が複数回実行されました'); invoked = true;
-    assert(!expectedSource || path.resolve(args.sourceDir) === path.resolve(expectedSource), 'Firefox ソースパスが不一致');
-    const initial = sourceFiles(args.sourceDir); validateSource(initial, variant, version, 'firefox');
-    const initialSha = sourceSha(initial); let record;
-    return webExt.cmd.sign(args, {
-      build: async (...buildArgs) => {
-        const result = await webExt.cmd.build(...buildArgs);
-        record = await verifyArchive({archive:result.extensionPath,source:args.sourceDir,variant,version,platform:'firefox'});
-        assert(record.sourceSha256 === initialSha, 'build 中にソースが変更されました'); verified = true;
-        return result;
-      },
-      submitAddon: async options => {
-        // AMO の version メタデータは実 upload UUID を上書きできない。
-        const metadata = options.metaDataJson;
-        if (metadata !== undefined) {
-          assert(metadata && typeof metadata === 'object' && !Array.isArray(metadata), 'AMO metadata の形式が不正');
-          if (metadata.version != null) {
-            assert(typeof metadata.version === 'object' && !Array.isArray(metadata.version), 'AMO version metadata の形式が不正');
-            assert(!Object.hasOwn(metadata.version, 'upload'), 'AMO metadata.version.upload の指定は禁止です');
-          }
-        }
-        assert(verified && record && path.resolve(options.xpiPath) === record.archive, '未検証の XPI');
-        const currentSource = sourceFiles(args.sourceDir);
-        validateSource(currentSource, variant, version, 'firefox');
-        validateCandidates(currentSource, variant, 'firefox');
-        assert(sourceSha(currentSource) === initialSha, '提出前にソースが変更されました');
-        assert(sha(fs.readFileSync(options.xpiPath)) === record.sha256, '提出前に XPI が変更されました');
-        // web-ext が FormData を組み立てる際に読み込んだ bytes 自体を照合する。
-        // UUID が後から作られても既存 upload を再利用せず、新しい実物を送る。
-        class VerifiedClient extends Client {
-          async fetchJson(url, method, ...args) {
-            const result = await super.fetchJson(url, method, ...args);
-            if (method === 'POST' && url.pathname.endsWith('/upload/') && result.uuid) {
-              console.log('AMO upload ' + JSON.stringify({variant, version, sha256:record.sha256, uuid:result.uuid}));
-            }
-            return result;
-          }
-          async doNewAddonOrVersionSubmit(addonId, uuid, metadata) {
-            const result = await super.doNewAddonOrVersionSubmit(addonId, uuid, metadata);
-            console.log('AMO submission ' + JSON.stringify({variant, version, sha256:record.sha256, uuid, addonId, versionId:result.version?.id, editUrl:result.version?.edit_url}));
-            return result;
-          }
-          async getPreviousUuidOrUploadXpi(xpiPath, channel, savedUploadUuidPath) {
-            assert(!fs.existsSync(savedUploadUuidPath), '提出前に upload UUID が現れました');
-            return super.getPreviousUuidOrUploadXpi(xpiPath, channel, savedUploadUuidPath, undefined,
-              async () => ({ uploadUuid: '', channel: '', xpiCrcHash: '' }));
-          }
-          fileFromSync(filePath) {
-            if (path.resolve(filePath) !== record.archive) return super.fileFromSync(filePath);
-            const bytes = fs.readFileSync(filePath);
-            assert(sha(bytes) === record.sha256, '送信時に XPI が変更されました');
-            return new File([bytes], path.basename(filePath));
-          }
-        }
-        submitted = true;
-        return submit ? submit(options) : signAddon({ ...options, SubmitClient: VerifiedClient });
-      }
-    });
-  }};
-  await webExt.main(webExtRoot, { commands, argv, runOptions: { shouldExitProgram: false } });
-  assert(invoked && verified && submitted, 'web-ext の検証・提出フックが実行されませんでした');
-}
 async function main() {
-  const [mode, variant, version, source, ...rest] = process.argv.slice(2);
-  if (mode === 'check-web-ext') { assert(process.argv.length === 3, 'check-web-ext は引数を取りません'); return checkWebExt(); }
-  if (mode === 'firefox') return runFirefox({variant,version,expectedSource:source,argv:['sign', ...rest]});
-  assert(mode === 'chrome' && rest.length === 1, '使い方: chrome <variant> <version> <source> <zip> / firefox <variant> <version> <source> [web-ext options]');
-  const record = await verifyArchive({archive:rest[0],source,variant,version,platform:'chrome'});
-  const currentSource = sourceFiles(source);
-  validateSource(currentSource, variant, version, 'chrome');
-  validateCandidates(currentSource, variant, 'chrome');
-  assert(sha(fs.readFileSync(record.archive)) === record.sha256 && sourceSha(currentSource) === record.sourceSha256, '提出前に成果物またはソースが変更されました');
-  const child = spawnSync('pnpm', ['exec','chrome-webstore-upload','--source',record.archive], {stdio:'inherit',shell:process.platform === 'win32'});
-  if (child.error) throw child.error;
-  assert(child.status === 0, 'Chrome upload が失敗: ' + (child.status ?? child.signal));
+  const [mode, variant, version, source, archive, platform, ...extra] = process.argv.slice(2);
+  assert(mode === 'verify' && archive && !extra.length && ['chrome','firefox'].includes(platform), 'verify <variant> <version> <source> <archive> <platform>');
+  const record = await verifyArchive({archive,source,variant,version,platform});
+  if (process.env.VERIFY_RECEIPT_PATH) fs.writeFileSync(process.env.VERIFY_RECEIPT_PATH, JSON.stringify(record), {flag:'wx'});
+  return record;
 }
 if (require.main === module) main().catch(e => { console.error(e.stack); process.exitCode = 1; });
-module.exports = { verifyArchive, runFirefox, checkWebExt };
+module.exports = { verifyArchive };

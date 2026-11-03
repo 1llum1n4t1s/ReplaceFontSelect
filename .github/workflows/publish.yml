@@ -9,7 +9,6 @@ name: Publish to Chrome Web Store & Firefox AMO
 #
 # 公開先:
 #   - Chrome Web Store (chrome-webstore-upload-cli v4 経由)
-#   - Firefox AMO (web-ext sign --channel=listed、 web-ext 10+ では submission API がデフォルト)
 
 on:
   push:
@@ -37,7 +36,7 @@ permissions:
 
 # 同一リポジトリの全 release branch と手動実行を直列化する。
 concurrency:
-  group: ${{ github.repository }}-replacefont-publish
+  group: publish-${{ github.repository }}
   cancel-in-progress: false
   queue: max
 
@@ -84,10 +83,19 @@ jobs:
             echo "::error::未対応のイベント: $EVENT"
             exit 1
           fi
-      - name: リポジトリをチェックアウト
+      - name: Checkout release commit with native git
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        # actions/checkout v7.0.1 (SHA pinned for supply chain security)
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" fetch --no-tags --depth=1 origin "$GITHUB_SHA"
+          git checkout --detach FETCH_HEAD
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" submodule update --init --recursive
 
       - name: 再開対象の source SHA を照合
         id: head_check
@@ -122,6 +130,11 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "🎯 version=$version (variant=${{ matrix.variant }})"
 
+      - name: Prepare Bun build toolchain
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
+        shell: pwsh
+        run: ./scripts/Initialize-BunBuild.ps1 -VersionFile package.json
+
       - name: バリアントの version とブランチ version の整合性チェック
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         env:
@@ -132,60 +145,51 @@ jobs:
             echo "::error::variants/${VARIANT}.json が見つかりません"
             exit 1
           fi
-          variant_version=$(node -p "require('./variants/${VARIANT}.json').version")
+          variant_version=$(bun -p "require('./variants/${VARIANT}.json').version")
           if [ "$variant_version" != "$BRANCH_VERSION" ]; then
             echo "::error::variants/${VARIANT}.json の version ($variant_version) とブランチ ($BRANCH_VERSION) が一致しません"
             exit 1
           fi
           echo "✅ variants/${VARIANT}.json の version とブランチ一致: $variant_version"
 
-      - name: pnpm セットアップ
-        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413  # v6.1.0
-        with:
-          version: '12.16.1'
-
-      - name: Node セットアップ
-        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        # actions/setup-node v7.1.0 (SHA pinned)
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          # package.json の開発用ツールチェーンと同じ Node.js / pnpm を使う
-          node-version: '26.13.0'
-          cache: 'pnpm'
-
       - name: 依存インストール
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        run: pnpm install --frozen-lockfile
+        run: bun run deps
+      - name: Validate dependency security patches
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
+        run: bun run test:dependencies
+      - name: Sync support assets
+        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
+        run: bun --bun run sync:support
 
       - name: 共通サポート部品の同期を確認
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        run: pnpm run check:support
+        run: bun --bun run check:support
 
       - name: アイコン生成
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         env:
           VARIANT: ${{ matrix.variant }}
-        run: node scripts/generate-icons.js "$VARIANT"
+        run: bun scripts/generate-icons.js "$VARIANT"
 
       - name: フォント変換（TTFがある場合）
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         run: |
           if ls src/fonts/*.ttf >/dev/null 2>&1; then
-            node scripts/convert-fonts.js
+            bun scripts/convert-fonts.js
           else
             echo "TTFファイルなし、スキップ"
           fi
 
       - name: CSS生成
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        run: node scripts/generate-css.js
+        run: bun scripts/generate-css.js
 
       - name: variant manifest / variant.js を生成
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         env:
           VARIANT: ${{ matrix.variant }}
-        run: node scripts/build-variant.js "$VARIANT"
+        run: bun scripts/build-variant.js "$VARIANT"
 
       - name: 生成された manifest の version を確認
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
@@ -193,7 +197,7 @@ jobs:
         env:
           BRANCH_VERSION: ${{ steps.parse.outputs.version }}
         run: |
-          manifest_version=$(node -p "require('./manifest.json').version")
+          manifest_version=$(bun -p "require('./manifest.json').version")
           if [ "$manifest_version" != "$BRANCH_VERSION" ]; then
             echo "::error::manifest.json の version ($manifest_version) とブランチ ($BRANCH_VERSION) が一致しません"
             exit 1
@@ -205,7 +209,7 @@ jobs:
         env:
           VARIANT: ${{ matrix.variant }}
         run: |
-          zip_base=$(node -p "require('./variants/${VARIANT}.json').zipBaseName")
+          zip_base=$(bun -p "require('./variants/${VARIANT}.json').zipBaseName")
           zip_path="${zip_base}-chrome.zip"
           variant_icons_dir="icons/${VARIANT}"
           if [ ! -d "$variant_icons_dir" ]; then
@@ -217,7 +221,7 @@ jobs:
           mkdir -p "$chrome_dir/icons"
           cp manifest.json "$chrome_dir/"
           cp -r "$variant_icons_dir" "$chrome_dir/icons/${VARIANT}"
-          node scripts/package-source.js "$VARIANT" --copy "$chrome_dir/src"
+          bun scripts/package-source.js "$VARIANT" --copy "$chrome_dir/src"
           find "$chrome_dir" \( -name "*.DS_Store" -o -name "*.swp" -o -name "*~" -o -name "preview.html" \) -delete
           (cd "$chrome_dir" && zip -r "$GITHUB_WORKSPACE/$zip_path" manifest.json "icons/${VARIANT}" src)
           echo "CHROME_SOURCE_DIR=$chrome_dir" >> "$GITHUB_ENV"
@@ -265,7 +269,10 @@ jobs:
           BRANCH_VERSION: ${{ steps.parse.outputs.version }}
         # integrity 検証済みの固定 CLI に、検証した同じ ZIP path を渡す。
         run: |
-          node scripts/verify-release-archive.js chrome "$VARIANT" "$BRANCH_VERSION" "$CHROME_SOURCE_DIR" "$ZIP_PATH"
+          pwsh -NoProfile -File scripts/Test-PublishCws.ps1 -WorkDirectory "$RUNNER_TEMP/cws-publisher-tests"
+          VERIFY_RECEIPT_PATH="$RUNNER_TEMP/chrome-verified.json" bun scripts/verify-release-archive.js verify "$VARIANT" "$BRANCH_VERSION" "$CHROME_SOURCE_DIR" "$ZIP_PATH" chrome
+          CHROME_SHA256=$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/chrome-verified.json"))["sha256"])')
+          pwsh -NoProfile -File scripts/Publish-Cws.ps1 -Archive "$ZIP_PATH" -ExpectedSha256 "$CHROME_SHA256"
           echo "🎉 ${{ matrix.variant }} → Chrome Web Store への公開リクエスト送信完了"
 
       - name: Firefox 用ソースディレクトリを準備
@@ -274,7 +281,6 @@ jobs:
         if: ${{ success() && steps.select.outputs.enabled == 'true' && steps.select.outputs.firefox == 'true' && steps.common_ready.outcome == 'success' }}
         env:
           VARIANT: ${{ matrix.variant }}
-        # web-ext sign の --source-dir に渡すための、Chrome ZIP と同じ内容を持つ
         # クリーンなディレクトリを構築する。manifest.json + icons/<variant> + src のみ。
         # Firefox AMO の MV3 validator は service_worker 単独を reject するため、
         # --firefox フラグで manifest.json を再生成して background.scripts を併記。
@@ -286,11 +292,11 @@ jobs:
             echo "::error::variant 用のアイコンディレクトリが見つかりません: $variant_icons_dir"
             exit 1
           fi
-          node scripts/build-variant.js "${VARIANT}" --firefox
+          bun scripts/build-variant.js "${VARIANT}" --firefox
           mkdir -p "$firefox_dir/icons"
           cp manifest.json "$firefox_dir/"
           cp -r "$variant_icons_dir" "$firefox_dir/icons/${VARIANT}"
-          node scripts/package-source.js "$VARIANT" --copy "$firefox_dir/src"
+          bun scripts/package-source.js "$VARIANT" --copy "$firefox_dir/src"
           # ストア配信に不要なファイルを除外 (Chrome ZIP と同じポリシー + TTF 除外)。
           # v3.0.3 戦略: replacefont-extension.css は WAR から fetch するので配布に含める (削除しない)。
           find "$firefox_dir" \( \
@@ -305,28 +311,21 @@ jobs:
           ls -la "$firefox_dir"
 
       - name: Firefox AMO に submission API でアップロード
-        # Firefox ソース準備失敗時は提出しない。
         if: ${{ success() && steps.firefox_source.outcome == 'success' }}
         env:
-          # web-ext は WEB_EXT_API_KEY / WEB_EXT_API_SECRET を環境変数から読む
-          # AMO API キーは全 variant 共通（同一 Mozilla アカウントの JWT）
           WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
           VARIANT: ${{ matrix.variant }}
           BRANCH_VERSION: ${{ steps.parse.outputs.version }}
-        # web-ext は devDependencies に固定し、pnpm install --frozen-lockfile で integrity 検証済みの
-        # ローカル版を pnpm exec で呼ぶ（Chrome 側と同じサプライチェーン方針）
         run: |
-          if [ -z "$WEB_EXT_API_KEY" ] || [ -z "$WEB_EXT_API_SECRET" ]; then
-            echo "::error::AMO_JWT_ISSUER / AMO_JWT_SECRET の GitHub Secrets が未設定です"
-            exit 1
-          fi
-          # web-ext 10+ では submission API がデフォルト動作。
-          # --use-submission-api フラグは廃止されたので渡さない。
-          # 提出後の人手審査は待たず、提出・検証・登録の失敗はそのまま失敗させる。
-          node scripts/verify-release-archive.js firefox "$VARIANT" "$BRANCH_VERSION" "$FIREFOX_SOURCE_DIR" \
-            --source-dir="$FIREFOX_SOURCE_DIR" \
-            --artifacts-dir="web-ext-artifacts" \
-            --channel=listed \
-            --approval-timeout=0
-          echo "🦊 ${{ matrix.variant }} → Firefox AMO への submission 送信完了 (レビュー待ち)"
+          pwsh -NoProfile -File scripts/Test-PublishAmo.ps1 -WorkDirectory "$RUNNER_TEMP/amo-publisher-tests"
+          test ! -e "$FIREFOX_SOURCE_DIR/.amo-upload-uuid"
+          mkdir -p web-ext-artifacts
+          ARCHIVE="$GITHUB_WORKSPACE/web-ext-artifacts/unsigned-submission.xpi"
+          test ! -e "$ARCHIVE"
+          pwsh -NoProfile -File scripts/Test-FirefoxArchive.ps1 -WorkDirectory "$RUNNER_TEMP/firefox-archive-tests"
+          pwsh -NoProfile -File scripts/New-FirefoxArchive.ps1 -SourceDirectory "$FIREFOX_SOURCE_DIR" -Archive "$ARCHIVE" > web-ext-artifacts/build-receipt.json
+          VERIFY_RECEIPT_PATH=web-ext-artifacts/verified.json bun scripts/verify-release-archive.js verify "$VARIANT" "$BRANCH_VERSION" "$FIREFOX_SOURCE_DIR" "$ARCHIVE" firefox
+          ADDON_ID=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["browser_specific_settings"]["gecko"]["id"])' "$FIREFOX_SOURCE_DIR/manifest.json")
+          SHA256=$(python3 -c 'import json; print(json.load(open("web-ext-artifacts/verified.json"))["sha256"])')
+          pwsh -NoProfile -File scripts/Publish-Amo.ps1 -Archive "$ARCHIVE" -Metadata ".amo-metadata-$VARIANT.json" -AddonId "$ADDON_ID" -ExpectedVersion "$BRANCH_VERSION" -ExpectedSha256 "$SHA256"

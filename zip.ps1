@@ -53,10 +53,10 @@ $zipBase = $variantConfig.zipBaseName
 Write-Host "🎯 Variant: $Variant (version=$version, zipBase=$zipBase)" -ForegroundColor Cyan
 Write-Host ""
 
-# 依存関係のインストール（pnpm-lock.yaml の整合性チェック付き）
-# pnpm install --frozen-lockfile: lockfile に厳密に従い、差分があれば失敗する。サプライチェーン攻撃対策
-Write-Host "📦 依存関係をインストール中（pnpm install --frozen-lockfile）..." -ForegroundColor Cyan
-pnpm install --frozen-lockfile
+# 依存関係のインストール（bun.lock の整合性チェック付き）
+# bun run deps: lockfile に厳密に従い、差分があれば失敗する。サプライチェーン攻撃対策
+Write-Host "📦 依存関係をインストール中（bun run deps）..." -ForegroundColor Cyan
+bun run deps
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ 依存関係のインストールに失敗しました" -ForegroundColor Red
     exit 1
@@ -66,7 +66,7 @@ Write-Host ""
 # 共通サポート部品を npm package の正本から同期する。
 # build:* を経由しないこの包装経路でも、問い合わせ UI の JS 2本 + CSS 3本を必ず揃える。
 Write-Host "🧩 共通サポート部品を同期中..." -ForegroundColor Cyan
-pnpm run sync:support
+bun --bun run sync:support
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ 共通サポート部品の同期に失敗しました" -ForegroundColor Red
     exit 1
@@ -75,7 +75,7 @@ Write-Host ""
 
 # アイコン生成
 Write-Host "🎨 アイコンを生成中..." -ForegroundColor Cyan
-node scripts/generate-icons.js $Variant
+bun scripts/generate-icons.js $Variant
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ アイコン生成に失敗しました" -ForegroundColor Red
     exit 1
@@ -85,7 +85,7 @@ Write-Host ""
 # フォント変換（TTFがある場合）
 if (Test-Path "src/fonts/*.ttf") {
     Write-Host "🔄 フォントを変換中..." -ForegroundColor Cyan
-    node scripts/convert-fonts.js
+    bun scripts/convert-fonts.js
     if ($LASTEXITCODE -ne 0) {
         Write-Host "❌ フォント変換に失敗しました" -ForegroundColor Red
         exit 1
@@ -95,7 +95,7 @@ if (Test-Path "src/fonts/*.ttf") {
 
 # CSS生成
 Write-Host "🎨 CSSを生成中..." -ForegroundColor Cyan
-node scripts/generate-css.js
+bun scripts/generate-css.js
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ CSS生成に失敗しました" -ForegroundColor Red
     exit 1
@@ -104,7 +104,7 @@ Write-Host ""
 
 # variant manifest / variant.js を生成
 Write-Host "🧬 バリアント設定を適用中..." -ForegroundColor Cyan
-node scripts/build-variant.js $Variant
+bun scripts/build-variant.js $Variant
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ バリアントビルドに失敗しました" -ForegroundColor Red
     exit 1
@@ -133,7 +133,7 @@ if (-not (Test-Path $variantIconsSrc)) {
 }
 New-Item -ItemType Directory -Path "$tempDir/icons/$Variant" -Force | Out-Null
 Copy-Item "$variantIconsSrc/*" -Destination "$tempDir/icons/$Variant/" -Recurse
-node scripts/package-source.js $Variant --copy "$tempDir/src"
+bun scripts/package-source.js $Variant --copy "$tempDir/src"
 if ($LASTEXITCODE -ne 0) { throw "Chrome用ソースのコピーに失敗しました" }
 
 # 不要なファイルを除外
@@ -169,7 +169,7 @@ Write-Host ""
 Write-Host "🦊 Firefox AMO用のXPIファイルを作成中..." -ForegroundColor Cyan
 if (Test-Path $xpiPath) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($xpiPath)) -AllowedRoot $PSScriptRoot }
 
-node scripts/build-variant.js $Variant --firefox
+bun scripts/build-variant.js $Variant --firefox
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Firefox 用 manifest の生成に失敗しました" -ForegroundColor Red
     exit 1
@@ -181,7 +181,7 @@ New-Item -ItemType Directory -Path $firefoxDir | Out-Null
 Copy-Item "manifest.json" -Destination $firefoxDir
 New-Item -ItemType Directory -Path "$firefoxDir/icons/$Variant" -Force | Out-Null
 Copy-Item "$variantIconsSrc/*" -Destination "$firefoxDir/icons/$Variant/" -Recurse
-node scripts/package-source.js $Variant --copy "$firefoxDir/src"
+bun scripts/package-source.js $Variant --copy "$firefoxDir/src"
 if ($LASTEXITCODE -ne 0) { throw "Firefox用ソースのコピーに失敗しました" }
 # Chrome ZIP と同じ除外ポリシー + TTF 除外 (AMO はソース由来の TTF を配信物に含めない)
 Get-ChildItem -Path $firefoxDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html","*.ttf" | ForEach-Object {  Remove-LocalWorkItem -LiteralPath $_.FullName -AllowedRoot $PSScriptRoot -IgnoreMissing }
@@ -194,7 +194,7 @@ Compress-Archive -Path "$firefoxDir/*" -DestinationPath $xpiTempZip -Force
 Move-Item $xpiTempZip $xpiPath -Force
 
 # manifest.json を Chrome 版へ戻す (Firefox 版のまま残すと "Load unpacked" が壊れる)
-node scripts/build-variant.js $Variant
+bun scripts/build-variant.js $Variant
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Chrome 用 manifest への復帰に失敗しました" -ForegroundColor Red
     exit 1

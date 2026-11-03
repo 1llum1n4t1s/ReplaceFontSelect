@@ -1,10 +1,10 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // 全 variant のバージョンを同期して patch +1 し、release/<X.Y.Z> ブランチを作成・push する。
 // 「両 variant 同時リリース」が常態のため、version を全 variant で揃え、
 // 1 ブランチで GitHub Actions matrix が両 variant を並列公開する仕組み。
 //
 // 使い方:
-//   node scripts/release.js [--dry-run] [--yes] [--prune-old]
+//   bun scripts/release.js [--dry-run] [--yes] [--prune-old]
 //
 //   --dry-run / -n = 実際の書き込み・push を行わず、計画だけ表示
 //   --yes / -y     = 確認プロンプトを省略（CI / Claude Code から呼ぶ場合に使用）

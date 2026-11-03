@@ -1,5 +1,5 @@
 // 実ブラウザで Shadow 初期化と遅延 CSS の競合を検証する。
-// 実行: node --test scripts/verify-style-injection.cjs
+// 実行: bun test ./scripts/verify-style-injection.cjs
 // chrome.storage/runtime はローカル fixture。CSSOM・フォント描画は実ブラウザを使用する。
 const assert = require('node:assert/strict');
 const { before, after, test } = require('node:test');

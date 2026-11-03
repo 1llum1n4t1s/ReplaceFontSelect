@@ -1,7 +1,7 @@
 // バリアントごとのアイコン PNG を icons/<variant>/icon.svg から生成する。
-// 使い方: node scripts/generate-icons.js <variant>
-//   例:   node scripts/generate-icons.js default
-//         node scripts/generate-icons.js notosans
+// 使い方: bun scripts/generate-icons.js <variant>
+//   例:   bun scripts/generate-icons.js default
+//         bun scripts/generate-icons.js notosans
 
 // puppeteer v25+ は ESM-only のため CommonJS からは動的 import で読み込む (generateIcons 内)
 const fs = require('fs');
@@ -9,7 +9,7 @@ const path = require('path');
 
 const variantName = process.argv[2];
 if (!variantName) {
-  console.error('使い方: node scripts/generate-icons.js <variant>');
+  console.error('使い方: bun scripts/generate-icons.js <variant>');
   process.exit(1);
 }
 if (!/^[a-z][a-z0-9_-]*$/.test(variantName)) {

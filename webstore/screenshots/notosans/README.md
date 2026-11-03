@@ -15,9 +15,9 @@
 リポジトリのルートで、依存関係と Puppeteer の Chrome を準備してから生成します。`zip.ps1` / `zip.sh` は画像を生成しません。
 
 ```bash
-pnpm install --frozen-lockfile
-pnpm exec puppeteer browsers install chrome
-pnpm run generate-screenshots:notosans
+bun run deps
+bun --bun run puppeteer browsers install chrome
+bun --bun run generate-screenshots:notosans
 ```
 
 生成される画像：

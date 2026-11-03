@@ -4,25 +4,26 @@
   "type": "commonjs",
   "description": "Chrome/Firefox extension that replaces hard-to-read fonts with Japanese fonts. Variant-based build produces both 'default' (user-selectable fonts) and 'notosans' (Noto Sans JP + UDEV Gothic JPDOC fixed) from a single source.",
   "scripts": {
-    "sync:support": "node --preserve-symlinks-main ./node_modules/@kagayoi/support-extension/bin/kagayoi-support-sync.mjs",
-    "check:support": "node --preserve-symlinks-main ./node_modules/@kagayoi/support-extension/bin/kagayoi-support-sync.mjs --check",
-    "generate-icons": "node scripts/generate-icons.js",
-    "generate-icons:default": "node scripts/generate-icons.js default",
-    "generate-icons:notosans": "node scripts/generate-icons.js notosans",
-    "generate-css": "node scripts/generate-css.js",
-    "convert-fonts": "node scripts/convert-fonts.js",
-    "generate-screenshots": "node scripts/generate-screenshots.js",
-    "generate-screenshots:default": "node scripts/generate-screenshots.js default",
-    "generate-screenshots:notosans": "node scripts/generate-screenshots.js notosans",
-    "build-variant": "node scripts/build-variant.js",
-    "build:default": "pnpm run sync:support && node scripts/generate-icons.js default && pnpm run generate-css && node scripts/build-variant.js default",
-    "build:notosans": "pnpm run sync:support && node scripts/generate-icons.js notosans && pnpm run generate-css && node scripts/build-variant.js notosans",
-    "build": "pnpm run build:default",
-    "release": "node scripts/release.js"
+    "deps": "bun scripts/Install-Dependencies.mjs",
+    "sync:support": "bun --preserve-symlinks-main ./node_modules/@kagayoi/support-extension/bin/kagayoi-support-sync.mjs",
+    "check:support": "bun --preserve-symlinks-main ./node_modules/@kagayoi/support-extension/bin/kagayoi-support-sync.mjs --check",
+    "generate-icons": "bun scripts/generate-icons.js",
+    "generate-icons:default": "bun scripts/generate-icons.js default",
+    "generate-icons:notosans": "bun scripts/generate-icons.js notosans",
+    "generate-css": "bun scripts/generate-css.js",
+    "convert-fonts": "bun scripts/convert-fonts.js",
+    "generate-screenshots": "bun scripts/generate-screenshots.js",
+    "generate-screenshots:default": "bun scripts/generate-screenshots.js default",
+    "generate-screenshots:notosans": "bun scripts/generate-screenshots.js notosans",
+    "build-variant": "bun scripts/build-variant.js",
+    "build:default": "bun --bun run sync:support && bun scripts/generate-icons.js default && bun --bun run generate-css && bun scripts/build-variant.js default",
+    "build:notosans": "bun --bun run sync:support && bun scripts/generate-icons.js notosans && bun --bun run generate-css && bun scripts/build-variant.js notosans",
+    "build": "bun --bun run build:default",
+    "release": "bun scripts/release.js",
+    "test:dependencies": "bun test ./scripts/dependency-security.test.cjs"
   },
   "devDependencies": {
     "@kagayoi/support-extension": "1.0.9",
-    "chrome-webstore-upload-cli": "4.0.2",
     "puppeteer": "^25.16.0",
     "ttf2woff2": "^8.0.1",
     "web-ext": "10.8.0"
@@ -35,8 +36,23 @@
   ],
   "author": "ゆろち",
   "license": "MIT",
-  "packageManager": "pnpm@12.16.1",
-  "volta": {
-    "node": "26.13.0"
+  "packageManager": "bun@1.4.4",
+  "overrides": {
+    "node-forge": "1.4.2",
+    "ip-address": "10.7.5",
+    "cacache>glob": "14.0.2",
+    "minimatch": "^11.0.4",
+    "multimatch": "^8.0.0"
+  },
+  "trustedDependencies": [
+    "puppeteer",
+    "spawn-sync",
+    "ttf2woff2"
+  ],
+  "patchedDependencies": {
+    "@eslint/eslintrc@3.3.7": "patches/@eslint%2Feslintrc@3.3.7.patch",
+    "deepmerge@4.3.1": "patches/deepmerge@4.3.1.patch",
+    "@eslint/config-array@0.21.2": "patches/@eslint%2Fconfig-array@0.21.2.patch",
+    "web-ext@10.8.0": "patches/web-ext@10.8.0.patch"
   }
 }
