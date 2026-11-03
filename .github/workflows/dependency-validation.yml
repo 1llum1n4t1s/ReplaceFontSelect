@@ -1,22 +1,31 @@
 name: Dependency validation
-run-name: 'dependency-validation pr=${{ inputs.pr || github.event.pull_request.number }} base=${{ inputs.base || github.event.pull_request.base.sha }} head=${{ inputs.head || github.event.pull_request.head.sha }}'
+run-name: >-
+  ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'main' && format('dependency-main-validation sha={0}', github.sha) || format('dependency-validation pr={0} base={1} head={2}', inputs.pr || github.event.pull_request.number, inputs.base || github.event.pull_request.base.sha, inputs.head || github.event.pull_request.head.sha) }}
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
+      mode:
+        description: Validation target
+        required: true
+        default: pr
+        type: choice
+        options:
+          - pr
+          - main
       pr:
         description: Dependabot PR number
-        required: true
+        required: false
         type: string
       base:
         description: Expected base SHA
-        required: true
+        required: false
         type: string
       head:
         description: Expected head SHA
-        required: true
+        required: false
         type: string
 
 permissions:
@@ -35,24 +44,35 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
+          VALIDATION_MODE: ${{ inputs.mode }}
           PR_NUMBER: ${{ inputs.pr }}
           BASE_SHA: ${{ inputs.base }}
           HEAD_SHA: ${{ inputs.head }}
         with:
           script: |
-            const { PR_NUMBER, BASE_SHA, HEAD_SHA } = process.env;
-            if (!/^[1-9][0-9]*$/.test(PR_NUMBER) || !/^[0-9a-f]{40}$/.test(BASE_SHA) || !/^[0-9a-f]{40}$/.test(HEAD_SHA) || context.sha !== BASE_SHA) throw Error('再検証入力が不正');
+            const { VALIDATION_MODE, PR_NUMBER, BASE_SHA, HEAD_SHA } = process.env;
+            if (!['pr', 'main'].includes(VALIDATION_MODE)) throw Error('検証 mode が不正');
+            if (VALIDATION_MODE === 'main') {
+              if (PR_NUMBER || BASE_SHA || HEAD_SHA) throw Error('main 検証に PR 入力は指定できません');
+            } else if (!/^[1-9][0-9]*$/.test(PR_NUMBER) || !/^[0-9a-f]{40}$/.test(BASE_SHA) || !/^[0-9a-f]{40}$/.test(HEAD_SHA) || context.sha !== BASE_SHA) {
+              throw Error('再検証入力が不正');
+            }
             const { owner, repo } = context.repo;
             const repository = (await github.rest.repos.get({owner, repo})).data;
-            const pr = (await github.rest.pulls.get({owner, repo, pull_number: Number(PR_NUMBER)})).data;
             const base = (await github.rest.repos.getBranch({owner, repo, branch: repository.default_branch})).data.commit.sha;
+            if (VALIDATION_MODE === 'main') {
+              if (context.ref !== `refs/heads/${repository.default_branch}` || context.sha !== base) throw Error('main 検証は現在の既定ブランチ先端に限定します');
+              return;
+            }
+            const pr = (await github.rest.pulls.get({owner, repo, pull_number: Number(PR_NUMBER)})).data;
             if (pr.state !== 'open' || pr.user.id !== 49699333 || pr.head.repo?.id !== repository.id || pr.base.ref !== repository.default_branch || pr.head.sha !== HEAD_SHA || base !== BASE_SHA) throw Error('PR または base が変化');
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: ${{ github.event_name == 'pull_request' && github.sha || format('refs/pull/{0}/merge', inputs.pr) }}
+          ref: ${{ (github.event_name == 'pull_request' || inputs.mode == 'main') && github.sha || format('refs/pull/{0}/merge', inputs.pr) }}
           fetch-depth: 2
       - name: '検証基点 pr=${{ inputs.pr || github.event.pull_request.number }} base=${{ inputs.base || github.event.pull_request.base.sha }} head=${{ inputs.head || github.event.pull_request.head.sha }}'
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'main'
         env:
           BASE_SHA: ${{ inputs.base || github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ inputs.head || github.event.pull_request.head.sha }}

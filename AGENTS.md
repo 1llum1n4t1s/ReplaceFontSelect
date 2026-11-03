@@ -387,6 +387,8 @@ CWS公開workflowはrepository固定のconcurrency groupで直列化する。同
 
 ### 依存の暫定セキュリティ修正
 
+依存検証 workflow の手動実行は `mode=pr`（既定）と `mode=main` を選べる。PR 再検証では従来どおり `pr`・`base`・`head` を必須とし、本人性・最新 SHA・merge parents の証跡を検査する。`mode=main` は PR 入力をすべて空にし、現在の既定ブランチを選ぶ場合に限る。実行 SHA を固定して検証し、`dependency-main-validation sha=...` の run-name により PR の自動マージ証跡とは区別する。
+
 minimatch は 11.0.4 以降、multimatch は named import 対応の 8 系へ override する。ESLint 設定の ESM 経路は @eslint/eslintrc@3.3.7 と @eslint/config-array@0.21.2 の最小 import patch で互換性を保つ。web-ext@10.8.0 の FileFilter は Windows で windowsPathsNoEscape を明示し、開発用ファイルやアーカイブの除外を維持する。
 
 CVE-2026-93753（GHSA-gcqx-w48m-w2h4）の deepmerge 4.3.1 は公式修正版が未公開のため、patches/deepmerge@4.3.1.patch で戻り値への書込みを own データ属性にし、__proto__ 経由の prototype 汚染を防ぐ。bun run test:dependencies で web-ext → addons-linter の実解決先の攻撃入力と通常 API を検証する。Bun 標準の patchedDependencies で適用し、公式修正版の採用時に patch の要否を再確認する。バージョンベースの bun audit 警告は残るため、警告を除外したり成功扱いにしない。
