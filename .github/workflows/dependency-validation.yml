@@ -3,23 +3,6 @@ run-name: >-
   ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'main' && format('dependency-main-validation sha={0}', github.sha) || format('dependency-validation pr={0} base={1} head={2}', inputs.pr || github.event.pull_request.number, inputs.base || github.event.pull_request.base.sha, inputs.head || github.event.pull_request.head.sha) }}
 
 on:
-  workflow_call:
-    inputs:
-      mode:
-        type: string
-        default: bun-security
-      pr:
-        type: string
-        required: true
-      base_sha:
-        type: string
-        required: true
-      head_sha:
-        type: string
-        required: true
-      merge_sha:
-        type: string
-        required: true
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
@@ -51,8 +34,7 @@ permissions:
 
 jobs:
   validate:
-    needs: security-guard
-    if: always() && needs.security-guard.result == 'success' && (inputs.mode == 'bun-security' || github.event_name == 'workflow_dispatch' || github.event.pull_request.user.login == 'dependabot[bot]')
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: windows-latest
     timeout-minutes: 30
     defaults:
@@ -60,7 +42,7 @@ jobs:
         shell: bash
     steps:
       - name: 再検証対象を確認
-        if: github.event_name == 'workflow_dispatch' && inputs.mode != 'bun-security'
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           VALIDATION_MODE: ${{ inputs.mode }}
@@ -88,23 +70,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: ${{ inputs.mode == 'bun-security' && format('refs/pull/{0}/merge', inputs.pr) || ((github.event_name == 'pull_request' || inputs.mode == 'main') && github.sha || format('refs/pull/{0}/merge', inputs.pr)) }}
+          ref: ${{ (github.event_name == 'pull_request' || inputs.mode == 'main') && github.sha || format('refs/pull/{0}/merge', inputs.pr) }}
           fetch-depth: 2
-      - name: Verify security merge commit and parents
-        if: inputs.mode == 'bun-security'
-        shell: bash
-        working-directory: ${{ github.workspace }}
-        env:
-          BASE_SHA: ${{ inputs.base_sha }}
-          HEAD_SHA: ${{ inputs.head_sha }}
-          MERGE_SHA: ${{ inputs.merge_sha }}
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$MERGE_SHA"
-          test "$(git rev-parse HEAD^1)" = "$BASE_SHA"
-          test "$(git rev-parse HEAD^2)" = "$HEAD_SHA"
       - name: '検証基点 pr=${{ inputs.pr || github.event.pull_request.number }} base=${{ inputs.base || github.event.pull_request.base.sha }} head=${{ inputs.head || github.event.pull_request.head.sha }}'
-        if: inputs.mode != 'bun-security' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'main')
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'main'
         env:
           BASE_SHA: ${{ inputs.base || github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ inputs.head || github.event.pull_request.head.sha }}
@@ -124,8 +93,8 @@ jobs:
         run: bun --bun run sync:support
       - name: Validate web-ext release contract
         run: pwsh -NoProfile -File scripts/Test-PublishAmo.ps1 -WorkDirectory "$RUNNER_TEMP/amo-publisher-tests"
-      - name: Validate Dependabot auto-merge decisions
-        run: bun test ./scripts/verify-dependabot-auto-merge.cjs
+      - name: Validate dependency validation dispatch guards
+        run: bun test ./scripts/verify-dependency-validation.cjs
       - name: Validate 1
         run: bun --bun run check:support
       - name: Validate 2
@@ -134,47 +103,3 @@ jobs:
         run: bun --bun run build:notosans
       - name: Validate 4
         run: bun test ./scripts/verify-style-injection.cjs
-  security-guard:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Check out trusted default branch
-        if: inputs.mode == 'bun-security'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-          persist-credentials: false
-      - name: Prepare trusted native Bun
-        if: inputs.mode == 'bun-security'
-        shell: pwsh
-        run: ./scripts/Initialize-BunBuild.ps1 -VersionFile package.json
-      - name: Validate security PR using trusted code
-        if: inputs.mode == 'bun-security'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ inputs.pr }}
-          BASE_SHA: ${{ inputs.base_sha }}
-          HEAD_SHA: ${{ inputs.head_sha }}
-          MERGE_SHA: ${{ inputs.merge_sha }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$BASE_SHA"
-          bun scripts/Validate-SecurityMerge.mjs
-      - name: Preserve ordinary validation entry points
-        if: inputs.mode != 'bun-security'
-        shell: bash
-        run: echo 'Ordinary validation does not require the security PR guard'
-  security-result:
-    if: always() && inputs.mode == 'bun-security'
-    needs: [security-guard, validate]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Require every validation job to succeed
-        env:
-          RESULTS: ${{ toJSON(needs) }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "$RESULTS" | jq -e 'length > 1 and all(.[]; .result == "success")'

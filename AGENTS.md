@@ -382,12 +382,12 @@ CWS公開workflowはrepository固定のconcurrency groupで直列化する。同
 
 依存の固定復元は `bun run deps` を使う。lock欠落・破損を拒否し、`[run] bun=true` 経由で依存のpostinstallまでBunで実行する。Node.jsがあるPCでも通常の `bun install` を直接使う経路へ戻さない。
 
-日次と手動実行では `bun audit` でlock全体を監査する。ローカルでも同じコマンドで確認できる。BunはDependabotの通常の更新PRには対応するが、脆弱性起点の自動修正PRは `dependency-security.yml` が補完する。日次・手動で全件監査し、隔離領域で `bun audit fix` による候補を作成し、同じrunから既存の Dependency validation を呼ぶ。未対策アドバイザリが減少し、依存以外のmanifest・パッチ・24時間待機を保ち、全検証が成功した場合だけ、検証したマージコミットを競合検知付きの通常pushで取り込む。保護されたブランチには自動pushせず、修正版未公開・互換性・検証失敗は単一のIssueに通知して次回再試行する。生の監査は警告を除外せず、対策済みパッチの認定も監査成功とは区別してsummaryへ残す。既知のdeepmerge対策はアドバイザリ・版・パッチSHAが完全一致した場合だけ修正対象から外し、生監査には残す。通常のDependabot更新と他ecosystemの設定は維持する。
+ローカルでは `bun audit` でlock全体を監査できる。通常のDependabot更新PRは維持し、Dependency validationで検証する。
 
 
 ### 依存の暫定セキュリティ修正
 
-依存検証 workflow の手動実行は `mode=pr`（既定）と `mode=main` を選べる。PR 再検証では従来どおり `pr`・`base`・`head` を必須とし、本人性・最新 SHA・merge parents の証跡を検査する。`mode=main` は PR 入力をすべて空にし、現在の既定ブランチを選ぶ場合に限る。実行 SHA を固定して検証し、`dependency-main-validation sha=...` の run-name により PR の自動マージ証跡とは区別する。
+依存検証 workflow の手動実行は `mode=pr`（既定）と `mode=main` を選べる。PR 再検証では従来どおり `pr`・`base`・`head` を必須とし、本人性・最新 SHA・merge parents の証跡を検査する。`mode=main` は PR 入力をすべて空にし、現在の既定ブランチを選ぶ場合に限る。実行 SHA を固定して検証し、`dependency-main-validation sha=...` の run-name により PR 再検証の証跡とは区別する。
 
 minimatch は 11.0.4 以降、multimatch は named import 対応の 8 系へ override する。ESLint 設定の ESM 経路は @eslint/eslintrc@3.3.7 と @eslint/config-array@0.21.2 の最小 import patch で互換性を保つ。web-ext@10.8.0 の FileFilter は Windows で windowsPathsNoEscape を明示し、開発用ファイルやアーカイブの除外を維持する。
 
