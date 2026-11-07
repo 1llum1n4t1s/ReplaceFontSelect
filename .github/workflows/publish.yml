@@ -45,7 +45,7 @@ jobs:
     # 修復 push や GitHub rerun は自動提出しない。再開は対象を指定する。
     if: ${{ startsWith(github.ref, 'refs/heads/release/') && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.created == true)) }}
     name: Publish ${{ matrix.variant }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, ARM64, m3mb14]
     # matrix で全 variant を並列実行。1 variant が失敗しても他は続行。
     strategy:
       fail-fast: false
