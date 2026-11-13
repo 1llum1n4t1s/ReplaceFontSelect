@@ -132,7 +132,9 @@ namespace Kagayoi.AmoSource
             uploadRequest.Content = form;
             var upload = Send(http, "Upload", uploadRequest);
             var uuid = Text(upload, "uuid");
-            if (uuid == null || !Regex.IsMatch(uuid, @"^[a-fA-F0-9-]{36}$")) throw new InvalidOperationException("Upload UUID not confirmed; acceptance unknown");
+            // AMO returns the upload UUID in hex format (32 hex digits, no hyphens):
+            // addons-server FileUploadSerializer uses serializers.UUIDField(format='hex').
+            if (uuid == null || !Regex.IsMatch(uuid, @"^[a-fA-F0-9]{32}$")) throw new InvalidOperationException("Upload UUID not confirmed; acceptance unknown");
             var deadline = DateTime.UtcNow.AddMinutes(15);
             while (!True(upload, "processed") && DateTime.UtcNow < deadline)
             {
