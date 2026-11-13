@@ -23,8 +23,8 @@
     "test:dependencies": "bun test ./scripts/dependency-security.test.cjs"
   },
   "devDependencies": {
-    "@kagayoi/support-extension": "1.0.9",
-    "puppeteer": "^25.16.0",
+    "@kagayoi/support-extension": "1.0.10",
+    "puppeteer": "^25.17.0",
     "ttf2woff2": "^8.0.1",
     "web-ext": "10.8.0"
   },
@@ -38,7 +38,7 @@
   "license": "MIT",
   "packageManager": "bun@1.4.4",
   "overrides": {
-    "node-forge": "1.4.2",
+    "node-forge": "1.4.3",
     "ip-address": "10.7.5",
     "cacache>glob": "14.0.2",
     "minimatch": "^11.0.4",
