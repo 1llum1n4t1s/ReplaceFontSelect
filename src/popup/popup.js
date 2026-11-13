@@ -96,11 +96,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const settings = mergeFontSettings(raw);
     applySettingsToUI(settings);
 
-    if (_lastSaved &&
-        _lastSaved.enabled === settings.enabled &&
-        _lastSaved.bodyFont === settings.bodyFont &&
-        _lastSaved.bodyFontWeight === settings.bodyFontWeight &&
-        _lastSaved.monoFont === settings.monoFont) {
+    // 保存スキーマの正本 (FONT_REGISTRY.defaults) のキーで比較し、設定項目の追加時に比較漏れを起こさない。
+    if (_lastSaved && Object.keys(FONT_REGISTRY.defaults).every(key => _lastSaved[key] === settings[key])) {
       return;
     }
 

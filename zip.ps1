@@ -13,7 +13,7 @@ param(
 
 # 検証済みの作業対象だけを標準APIで削除する。
 function Remove-LocalWorkItem {
-    param([string[]]$LiteralPath, [string]$AllowedRoot, [switch]$IgnoreMissing, [switch]$AllowLeafJunction)
+    param([string[]]$LiteralPath, [string]$AllowedRoot, [switch]$IgnoreMissing)
     if ([string]::IsNullOrWhiteSpace($AllowedRoot) -or -not [IO.Path]::IsPathRooted($AllowedRoot)) { throw 'Cleanup root must be absolute.' }
     $boundary = [IO.Path]::GetFullPath($AllowedRoot).TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
     foreach ($target in $LiteralPath) {
@@ -24,7 +24,7 @@ function Remove-LocalWorkItem {
         while ($ancestor) {
             if (Test-Path -LiteralPath $ancestor) {
                 $item = Get-Item -LiteralPath $ancestor -Force -ErrorAction Stop
-                if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -and -not ($AllowLeafJunction -and $ancestor -eq $resolved -and $item.LinkType -eq 'Junction')) { throw 'Cleanup path contains a reparse point.' }
+                if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Cleanup path contains a reparse point.' }
             }
             $ancestor = Split-Path $ancestor -Parent
         }

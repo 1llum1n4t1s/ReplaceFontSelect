@@ -8,7 +8,8 @@ const base = 'a'.repeat(40), newBase = 'c'.repeat(40), head = 'b'.repeat(40), ot
 const bot = 49699333;
 
 // 実 workflow の入力 guard を実行し、手動 main 検証と PR 証跡を混同しないことを確認する。
-const validation = require('js-yaml').load(fs.readFileSync(path.join(__dirname, '../.github/workflows/dependency-validation.yml'), 'utf8'));
+// YAML は Bun 標準の解析器で読み、未宣言の推移的依存 (js-yaml) に頼らない。
+const validation = Bun.YAML.parse(fs.readFileSync(path.join(__dirname, '../.github/workflows/dependency-validation.yml'), 'utf8'));
 const validationSteps = validation.jobs.validate.steps;
 const guard = new AsyncFunction('github', 'context', validationSteps[0].with.script);
 

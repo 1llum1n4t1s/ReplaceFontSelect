@@ -61,7 +61,6 @@
   const fixedCSSCache = new Map();
   let sharedStyleSheetPromise = null;
   let placeholderMap = null;
-  let placeholderRegex = null;
 
   // 選択されたフォント情報（設定読み込み後にセットされる）
   let selectedBodyFont = null;
@@ -110,7 +109,6 @@
     fixedCSSCache.clear();
     sharedStyleSheetPromise = null;
     placeholderMap = null;
-    placeholderRegex = null;
   };
   window.addEventListener('pagehide', onPagehideCacheClear);
   window.addEventListener('pagehide', onPagehideDispose);
@@ -176,6 +174,16 @@
   }
 
   /**
+   * プレースホルダーを map の値へ置換する。map に無いトークンは元のまま残す。
+   * fallback 経路と YouTube の Blob 経路で同じ解決規則を使うための共通処理。
+   */
+  function resolvePlaceholders(text, map) {
+    return text.replace(new RegExp(PLACEHOLDER_REGEX_SOURCE, 'g'), match =>
+      Object.prototype.hasOwnProperty.call(map, match) ? map[match] : match
+    );
+  }
+
+  /**
    * CSSテキスト内のプレースホルダーを置換する（フォールバック用）
    * font-config.js の buildPlaceholderMap を単一ソースとして使用
    */
@@ -183,11 +191,8 @@
     if (!selectedBodyFont || !selectedMonoFont) return text;
     if (!placeholderMap) {
       placeholderMap = buildPlaceholderMap(selectedBodyFont, selectedMonoFont, selectedBodyFontWeight, BASE_URL);
-      placeholderRegex = new RegExp(PLACEHOLDER_REGEX_SOURCE, 'g');
     }
-    return text.replace(placeholderRegex, match =>
-      Object.prototype.hasOwnProperty.call(placeholderMap, match) ? placeholderMap[match] : match
-    );
+    return resolvePlaceholders(text, placeholderMap);
   }
 
   /**
@@ -1024,8 +1029,7 @@
     youtubeFailureCode = 'stylesheet';
     const marker = '__RFS_BLOB_BASE__/';
     const map = buildPlaceholderMap(selectedBodyFont, selectedMonoFont, selectedBodyFontWeight, marker);
-    let css = response.css.replace(new RegExp(PLACEHOLDER_REGEX_SOURCE, 'g'), match =>
-      Object.prototype.hasOwnProperty.call(map, match) ? map[match] : match);
+    let css = resolvePlaceholders(response.css, map);
     for (const [name, url] of byName) css = css.split(`${marker}src/fonts/${name}`).join(url);
     if (css.includes(marker) || css.includes('__REPLACE_FONT_BASE__') || /(?:chrome|moz)-extension:\/\//.test(css)) {
       throw new Error('unresolved font URL');
