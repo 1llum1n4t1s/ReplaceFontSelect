@@ -10,11 +10,7 @@ This file provides guidance to Codex and other coding agents working in this rep
 - **default**: フォント選択 UI で好きなフォントを 42 プリセットから選ぶ通常版
 - **notosans variant**: 最初から Noto Sans JP + UDEV Gothic JPDOC に固定、 フォント選択 UI なし (popup がシンプル)
 
-両 variant は次のドメインを `exclude_matches` で除外している (フォントが作品 / 編集体験の一部となるサービス保護、 およびアイコンフォント破壊回避のため、 全 18 ドメイン):
-- **Microsoft / Google のリッチエディタ / ファイル管理系**: `*.onenote.com` / `*.officeapps.live.com` (Excel/Word/PowerPoint Online) / `*.sharepoint.com` (SharePoint Online — Excel/Word を開いた時のホストオリジン。 `officeapps.live.com` には遷移せず SharePoint オリジン内の iframe で WAC = WebApps Components が動くため別途除外が必要) / `onedrive.live.com` (OneDrive 個人版のファイル管理 UI — Fluent UI / FabricMDL2Icons のアイコンフォントが本文置換の巻き添えになるため除外。 OneDrive for Business は `*.sharepoint.com` 経由で別途カバー済) / `docs.google.com` (Docs / Sheets / Slides / Forms)
-- **デザインツール系**: `*.figma.com` / `www.canva.com` / `express.adobe.com`
-- **リッチエディタ / IDE 系 (v3.1 系で追加)**: `www.notion.so` / `app.slack.com` / `linear.app` / `*.github.dev` / `vscode.dev` / `replit.com` / `codesandbox.io` / `stackblitz.com` / `www.overleaf.com` / `discord.com` (アプリ本体は `/channels/*` 配下で `/app/*` にはマッチしないため、 Notion / Linear と同じくドメイン全体を除外)
-
+両 variant は編集体験とアイコンフォントの保護のため、リッチエディタ・ファイル管理・デザイン・IDE 等のドメインを除外する。除外や登録経路の変更前に [default.json](variants/default.json) と [notosans.json](variants/notosans.json) の `excludeMatches` を両方読み、宣言的・動的登録で一致させる。SharePoint は Office を同一オリジンの iframe で開き、OneDrive 個人版はアイコンフォントを使うため両方を除外する。Discord は `/channels/*` にアプリがあるためドメイン全体を除外する。
 **多言語対応**: `@font-face` の `unicode-range` は **省略する** (オープン範囲のまま運用)。 置換フォントのグリフカバレッジ範囲がそのまま置換対象となり、 範囲外の文字は CSS font fallback で元サイトの指定 / システムフォントに自然に落ちる。
 
 ## Build Commands
@@ -44,7 +40,7 @@ bun --bun run check:support                 # 同梱資産が共有パッケー�
 
 Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-extension` を正本とし、`src/shared/` の `kagayoi-support-footer.{js,css}`、`kagayoi-support-popup.{js,css}`、`kagayoi-support-form.css` へ逐語同期する。これら5資産を拡張側で直接改変しない。`build:default` / `build:notosans` と `zip.ps1` は実行前に自動同期し、CIは `check:support` とChrome ZIP内のCSS存在確認で欠落・乖離を拒否する。共有部品を更新するときは依存versionを更新してから `bun --bun run sync:support` と両variantのbuildを実行する。
 
-アイコン / スクショ生成 (puppeteer) は headless Chrome バイナリが必要。 初回のみ `bun --bun run puppeteer browsers install chrome` を実行する (`~/.cache/puppeteer/` に保存され、 未導入だと `build:*` が ChromeLauncher の resolveExecutablePath エラーで落ちる)。 puppeteer は v25+ (ESM-only) のため、 `scripts/generate-icons.js` / `generate-screenshots.js` は CommonJS から動的 `import('puppeteer')` で読み込む。
+アイコン・スクショ生成には headless Chrome が必要。初回は `bun --bun run puppeteer browsers install chrome` で導入する。Puppeteer v25+ は ESM-only のため生成スクリプトは動的 import を使う。
 
 ### Local Testing
 
@@ -58,22 +54,9 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 
 ## Variant System
 
-「同じソースから別ブランドの拡張機能を出す仕組み」の骨組み。 現在 `default` + `notosans` の 2 variant がアクティブで、 publish.yml の matrix strategy で並行リリースされる。 4 つのファイルが連動:
+`default` と `notosans` は同じソースから別拡張として公開する。設定変更前に [default.json](variants/default.json)、[notosans.json](variants/notosans.json)、[manifest.template.json](manifest.template.json)、[scripts/build-variant.js](scripts/build-variant.js) を読む。variant は名前・説明・版・geckoId・フォント固定・除外・ZIP名等を定義し、生成器は manifest と `src/content/variant.js` を生成する。生成した `VARIANT` は content / popup / background が参照する。
 
-| ファイル | 役割 |
-|---|---|
-| `variants/<name>.json` | name / description / version / geckoId / lockedFonts / showFontSelector / excludeMatches / zipBaseName を定義 |
-| `manifest.template.json` | プレースホルダー入りの manifest テンプレート |
-| `scripts/build-variant.js` | template に variant 設定を注入して `manifest.json` と `src/content/variant.js` を生成 |
-| `src/content/variant.js` | **ビルド生成物**。 `const VARIANT = {...}` を定義し content scripts / popup / background から参照される |
-
-| Variant | フォント | gecko id 末尾 | 用途 |
-|---|---|---|---|
-| `default` | ユーザー選択 (7×3×2=42プリセット) | `...323f` | 通常版 |
-| `notosans` | Noto Sans JP + UDEV Gothic JPDOC 固定 | `...323e` | フォント選択 UI なしの固定版 |
-
-`mergeFontSettings()` (`src/content/font-config.js`) は **stored → VARIANT.lockedFonts** の順で override を適用 (後勝ち)。 つまり variant が `lockedFonts` を設定している場合 (notosans variant) はユーザーの保存値より優先される。
-
+`mergeFontSettings()` は保存値に `VARIANT.lockedFonts` を後勝ちで適用し、固定版ではユーザー保存値より優先する。
 ### Variant の運用方針 — default / notosans 並行維持 💖
 
 公開済み variant (default / notosans) は **現状の 2 variant 並行運用を維持** する。 「機能の重複」「YAGNI」「scope creep」「default に統合できる」 といった技術的合理性で退役を推奨したくなった場合は、 実装せず **ストア掲載済みの拡張機能 ID と既存ユーザー資産に直結するビジネス判断マター** として議題化し、 ゆろさんの明示承認を得てから進める。
@@ -135,20 +118,7 @@ bun scripts/release.js --yes    # 直接呼び（確認プロンプト省略、C
 
 #### minor / major bump の運用
 
-このスクリプトは **patch +1 専用** (`/vava` と一貫)。 minor / major bump は手作業:
-
-```bash
-# 例: 3.0.5 から 3.1.0 に minor bump する場合
-# variants/*.json の全ファイルと package.json の "version" を 3.1.0 に手で書き換え
-git add variants/ package.json
-git commit -m "release: v3.1.0"
-git push origin main
-git checkout -b release/3.1.0
-git push -u origin release/3.1.0
-git checkout main
-```
-
-publish.yml はブランチ末尾 `X.Y.Z` と variant の `version` が一致するか matrix の各 job で検証する。
+スクリプトは patch +1 専用。minor / major は `/vava` で指定版を決定し、全 `variants/*.json` と `package.json` をその版に手動更新して main に commit・push し、同じ版の `release/<X.Y.Z>` branch を作成・push する。`release.js` は実行しない。branch push はストア提出を起動するため、公開依頼の範囲でのみ実行する。
 
 #### 前提条件と挙動
 - 実行は **clean な main ブランチ** から (リモートと同期済みであること)。 違反時は abort
@@ -175,15 +145,7 @@ publish.yml はブランチ末尾 `X.Y.Z` と variant の `version` が一致す
 
 ### `/vava` スキル経由の起動
 
-このプロジェクトに対して `/vava` スキルが起動された場合、Codex は **標準フローを使わず** `bun --bun run release`（`scripts/release.js`）に委譲する。
-
-`release.js` は:
-- `variants/<name>.json` の version → patch +1 → `package.json` の version も自動同期
-- main に 1 commit → push
-- `release/<X.Y.Z>` ブランチ作成 → push
-- (`--prune-old` で) 古い release ブランチ削除
-
-minor / major bump は手作業 (上述「minor / major bump の運用」参照)。
+このプロジェクトの `/vava` は patch リリースに限り `bun --bun run release`（`scripts/release.js`）に委譲する。patch 版の同期、main への commit・push と release branch の作成・push を行う。minor / major は上記の手動手順に従う。旧 branch の削除は明示許可がある場合の `--prune-old` 指定時のみ。
 
 ### CI 自動公開 (`.github/workflows/publish.yml`)
 
@@ -197,25 +159,9 @@ minor / major bump は手作業 (上述「minor / major bump の運用」参照)
 - **共通シークレット**: `CWS_CLIENT_ID` / `CWS_CLIENT_SECRET` / `CWS_REFRESH_TOKEN` / `CWS_PUBLISHER_ID` は全 variant 共有 (同一 Google アカウントの OAuth 認証情報 + publisher ID。 publisher ID は secrets.json の `chrome_web_store.publisher_id` にも保管)
 - アップロードは `scripts/Publish-Cws.ps1` のネイティブHTTP API v2を使う。既存OAuth secretsとpublisher/item IDを維持する。
 
-##### Privacy practices タブの落とし穴 ⚠️
+##### Privacy practices
 
-Chrome Web Store は公開リクエスト時に **Developer Dashboard の「Privacy practices」タブの入力を必須**としている。 未入力だと CWS API が HTTP 400 で失敗する:
-
-```
-Error: Bad Request
-  response: { error: { code: 400, message: 'Publish condition not met: To publish your item,
-    you must provide mandatory privacy information in the new Developer Dashboard:
-    https://chrome.google.com/webstore/devconsole. Click on your item from the home page
-    and enter this information on the Privacy practices tab.' } }
-```
-
-**対処** (一度入力すれば以降のリリースで再発しない):
-1. https://chrome.google.com/webstore/devconsole にアクセス
-2. 拡張機能を選択 → 左メニュー「Privacy practices」タブ
-3. single-purpose / data usage / data collection を全て入力 → 保存
-4. 提出状況を確認し、上記の手動再開手順で対象 variant・chrome・照合済み SHA を指定する
-
-**過去事例**: v3.0.4 リリース (run #25952259808) で踏んだ。 v3.0.3 までは Privacy practices タブが必須化される前にリリースされていたため通過していたが、 Google が Manifest V3 ポリシー強化 (2024-2026) で必須化。
+CWS の公開で必須情報不足なら Developer Dashboard の Privacy practices で single-purpose / data usage / data collection を入力し、提出状態を確認して上記の手動再開手順を使う。
 
 #### Firefox AMO (addons.mozilla.org)
 - **提出ツール**: 最終XPIをverifierで照合後、receiptのSHA-256を `scripts/Publish-Amo.ps1` へ渡す。既存GUIDへのPUTで新versionを提出し、人手レビューの承認は待たない。
@@ -225,23 +171,9 @@ Error: Bad Request
 - **レビュー**: `--channel=listed` は AMO の人間レビューが入る。 submission API は受付完了で job 成功扱いとなり、 実際のストア反映は別事象
 - **API キーの発行**: https://addons.mozilla.org/ja/developers/addon/api/key/ で JWT issuer / secret を生成し、 `gh secret set AMO_JWT_ISSUER` / `gh secret set AMO_JWT_SECRET` で登録
 
-##### AMO API rate limit の落とし穴 ⚠️
+##### AMO API rate limit
 
-AMO submission API は **アカウント単位で厳格な rate limit** がある。 短時間で複数バージョンの提出や同 version の再提出を繰り返すと throttle 発動:
-
-```
-WebExtError: Submission failed (2): Unknown Error
-{ "detail": "Request was throttled. Expected available in 48547 seconds." }
-```
-
-48547 秒 ≒ **13.5 時間**。 解除されるまで待つしかない (Mozilla 側でリセット手段なし)。
-
-**対処**:
-1. **時間を置いて retry**: 表示秒数を待ち、提出状況を確認して上記の手動再開手順で対象 variant・firefox・照合済み SHA を指定
-2. **手動 submission に切替**: https://addons.mozilla.org/ja/developers/ → 該当 add-on → 「新しいバージョンを送信」から XPI を手動 upload (rate limit 別枠の可能性あり、 未検証)
-3. **1 回失敗したらクールダウン**: 同セッションで連続再 fire する代わりに、 1 回目の失敗原因 (Chrome 側など) を解消してから 1 回だけ retry する
-
-**過去事例**: v3.0.4 リリース (run #25952259808) で踏んだ。 Chrome 側の Privacy practices 必須化と同じ run で発生 → 両方失敗してリカバリー難度上昇。 1 回成功した後の連続再試行で発動する印象。
+AMO はアカウント単位で提出を制限する。throttle 時は表示された時間を待ち、提出状態を確認してから手動再開する。連続再試行しない。
 
 #### AMO 初回登録 (CI 自動公開の前提条件)
 
@@ -256,16 +188,7 @@ https://addons.mozilla.org/ja/developers/ で「Submit a New Add-on」から XPI
 
 #### AMO リスティング情報の API 更新時の落とし穴
 
-`PATCH /api/v5/addons/addon/{guid}/` で description / summary / privacy_policy 等を更新する運用 know-how:
-
-- **HTML タグは plain text 化される**: API 経由で送る `<ul>` 等は `&lt;ul&gt;` としてエスケープ保存される。 リッチ HTML 表示は AMO Web UI のリッチテキストエディタ経由のみ可能
-- **locale コードは BCP 47 厳密**: `en` 単独は HTTP 400 拒否、 `en-US` を使う。 送信時のキーは `{ja: "...", "en-US": "..."}` 形式
-- **license の格納先**: top-level `license` ではなく `current_version.license.slug` に格納される (PATCH 時は `{license: {slug: "MIT"}}` で OK)
-- **privacy_policy の取得**: GET 本文には含まれず `has_privacy_policy: true` boolean のみ
-- **`?lang=all` クエリのバグ**: 一部 locale が省略される。 確認時は `?lang=ja` 等のピンポイント指定が安全
-- **レート制限**: 短時間連投で HTTP 429。 60 秒待機で解除
-- **JWT 認証**: `Authorization: JWT <token>` ヘッダー、 HS256 で `{iss, jti, iat, exp}` を `AMO_JWT_SECRET` で署名 (`exp` は 60 秒程度の短命トークンが推奨)
-
+`PATCH /api/v5/addons/addon/{guid}/` の HTML はプレーンテキスト化される。locale は `ja`・`en-US` 等を使い、英語に `en` 単独は使わない（HTTP 400）。license は `current_version.license.slug` に格納される。GET の privacy policy は本文でなく `has_privacy_policy` で確認する。`?lang=all` は locale が欠けることがあるため個別 locale を指定する。429 時は制限解除を待ち、JWT は短命の HS256 署名を使う。
 #### サプライチェーン対策
 - 公開workflowはネイティブgit・公式BunアーカイブとSHA-256検証・PowerShellのHTTP publisherを使う。製品build/lint用Bunとlockfile固定を維持し、公開専用CLI/NodeActionsは使わない。
 
@@ -295,14 +218,7 @@ Service Worker (`background.js`) も同様の順序で `importScripts('/src/cont
 
 ### CSS — 対象要素を明示したセレクタを書く
 
-CSS は **常に対象要素を明示** する。 `*` や暗黙的なユニバーサル相当のセレクタは Font Awesome / Material Icons / codicon のアイコンフォントの `font-family` を破壊するので、 対象を絞ったセレクタを書くこと。
-
-- ❌ `* { font-family: ... }` — ユニバーサル相当、 アイコンフォント破壊
-- ❌ `:is(pre, code) :not(i, .icon)` — `:not()` 単独の子孫セレクタは `*:not(...)` と同義
-- ✅ `:root :is(pre, code, kbd, samp, ...)` — コンテナ要素自体にマッチ (継承で子孫へ伝播)
-- ✅ `[style*="monospace"]` — インラインスタイルを持つ要素のみ
-- ✅ `revert` リセット戦略: 通常ルール (negation なし) → 編集領域に separate ルールで `font-family: revert !important` (v3.x で導入)
-
+アイコンフォントを壊さないよう、`*` や `:is(pre, code) :not(i, .icon)` のような暗黙の全要素指定を使わない。`:root :is(pre, code, kbd, samp, ...)` はコンテナに適用して継承させ、`[style*="monospace"]` は該当要素だけを対象にする。編集領域は通常ルールと分離し `font-family: revert !important` で戻す。
 ### Performance — preload-fonts.js は Hot Path
 
 全ページ document_start (top + iframe 全フレーム、 `all_frames: true`) 実行されるため:
@@ -318,49 +234,12 @@ CSS は **常に対象要素を明示** する。 `*` や暗黙的なユニバ�
 
 ### Cross-Browser Compatibility
 
-Chrome / Firefox desktop 140+ / Firefox Android 142+ を単一コードで対応:
-- 使用している `chrome.*` API は全て Firefox の `chrome.*` 名前空間でも動作 (`browser.*` リライト不要)
-- `chrome.scripting.registerContentScripts` の `persistAcrossSessions` / `world` は Firefox desktop 140+ / Android 142+ で対応
-- `chrome.scripting.updateContentScripts` (v3.x で導入、 unregister+register の atomic 化) も同じ下限で対応
-- gecko id は variant ごとに `variants/<name>.json` の `geckoId` から注入される (Chrome は `browser_specific_settings` を silently ignore)
-- `chrome.runtime.getURL('')` は両ブラウザで正常動作するため、 `getExtensionBaseURL()` の Chrome 固有フォールバック (`chrome-extension://${runtime.id}`) には到達しない
-- `src/popup/style.css` のフォントは相対パス (`../fonts/...`) を使い、 拡張機能オリジン内で両ブラウザが解決する
+Chrome / Firefox desktop 140+ / Firefox Android 142+ を単一コードで対応する。Firefox は `chrome.*`、`registerContentScripts` の `persistAcrossSessions` / `world`、`updateContentScripts` に対応する。gecko id は variant から注入し、Chrome は `browser_specific_settings` を無視する。`chrome.runtime.getURL('')` は両ブラウザで動作し、Chrome 固有フォールバックには到達しない。popup のフォントは拡張内の相対パスを使う。
+### Firefox MV3 — background は service_worker と scripts の併記必須
 
-### Firefox MV3 — background は service_worker と scripts の併記必須 🚨
+AMO は `background.service_worker` 単独を拒否する。[manifest.template.json](manifest.template.json) は service worker のみを定義し、`bun scripts/build-variant.js <variant> --firefox` が Firefox 用に `variant.js`、`font-config.js`、`background.js` の順で `background.scripts` を追加する。`zip.ps1` と CI もこの生成経路を使う。Chrome は `--firefox` なしで生成し `scripts` を含めない。
 
-AMO validator は `background.service_worker` 単独を **reject** し、 `background.scripts` を Firefox-compatible fallback として要求する:
-
-```
-Error: Unsupported "/background/service_worker" manifest property used
-       without "/background/scripts" property as Firefox-compatible fallback.
-```
-
-[manifest.template.json](manifest.template.json) は `service_worker` のみを定義する。Firefox 用には `bun scripts/build-variant.js <variant> --firefox` で、次のように `scripts` を併記した manifest を生成する (`zip.ps1` と CI もこの生成経路を使う):
-
-```json
-"background": {
-  "service_worker": "src/background/background.js",
-  "scripts": [
-    "src/content/variant.js",
-    "src/content/font-config.js",
-    "src/background/background.js"
-  ]
-}
-```
-
-- **Chrome**: `--firefox` を付けずに生成し、`service_worker` のみで SW として動作 ([background.js](src/background/background.js) が `importScripts('/src/content/variant.js', '/src/content/font-config.js')` で順次ロード)。Chrome 用成果物には `scripts` を含めない。
-- **Firefox**: `scripts` を見て event page として動作 (3 ファイルが順次ロード、 `importScripts` は worker 限定 API なので使えない)
-
-そのため [src/background/background.js](src/background/background.js) では `importScripts` を `typeof` ガード:
-
-```js
-if (typeof importScripts === 'function') {
-  importScripts('/src/content/variant.js', '/src/content/font-config.js');
-}
-```
-
-これがないと Firefox の event page で `ReferenceError: importScripts is not defined` で background script 全体が落ちる。 過去に release/3.0.3 でハマって解消済み。
-
+Firefox の event page では `importScripts` が使えないため、[background.js](src/background/background.js) は `typeof importScripts === 'function'` でガードする。Chrome service worker では同関数で variant・font config を順次ロードする。
 ### その他の制約
 
 - `web_accessible_resources` に `src/fonts/*.woff2` と `src/css/replacefont-extension.css` を含める。 後者は Path B で `preload-fonts.js` が fetch + placeholder 解決して注入するために必須
