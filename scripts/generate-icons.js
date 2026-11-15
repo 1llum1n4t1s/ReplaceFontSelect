@@ -70,8 +70,13 @@ async function generateIcons() {
   const fontBase64 = fs.readFileSync(fontPath).toString('base64');
 
   const { default: puppeteer } = await import('puppeteer');
+  // Windows アカウントのロック防止（必須）: userDataDir 未指定だと新規プロファイルごとに空パスワード確認（LogonUser 失敗）が走るため、
+  // シード済みの一時プロファイルを渡し、終了時に片付ける。理由は scripts/chrome-profile-seed.mjs を参照。
+  const { createSeededProfile, removeSeededProfile } = await import('./chrome-profile-seed.mjs');
+  const userDataDir = createSeededProfile('rfs-icons');
   const browser = await puppeteer.launch({
     headless: true,
+    userDataDir,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
   try {
@@ -94,6 +99,7 @@ async function generateIcons() {
     }
   } finally {
     await browser.close();
+    removeSeededProfile(userDataDir);
   }
 
   console.log('\n🎉 アイコン生成が完了しました！');
