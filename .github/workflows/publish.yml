@@ -1,4 +1,7 @@
 name: Publish to Chrome Web Store & Firefox AMO
+# CWS は「アップロード」と「審査への申請」を別 workflow に分けている。
+# この workflow は検証済みZIPを下書きとしてアップロードするだけで、申請しない。
+# 申請は掲載画像などを Dashboard で整えた後に、cws-submit.yml を手動で実行する。
 
 # ブランチ命名規約:
 #   release/X.Y.Z (例: release/3.0.0)
@@ -8,7 +11,7 @@ name: Publish to Chrome Web Store & Firefox AMO
 # variants/<name>.json の version とブランチ末尾の X.Y.Z が一致する必要がある。
 #
 # 公開先:
-#   - Chrome Web Store (chrome-webstore-upload-cli v4 経由)
+#   - Chrome Web Store (scripts/Publish-Cws.ps1。アップロードのみ。申請は cws-submit.yml)
 
 on:
   push:
@@ -220,10 +223,11 @@ jobs:
           chrome_dir="chrome-build"
           mkdir -p "$chrome_dir/icons"
           cp manifest.json "$chrome_dir/"
+          cp -r _locales "$chrome_dir/_locales"
           cp -r "$variant_icons_dir" "$chrome_dir/icons/${VARIANT}"
           bun scripts/package-source.js "$VARIANT" --copy "$chrome_dir/src"
           find "$chrome_dir" \( -name "*.DS_Store" -o -name "*.swp" -o -name "*~" -o -name "preview.html" \) -delete
-          (cd "$chrome_dir" && zip -r "$GITHUB_WORKSPACE/$zip_path" manifest.json "icons/${VARIANT}" src)
+          (cd "$chrome_dir" && zip -r "$GITHUB_WORKSPACE/$zip_path" manifest.json _locales "icons/${VARIANT}" src)
           echo "CHROME_SOURCE_DIR=$chrome_dir" >> "$GITHUB_ENV"
           ls -lh "$zip_path"
           echo "ZIP_PATH=$zip_path" >> "$GITHUB_ENV"
@@ -254,11 +258,10 @@ jobs:
           fi
           echo "extension_id=$extension_id" >> "$GITHUB_OUTPUT"
 
-      - name: Chrome Web Store にアップロード & 公開
+      - name: Chrome Web Store にアップロード（下書き）
         if: ${{ success() && steps.select.outputs.enabled == 'true' && steps.select.outputs.chrome == 'true' }}
-        # chrome-webstore-upload-cli v4: 認証情報は CLI フラグ廃止・環境変数のみ
-        # (CLIENT_ID / CLIENT_SECRET / REFRESH_TOKEN / PUBLISHER_ID / EXTENSION_ID)。
-        # サブコマンドなしで upload + publish を一括実行 (--auto-publish は v4 で削除)。
+        # 認証情報は環境変数のみ (CLIENT_ID / CLIENT_SECRET / REFRESH_TOKEN / PUBLISHER_ID / EXTENSION_ID)。
+        # -Stage Upload は下書きとしてアップロードするだけで申請しない。
         env:
           CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
@@ -272,8 +275,8 @@ jobs:
           pwsh -NoProfile -File scripts/Test-PublishCws.ps1 -WorkDirectory "$RUNNER_TEMP/cws-publisher-tests"
           VERIFY_RECEIPT_PATH="$RUNNER_TEMP/chrome-verified.json" bun scripts/verify-release-archive.js verify "$VARIANT" "$BRANCH_VERSION" "$CHROME_SOURCE_DIR" "$ZIP_PATH" chrome
           CHROME_SHA256=$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/chrome-verified.json"))["sha256"])')
-          pwsh -NoProfile -File scripts/Publish-Cws.ps1 -Archive "$ZIP_PATH" -ExpectedSha256 "$CHROME_SHA256"
-          echo "🎉 ${{ matrix.variant }} → Chrome Web Store への公開リクエスト送信完了"
+          pwsh -NoProfile -File scripts/Publish-Cws.ps1 -Archive "$ZIP_PATH" -ExpectedSha256 "$CHROME_SHA256" -Stage Upload
+          echo "🎉 ${{ matrix.variant }} → Chrome Web Store へのアップロード完了 (申請は cws-submit.yml)"
 
       - name: Firefox 用ソースディレクトリを準備
         id: firefox_source
@@ -281,7 +284,7 @@ jobs:
         if: ${{ success() && steps.select.outputs.enabled == 'true' && steps.select.outputs.firefox == 'true' && steps.common_ready.outcome == 'success' }}
         env:
           VARIANT: ${{ matrix.variant }}
-        # クリーンなディレクトリを構築する。manifest.json + icons/<variant> + src のみ。
+        # クリーンなディレクトリを構築する。manifest.json + _locales + icons/<variant> + src のみ。
         # Firefox AMO の MV3 validator は service_worker 単独を reject するため、
         # --firefox フラグで manifest.json を再生成して background.scripts を併記。
         # Chrome step はこれより前に実行済みなので、 Chrome 用 manifest が上書きされても問題ない。
@@ -295,6 +298,7 @@ jobs:
           bun scripts/build-variant.js "${VARIANT}" --firefox
           mkdir -p "$firefox_dir/icons"
           cp manifest.json "$firefox_dir/"
+          cp -r _locales "$firefox_dir/_locales"
           cp -r "$variant_icons_dir" "$firefox_dir/icons/${VARIANT}"
           bun scripts/package-source.js "$VARIANT" --copy "$firefox_dir/src"
           # ストア配信に不要なファイルを除外 (Chrome ZIP と同じポリシー + TTF 除外)。
