@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="vitrina-fixture" content="compare">
+<title></title>
+<!--
+  ストア画像用の固定ページ（フォント置換のビフォーアフター用）。
+  同じ文章を左右 2 枚のカードに置く。フォントは Windows 同梱の読みづらい明朝体の指定にして、
+  拡張が有効なページでは置換後の見た目になる。左側（#sample-a）は撮影時に
+  store-assets.steps.mjs が「拡張を無効にした同じページの撮影画像」へ差し替える。
+  文字ロゴ・商標は描かない。ラベルは置かず、状態は記号の図形だけで示す（拡張がラベル文字を置換してしまうため）。
+-->
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; overflow: hidden; background: #eef0f4; }
+  body { width: 1120px; height: 524px; font-family: "MS PMincho", "MS Mincho", serif; color: #26303b; }
+  .top { height: 52px; display: flex; align-items: center; padding: 0 32px; gap: 20px; background: #fff; border-bottom: 1px solid #dfe3e8; }
+  .top .logo { width: 84px; height: 22px; border-radius: 6px; background: #dfe3e8; }
+  .top .nav { width: 56px; height: 8px; border-radius: 4px; background: #e8ebef; }
+  main { display: flex; gap: 24px; padding: 24px 32px; }
+  .panel { position: relative; width: 504px; height: 424px; background: #fff; border: 1px solid #dfe3e8; border-radius: 14px; padding: 22px 26px; }
+  .badge { position: absolute; right: 18px; top: 18px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+  .badge svg { width: 18px; height: 18px; display: block; }
+  .badge.off { background: #e8ebef; }
+  .badge.on { background: #7c4dff; }
+  .sample { width: 452px; height: 380px; }
+  .sample h2 { margin: 0 44px 14px 0; font-size: 24px; line-height: 1.4; font-weight: 700; }
+  .sample p { margin: 0 0 12px; font-size: 16px; line-height: 1.75; }
+  .sample pre { margin: 14px 0 0; padding: 12px 14px; background: #f3f5f8; border-radius: 8px; font-family: "MS Gothic", monospace; font-size: 13px; line-height: 1.6; white-space: pre; }
+</style>
+</head>
+<body>
+  <div class="top"><div class="logo"></div><div class="nav"></div><div class="nav"></div><div class="nav"></div></div>
+  <main>
+    <section class="panel" id="panel-a">
+      <div class="badge off"><svg viewBox="0 0 18 18" fill="none" stroke="#7b8794" stroke-width="2" stroke-linecap="round"><path d="M4 9h10"/></svg></div>
+      <div class="sample" id="sample-a">
+        <h2>静かな朝に読みたい、やさしい文章</h2>
+        <p>画面の文字は、毎日たくさん目にするものです。字形が細かすぎたり、線がかすれたりすると、少し読むだけでも疲れてしまいます。</p>
+        <p>同じ文章でも、読みやすい書体に変わるだけで、行の流れが整い、長い記事も最後まで楽に読み進められます。</p>
+        <p>文字の太さや間隔が整うと、画面を見つめる時間が長くなっても、目の負担を感じにくくなります。</p>
+<pre>const message = "こんにちは、世界";
+console.log(message.length);</pre>
+      </div>
+    </section>
+    <section class="panel" id="panel-b">
+      <div class="badge on"><svg viewBox="0 0 18 18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5l3.2 3.2L14 5.8"/></svg></div>
+      <div class="sample" id="sample-b">
+        <h2>静かな朝に読みたい、やさしい文章</h2>
+        <p>画面の文字は、毎日たくさん目にするものです。字形が細かすぎたり、線がかすれたりすると、少し読むだけでも疲れてしまいます。</p>
+        <p>同じ文章でも、読みやすい書体に変わるだけで、行の流れが整い、長い記事も最後まで楽に読み進められます。</p>
+        <p>文字の太さや間隔が整うと、画面を見つめる時間が長くなっても、目の負担を感じにくくなります。</p>
+<pre>const message = "こんにちは、世界";
+console.log(message.length);</pre>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

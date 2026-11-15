@@ -1,0 +1,285 @@
+{
+  "brand": "Font Replacer",
+  "icon": "icons/default/icon.svg",
+  "extensionDir": ".",
+  "palette": {
+    "primary": "#9B6BFF",
+    "secondary": "#F472B6"
+  },
+  "locales": [
+    "en",
+    "ja",
+    "zh_CN",
+    "zh_TW",
+    "ko",
+    "es",
+    "fr",
+    "de",
+    "pt_BR"
+  ],
+  "captures": [
+    {
+      "id": "popup",
+      "kind": "popup",
+      "page": "src/popup/popup.html"
+    },
+    {
+      "id": "compare-default",
+      "kind": "page",
+      "url": "https://blog.example.jp/articles/morning",
+      "fixture": "compare.html",
+      "storage": {
+        "fontSettings": {
+          "enabled": true,
+          "bodyFont": "noto-sans-jp",
+          "monoFont": "udev-gothic-jpdoc",
+          "bodyFontWeight": "400"
+        }
+      },
+      "width": 1120,
+      "height": 524
+    },
+    {
+      "id": "reading",
+      "kind": "page",
+      "url": "https://blog.example.jp/articles/reading",
+      "fixture": "reading.html",
+      "storage": {
+        "fontSettings": {
+          "enabled": true,
+          "bodyFont": "zen-kaku-gothic-new",
+          "monoFont": "plemoljp",
+          "bodyFontWeight": "500"
+        }
+      },
+      "width": 560,
+      "height": 480
+    }
+  ],
+  "slides": [
+    {
+      "layout": "hero",
+      "capture": "popup",
+      "tagline": {
+        "msg": "popupDescription"
+      },
+      "chips": [
+        {
+          "en": "7 body + 3 monospace fonts",
+          "ja": "本文7種＋等幅3種",
+          "zh_CN": "7种正文＋3种等宽字体",
+          "zh_TW": "7種內文＋3種等寬字體",
+          "ko": "본문 7종 + 고정폭 3종",
+          "es": "7 fuentes de texto + 3 monoespaciadas",
+          "fr": "7 polices de texte + 3 à chasse fixe",
+          "de": "7 Textschriften + 3 Festbreiten",
+          "pt_BR": "7 fontes de texto + 3 monoespaçadas"
+        },
+        {
+          "en": "Regular or Medium weight",
+          "ja": "太さはRegular／Mediumから",
+          "zh_CN": "可选常规或中等粗细",
+          "zh_TW": "可選一般或中等粗細",
+          "ko": "굵기는 Regular 또는 Medium",
+          "es": "Grosor Regular o Medium",
+          "fr": "Graisse Regular ou Medium",
+          "de": "Stärke: Regular oder Medium",
+          "pt_BR": "Peso Regular ou Medium"
+        },
+        {
+          "en": "Fonts bundled, no downloads",
+          "ja": "フォント同梱・外部読み込みなし",
+          "zh_CN": "字体内置，无需下载",
+          "zh_TW": "內建字體，無需下載",
+          "ko": "글꼴 내장, 별도 다운로드 없음",
+          "es": "Fuentes incluidas, sin descargas",
+          "fr": "Polices incluses, sans téléchargement",
+          "de": "Schriften enthalten, ohne Download",
+          "pt_BR": "Fontes incluídas, sem downloads"
+        }
+      ]
+    },
+    {
+      "layout": "wide",
+      "capture": "compare-default",
+      "title": {
+        "en": "Same text, easier to read",
+        "ja": "同じ文章が、読みやすく変わる",
+        "zh_CN": "同样的文字，读起来更轻松",
+        "zh_TW": "同樣的文字，讀起來更輕鬆",
+        "ko": "같은 글도 더 읽기 편하게",
+        "es": "El mismo texto, más fácil de leer",
+        "fr": "Le même texte, plus agréable à lire",
+        "de": "Derselbe Text, besser lesbar",
+        "pt_BR": "O mesmo texto, mais fácil de ler"
+      },
+      "body": {
+        "en": "Left: original fonts. Right: after replacement.",
+        "ja": "左：サイトの元のフォント　右：置換後",
+        "zh_CN": "左：网站原有字体　右：替换后",
+        "zh_TW": "左：網站原有字體　右：替換後",
+        "ko": "왼쪽: 사이트 원래 글꼴, 오른쪽: 교체 후",
+        "es": "Izquierda: fuentes originales. Derecha: tras la sustitución.",
+        "fr": "À gauche : polices d’origine. À droite : après remplacement.",
+        "de": "Links: Originalschriften. Rechts: nach dem Ersatz.",
+        "pt_BR": "Esquerda: fontes originais. Direita: após a troca."
+      }
+    },
+    {
+      "layout": "feature",
+      "capture": "reading",
+      "kicker": {
+        "en": "Font picker",
+        "ja": "フォント選択",
+        "zh_CN": "字体选择",
+        "zh_TW": "字體選擇",
+        "ko": "글꼴 선택",
+        "es": "Selector de fuentes",
+        "fr": "Choix des polices",
+        "de": "Schriftauswahl",
+        "pt_BR": "Seletor de fontes"
+      },
+      "title": {
+        "en": "Pick the fonts you like to read",
+        "ja": "好みのフォントを選べる",
+        "zh_CN": "自选喜欢的字体",
+        "zh_TW": "自選喜歡的字體",
+        "ko": "마음에 드는 글꼴을 고르세요",
+        "es": "Elija las fuentes que prefiera",
+        "fr": "Choisissez les polices que vous préférez",
+        "de": "Wählen Sie Ihre Lieblingsschriften",
+        "pt_BR": "Escolha as fontes que preferir"
+      },
+      "body": {
+        "en": "Set body text and code fonts separately from the popup.",
+        "ja": "本文用と等幅用を、ポップアップで別々に設定できます。",
+        "zh_CN": "在弹出窗口中分别设置正文和代码字体。",
+        "zh_TW": "在彈出視窗中分別設定內文與程式碼字體。",
+        "ko": "팝업에서 본문과 고정폭 글꼴을 따로 설정합니다.",
+        "es": "Configure por separado las fuentes del texto y del código en la ventana emergente.",
+        "fr": "Réglez séparément la police du texte et celle du code dans la fenêtre contextuelle.",
+        "de": "Legen Sie Text- und Code-Schrift im Popup getrennt fest.",
+        "pt_BR": "Defina separadamente as fontes do texto e do código no pop-up."
+      },
+      "bullets": [
+        {
+          "en": "7 body fonts and 3 monospace fonts",
+          "ja": "本文用7種・等幅用3種から選択",
+          "zh_CN": "7种正文字体、3种等宽字体可选",
+          "zh_TW": "7種內文字體、3種等寬字體可選",
+          "ko": "본문 7종, 고정폭 3종 중 선택",
+          "es": "7 fuentes de texto y 3 monoespaciadas",
+          "fr": "7 polices de texte et 3 à chasse fixe",
+          "de": "7 Textschriften und 3 Festbreitenschriften",
+          "pt_BR": "7 fontes de texto e 3 monoespaçadas"
+        },
+        {
+          "en": "Body weight: Regular or Medium",
+          "ja": "本文の太さはRegular／Mediumから",
+          "zh_CN": "正文粗细可选常规或中等",
+          "zh_TW": "內文粗細可選一般或中等",
+          "ko": "본문 굵기는 Regular 또는 Medium",
+          "es": "Grosor del texto: Regular o Medium",
+          "fr": "Graisse du texte : Regular ou Medium",
+          "de": "Textstärke: Regular oder Medium",
+          "pt_BR": "Peso do texto: Regular ou Medium"
+        },
+        {
+          "msg": "popupSaveNotice"
+        }
+      ]
+    },
+    {
+      "layout": "steps",
+      "title": {
+        "en": "Set it once, then just read",
+        "ja": "一度選べば、あとは読むだけ",
+        "zh_CN": "设置一次，之后只管阅读",
+        "zh_TW": "設定一次，之後只管閱讀",
+        "ko": "한 번 정하면 읽기만 하면 됩니다",
+        "es": "Configúrelo una vez y lea",
+        "fr": "Réglez une fois, puis lisez",
+        "de": "Einmal einstellen, dann lesen",
+        "pt_BR": "Configure uma vez e é só ler"
+      },
+      "steps": [
+        {
+          "title": {
+            "en": "Open the popup",
+            "ja": "ポップアップを開く",
+            "zh_CN": "打开弹出窗口",
+            "zh_TW": "開啟彈出視窗",
+            "ko": "팝업 열기",
+            "es": "Abra la ventana emergente",
+            "fr": "Ouvrez la fenêtre contextuelle",
+            "de": "Popup öffnen",
+            "pt_BR": "Abra o pop-up"
+          },
+          "body": {
+            "en": "Click the toolbar icon.",
+            "ja": "ツールバーのアイコンをクリックします。",
+            "zh_CN": "点击工具栏图标。",
+            "zh_TW": "點選工具列圖示。",
+            "ko": "도구 모음의 아이콘을 클릭합니다.",
+            "es": "Haga clic en el icono de la barra de herramientas.",
+            "fr": "Cliquez sur l’icône de la barre d’outils.",
+            "de": "Klicken Sie auf das Symbol in der Symbolleiste.",
+            "pt_BR": "Clique no ícone da barra de ferramentas."
+          }
+        },
+        {
+          "title": {
+            "en": "Choose your fonts",
+            "ja": "フォントを選ぶ",
+            "zh_CN": "选择字体",
+            "zh_TW": "選擇字體",
+            "ko": "글꼴 선택",
+            "es": "Elija las fuentes",
+            "fr": "Choisissez vos polices",
+            "de": "Schriften wählen",
+            "pt_BR": "Escolha as fontes"
+          },
+          "body": {
+            "en": "Pick body font, weight and monospace font.",
+            "ja": "本文フォント・太さ・等幅フォントを選びます。",
+            "zh_CN": "选择正文字体、粗细和等宽字体。",
+            "zh_TW": "選擇內文字體、粗細與等寬字體。",
+            "ko": "본문 글꼴, 굵기, 고정폭 글꼴을 고릅니다.",
+            "es": "Seleccione la fuente del texto, el grosor y la fuente monoespaciada.",
+            "fr": "Sélectionnez la police du texte, la graisse et la police à chasse fixe.",
+            "de": "Wählen Sie Textschrift, Stärke und Festbreitenschrift.",
+            "pt_BR": "Selecione a fonte do texto, o peso e a fonte monoespaçada."
+          }
+        },
+        {
+          "title": {
+            "en": "Reload the page",
+            "ja": "ページを再読み込み",
+            "zh_CN": "刷新页面",
+            "zh_TW": "重新整理頁面",
+            "ko": "페이지 새로고침",
+            "es": "Recargue la página",
+            "fr": "Rechargez la page",
+            "de": "Seite neu laden",
+            "pt_BR": "Recarregue a página"
+          },
+          "body": {
+            "en": "The page now uses your fonts.",
+            "ja": "開いているページが選んだフォントで表示されます。",
+            "zh_CN": "页面将以所选字体显示。",
+            "zh_TW": "頁面將以所選字體顯示。",
+            "ko": "열려 있는 페이지가 선택한 글꼴로 표시됩니다.",
+            "es": "La página se muestra con las fuentes elegidas.",
+            "fr": "La page s’affiche avec les polices choisies.",
+            "de": "Die Seite wird in den gewählten Schriften angezeigt.",
+            "pt_BR": "A página passa a usar as fontes escolhidas."
+          }
+        }
+      ]
+    }
+  ],
+  "tiles": {
+    "tagline": "Replace hard-to-read fonts",
+    "capture": "popup"
+  }
+}

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="vitrina-fixture" content="reading">
+<title></title>
+<!--
+  ストア画像用の固定ページ（置換後の本文と等幅フォントを見せる読み物ページ）。
+  元のフォント指定は Windows 同梱の和文フォント。拡張が有効なページでは、選んだ本文・等幅フォントで表示される。
+  文字ロゴ・商標は描かない（灰色のバーだけ）。
+-->
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; overflow: hidden; background: #eef0f4; }
+  body { width: 560px; height: 480px; font-family: "MS PMincho", "MS Mincho", serif; color: #26303b; padding: 24px; }
+  .card { height: 432px; background: #fff; border: 1px solid #dfe3e8; border-radius: 16px; padding: 28px 30px; }
+  .bar { width: 96px; height: 8px; border-radius: 4px; background: #e8ebef; margin-bottom: 18px; }
+  h1 { margin: 0 0 14px; font-size: 24px; line-height: 1.4; font-weight: 700; }
+  p { margin: 0 0 12px; font-size: 16px; line-height: 1.8; }
+  h2 { margin: 18px 0 8px; font-size: 18px; line-height: 1.4; font-weight: 700; }
+  pre { margin: 12px 0 0; padding: 14px 16px; background: #f3f5f8; border-radius: 10px; font-family: "MS Gothic", monospace; font-size: 14px; line-height: 1.7; white-space: pre; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="bar"></div>
+    <h1>長い記事も、疲れずに読める</h1>
+    <p>本文に使う書体と、コードに使う書体を、それぞれ別に選べます。行の流れがそろうと、読み進めるペースも落ち着きます。</p>
+    <h2>コードの桁がそろう</h2>
+    <p>等幅フォントでは、日本語のコメントも半角の二倍幅できれいに並びます。</p>
+<pre>function greet(name) {
+  // 挨拶を返す
+  return `こんにちは、${name}`; // 1l0O
+}</pre>
+  </div>
+</body>
+</html>

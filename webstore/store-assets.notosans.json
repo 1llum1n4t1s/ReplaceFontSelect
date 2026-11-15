@@ -1,0 +1,277 @@
+{
+  "brand": "NotoSans Replacer",
+  "icon": "icons/notosans/icon.svg",
+  "extensionDir": ".",
+  "palette": {
+    "primary": "#22C7EE",
+    "secondary": "#E83FC8"
+  },
+  "locales": [
+    "en",
+    "ja",
+    "zh_CN",
+    "zh_TW",
+    "ko",
+    "es",
+    "fr",
+    "de",
+    "pt_BR"
+  ],
+  "captures": [
+    {
+      "id": "popup",
+      "kind": "popup",
+      "page": "src/popup/popup.html"
+    },
+    {
+      "id": "compare-notosans",
+      "kind": "page",
+      "url": "https://blog.example.jp/articles/morning",
+      "fixture": "compare.html",
+      "width": 1120,
+      "height": 524
+    },
+    {
+      "id": "reading",
+      "kind": "page",
+      "url": "https://blog.example.jp/articles/reading",
+      "fixture": "reading.html",
+      "width": 560,
+      "height": 480
+    }
+  ],
+  "slides": [
+    {
+      "layout": "hero",
+      "capture": "popup",
+      "tagline": {
+        "msg": "popupDescription"
+      },
+      "chips": [
+        {
+          "en": "Text: Noto Sans JP",
+          "ja": "本文はNoto Sans JP",
+          "zh_CN": "正文使用Noto Sans JP",
+          "zh_TW": "內文使用Noto Sans JP",
+          "ko": "본문은 Noto Sans JP",
+          "es": "Texto: Noto Sans JP",
+          "fr": "Texte : Noto Sans JP",
+          "de": "Text: Noto Sans JP",
+          "pt_BR": "Texto: Noto Sans JP"
+        },
+        {
+          "en": "Code: UDEV Gothic JPDOC",
+          "ja": "コードはUDEV Gothic JPDOC",
+          "zh_CN": "代码使用UDEV Gothic JPDOC",
+          "zh_TW": "程式碼使用UDEV Gothic JPDOC",
+          "ko": "코드는 UDEV Gothic JPDOC",
+          "es": "Código: UDEV Gothic JPDOC",
+          "fr": "Code : UDEV Gothic JPDOC",
+          "de": "Code: UDEV Gothic JPDOC",
+          "pt_BR": "Código: UDEV Gothic JPDOC"
+        },
+        {
+          "en": "Works on install, no setup",
+          "ja": "インストールするだけで動作",
+          "zh_CN": "安装即用，无需设置",
+          "zh_TW": "安裝即用，無需設定",
+          "ko": "설치만 하면 바로 작동",
+          "es": "Funciona al instalar, sin ajustes",
+          "fr": "Actif dès l’installation",
+          "de": "Läuft direkt nach der Installation",
+          "pt_BR": "Funciona ao instalar, sem ajustes"
+        }
+      ]
+    },
+    {
+      "layout": "wide",
+      "capture": "compare-notosans",
+      "title": {
+        "en": "Same text, easier to read",
+        "ja": "同じ文章が、読みやすく変わる",
+        "zh_CN": "同样的文字，读起来更轻松",
+        "zh_TW": "同樣的文字，讀起來更輕鬆",
+        "ko": "같은 글도 더 읽기 편하게",
+        "es": "El mismo texto, más fácil de leer",
+        "fr": "Le même texte, plus agréable à lire",
+        "de": "Derselbe Text, besser lesbar",
+        "pt_BR": "O mesmo texto, mais fácil de ler"
+      },
+      "body": {
+        "en": "Left: original fonts. Right: after replacement.",
+        "ja": "左：サイトの元のフォント　右：置換後",
+        "zh_CN": "左：网站原有字体　右：替换后",
+        "zh_TW": "左：網站原有字體　右：替換後",
+        "ko": "왼쪽: 사이트 원래 글꼴, 오른쪽: 교체 후",
+        "es": "Izquierda: fuentes originales. Derecha: tras la sustitución.",
+        "fr": "À gauche : polices d’origine. À droite : après remplacement.",
+        "de": "Links: Originalschriften. Rechts: nach dem Ersatz.",
+        "pt_BR": "Esquerda: fontes originais. Direita: após a troca."
+      }
+    },
+    {
+      "layout": "feature",
+      "capture": "reading",
+      "kicker": {
+        "en": "Body and code",
+        "ja": "本文とコード",
+        "zh_CN": "正文与代码",
+        "zh_TW": "內文與程式碼",
+        "ko": "본문과 코드",
+        "es": "Texto y código",
+        "fr": "Texte et code",
+        "de": "Text und Code",
+        "pt_BR": "Texto e código"
+      },
+      "title": {
+        "en": "Body text and code both look better",
+        "ja": "本文もコードも、読みやすく",
+        "zh_CN": "正文和代码都更易读",
+        "zh_TW": "內文和程式碼都更易讀",
+        "ko": "본문도 코드도 더 읽기 편하게",
+        "es": "Tanto el texto como el código se leen mejor",
+        "fr": "Le texte comme le code gagnent en lisibilité",
+        "de": "Text und Code werden besser lesbar",
+        "pt_BR": "Texto e código ficam mais legíveis"
+      },
+      "body": {
+        "en": "Noto Sans JP for body text, UDEV Gothic JPDOC for code.",
+        "ja": "本文はNoto Sans JP、コードはUDEV Gothic JPDOCで表示します。",
+        "zh_CN": "正文使用Noto Sans JP，代码使用UDEV Gothic JPDOC。",
+        "zh_TW": "內文使用Noto Sans JP，程式碼使用UDEV Gothic JPDOC。",
+        "ko": "본문은 Noto Sans JP, 코드는 UDEV Gothic JPDOC로 표시합니다.",
+        "es": "Noto Sans JP para el texto y UDEV Gothic JPDOC para el código.",
+        "fr": "Noto Sans JP pour le texte, UDEV Gothic JPDOC pour le code.",
+        "de": "Noto Sans JP für den Text, UDEV Gothic JPDOC für den Code.",
+        "pt_BR": "Noto Sans JP para o texto e UDEV Gothic JPDOC para o código."
+      },
+      "bullets": [
+        {
+          "en": "Code columns stay aligned",
+          "ja": "コードの桁ぞろえを保持",
+          "zh_CN": "代码的列对齐保持不变",
+          "zh_TW": "程式碼的欄位對齊維持不變",
+          "ko": "코드의 자릿수 정렬 유지",
+          "es": "Las columnas del código siguen alineadas",
+          "fr": "Les colonnes de code restent alignées",
+          "de": "Spalten im Code bleiben ausgerichtet",
+          "pt_BR": "As colunas do código continuam alinhadas"
+        },
+        {
+          "en": "Bold text stays bold",
+          "ja": "太字は太字のまま表示",
+          "zh_CN": "粗体仍显示为粗体",
+          "zh_TW": "粗體仍顯示為粗體",
+          "ko": "굵은 글씨는 굵게 유지",
+          "es": "El texto en negrita se mantiene en negrita",
+          "fr": "Le gras reste en gras",
+          "de": "Fettschrift bleibt fett",
+          "pt_BR": "O negrito continua em negrito"
+        },
+        {
+          "en": "“1” and “l”, “0” and “O” stay clearly distinct",
+          "ja": "「1」と「l」、「0」と「O」を判別しやすい",
+          "zh_CN": "“1”与“l”、“0”与“O”清晰可辨",
+          "zh_TW": "「1」與「l」、「0」與「O」清楚可辨",
+          "ko": "“1”과 “l”, “0”과 “O”를 구별하기 쉬움",
+          "es": "“1” y “l”, “0” y “O” se distinguen con claridad",
+          "fr": "« 1 » et « l », « 0 » et « O » se distinguent nettement",
+          "de": "„1“ und „l“, „0“ und „O“ lassen sich klar unterscheiden",
+          "pt_BR": "“1” e “l”, “0” e “O” ficam bem distintos"
+        }
+      ]
+    },
+    {
+      "layout": "steps",
+      "title": {
+        "en": "Install and it just works",
+        "ja": "インストールするだけで動く",
+        "zh_CN": "安装后即可使用",
+        "zh_TW": "安裝後即可使用",
+        "ko": "설치하면 바로 작동합니다",
+        "es": "Instale y funciona",
+        "fr": "Installez, c’est prêt",
+        "de": "Installieren, fertig",
+        "pt_BR": "Instale e já funciona"
+      },
+      "steps": [
+        {
+          "title": {
+            "en": "Install",
+            "ja": "インストール",
+            "zh_CN": "安装",
+            "zh_TW": "安裝",
+            "ko": "설치",
+            "es": "Instale",
+            "fr": "Installez",
+            "de": "Installieren",
+            "pt_BR": "Instale"
+          },
+          "body": {
+            "en": "Add the extension to your browser.",
+            "ja": "ブラウザに拡張機能を追加します。",
+            "zh_CN": "将扩展程序添加到浏览器。",
+            "zh_TW": "將擴充功能加入瀏覽器。",
+            "ko": "브라우저에 확장 프로그램을 추가합니다.",
+            "es": "Añada la extensión al navegador.",
+            "fr": "Ajoutez l’extension à votre navigateur.",
+            "de": "Fügen Sie die Erweiterung Ihrem Browser hinzu.",
+            "pt_BR": "Adicione a extensão ao navegador."
+          }
+        },
+        {
+          "title": {
+            "en": "Open a page",
+            "ja": "ページを開く",
+            "zh_CN": "打开网页",
+            "zh_TW": "開啟網頁",
+            "ko": "페이지 열기",
+            "es": "Abra una página",
+            "fr": "Ouvrez une page",
+            "de": "Seite öffnen",
+            "pt_BR": "Abra uma página"
+          },
+          "body": {
+            "en": "Fonts are replaced as the page loads.",
+            "ja": "読み込み開始時にフォントが置き換わります。",
+            "zh_CN": "页面开始加载时即替换字体。",
+            "zh_TW": "頁面開始載入時即替換字體。",
+            "ko": "페이지를 불러올 때 글꼴이 교체됩니다.",
+            "es": "Las fuentes se sustituyen al empezar a cargar la página.",
+            "fr": "Les polices sont remplacées dès le chargement de la page.",
+            "de": "Die Schriften werden beim Laden der Seite ersetzt.",
+            "pt_BR": "As fontes são trocadas assim que a página começa a carregar."
+          }
+        },
+        {
+          "title": {
+            "en": "Switch it off anytime",
+            "ja": "いつでもオフに",
+            "zh_CN": "随时关闭",
+            "zh_TW": "隨時關閉",
+            "ko": "언제든 끄기",
+            "es": "Desactívela cuando quiera",
+            "fr": "Désactivez à tout moment",
+            "de": "Jederzeit ausschaltbar",
+            "pt_BR": "Desative quando quiser"
+          },
+          "body": {
+            "en": "Use the popup switch, then reload the page.",
+            "ja": "ポップアップのスイッチで切り替え、ページを再読み込みします。",
+            "zh_CN": "通过弹出窗口中的开关切换，然后刷新页面。",
+            "zh_TW": "透過彈出視窗中的開關切換，然後重新整理頁面。",
+            "ko": "팝업의 스위치로 전환한 뒤 페이지를 새로고침합니다.",
+            "es": "Use el interruptor de la ventana emergente y recargue la página.",
+            "fr": "Utilisez l’interrupteur de la fenêtre contextuelle, puis rechargez la page.",
+            "de": "Mit dem Schalter im Popup umschalten, dann die Seite neu laden.",
+            "pt_BR": "Use a chave do pop-up e recarregue a página."
+          }
+        }
+      ]
+    }
+  ],
+  "tiles": {
+    "tagline": "Auto-replace with Noto Sans JP",
+    "capture": "popup"
+  }
+}
