@@ -126,6 +126,8 @@ New-Item -ItemType Directory -Path $tempDir | Out-Null
 # 必要なファイルをコピー (icons は対象 variant のみ同梱して別ブランドのアイコンが混入しないようにする)
 Write-Host "📂 必要なファイルをコピー中..." -ForegroundColor Yellow
 Copy-Item "manifest.json" -Destination $tempDir
+# 拡張名・UI 文言の 9 言語辞書 (build-variant.js が variant ごとに生成)
+Copy-Item "_locales" -Destination $tempDir -Recurse
 $variantIconsSrc = "icons/$Variant"
 if (-not (Test-Path $variantIconsSrc)) {
     Write-Host "❌ variant 用のアイコンディレクトリが見つかりません: $variantIconsSrc" -ForegroundColor Red
@@ -179,6 +181,7 @@ $firefoxDir = "./firefox-build"
 if (Test-Path $firefoxDir) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($firefoxDir)) -AllowedRoot $PSScriptRoot }
 New-Item -ItemType Directory -Path $firefoxDir | Out-Null
 Copy-Item "manifest.json" -Destination $firefoxDir
+Copy-Item "_locales" -Destination $firefoxDir -Recurse
 New-Item -ItemType Directory -Path "$firefoxDir/icons/$Variant" -Force | Out-Null
 Copy-Item "$variantIconsSrc/*" -Destination "$firefoxDir/icons/$Variant/" -Recurse
 bun scripts/package-source.js $Variant --copy "$firefoxDir/src"

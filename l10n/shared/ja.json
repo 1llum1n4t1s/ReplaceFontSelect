@@ -1,0 +1,50 @@
+{
+  "statusActive": {
+    "message": "動作中"
+  },
+  "statusInactive": {
+    "message": "無効"
+  },
+  "statusToggleLabel": {
+    "message": "拡張機能の有効・無効を切り替え"
+  },
+  "popupBodyFont": {
+    "message": "本文フォント"
+  },
+  "popupBodyWeight": {
+    "message": "本文ウェイト"
+  },
+  "popupMonoFont": {
+    "message": "等幅フォント"
+  },
+  "popupSaveNotice": {
+    "message": "ページを再読み込みすると反映されます"
+  },
+  "popupSaveFailed": {
+    "message": "⚠️ 保存に失敗しました: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "QUOTA_BYTES quota exceeded"
+      }
+    }
+  },
+  "popupConfigLoadError": {
+    "message": "⚠️ フォント設定ファイルの読み込みに失敗しました。拡張機能を再インストールしてください。"
+  },
+  "languageAuto": {
+    "message": "自動（ブラウザ）"
+  },
+  "languageSelectLabel": {
+    "message": "言語"
+  },
+  "languageSelectTitle": {
+    "message": "言語（開いているページは再読み込みで反映）"
+  },
+  "kagayoiSupportContact": {
+    "message": "お問い合わせ"
+  },
+  "kagayoiSupportRate": {
+    "message": "評価をお願いします！"
+  }
+}

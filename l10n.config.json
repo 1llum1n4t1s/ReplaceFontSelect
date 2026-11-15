@@ -1,0 +1,13 @@
+{
+  "ignore": [
+    {
+      "path": "src/css/**",
+      "reason": "ビルド生成物 (generate-css.js)。日本語はユーザー環境にあるフォント名 (font-family) のみで、UI 文言ではない"
+    },
+    {
+      "path": "src/content/preload-fonts.js",
+      "pattern": "\\[フォント置換\\]",
+      "reason": "console.warn に渡す開発者向け診断メッセージ（UI には表示されない）"
+    }
+  ]
+}

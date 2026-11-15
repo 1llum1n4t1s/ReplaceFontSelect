@@ -17,10 +17,20 @@ const VARIANTS_DIR = path.join(ROOT, 'variants');
 const TEMPLATE_PATH = path.join(ROOT, 'manifest.template.json');
 const MANIFEST_OUT = path.join(ROOT, 'manifest.json');
 const VARIANT_JS_OUT = path.join(ROOT, 'src', 'content', 'variant.js');
+// 9 言語共通の UI 文言（正本）と、variant ごとに合成して出力する _locales。
+const SHARED_MESSAGES_DIR = path.join(ROOT, 'l10n', 'shared');
+const LOCALES_OUT = path.join(ROOT, '_locales');
+const LOCALES = ['en', 'ja', 'zh_CN', 'zh_TW', 'ko', 'es', 'fr', 'de', 'pt_BR'];
+// variant 固有の文言。locales.<code> に持ち、_locales の同名キーとして出力する。
+const LOCALE_FIELDS = [
+  ['name', 'appName'],
+  ['description', 'appDescription'],
+  ['popupTitle', 'popupTitle'],
+  ['popupDescription', 'popupDescription']
+];
 
 const REQUIRED_KEYS = [
-  'name', 'description', 'version', 'geckoId',
-  'popupTitle', 'popupDescription',
+  'locales', 'version', 'geckoId',
   'lockedFonts', 'showFontSelector', 'excludeMatches',
   'zipBaseName', 'secretsKey'
 ];
@@ -53,15 +63,30 @@ function loadVariant(name) {
   if (!Array.isArray(json.excludeMatches)) {
     fail('excludeMatches は配列である必要があります');
   }
+  // 拡張名・説明・popup 文言は全 9 言語ぶん必須（空文字不可）。
+  for (const code of LOCALES) {
+    const entry = json.locales && json.locales[code];
+    if (!entry) fail(`variants/${name}.json の locales.${code} がありません`);
+    for (const [field] of LOCALE_FIELDS) {
+      if (typeof entry[field] !== 'string' || !entry[field].trim()) {
+        fail(`variants/${name}.json の locales.${code}.${field} が空です`);
+      }
+    }
+    // Chrome Web Store の上限（name 45 字 / description 132 字）
+    if ([...entry.name].length > 45) fail(`locales.${code}.name は 45 字以内にしてください`);
+    if ([...entry.description].length > 132) fail(`locales.${code}.description は 132 字以内にしてください`);
+  }
   return json;
 }
 
 function buildManifest(variant, variantName) {
   const template = JSON.parse(fs.readFileSync(TEMPLATE_PATH, 'utf8'));
   // プレースホルダー差し替え（深いコピー後に直接置換）
-  template.name = variant.name;
+  // 名前・説明は _locales の appName / appDescription を参照し、ブラウザの言語で表示させる。
+  template.name = '__MSG_appName__';
   template.version = variant.version;
-  template.description = variant.description;
+  template.description = '__MSG_appDescription__';
+  template.default_locale = 'en';
   template.browser_specific_settings.gecko.id = variant.geckoId;
 
   // icons パスを variant ごとに振り分け (例: icons/default/icon-128x128.png)
@@ -81,14 +106,33 @@ function buildManifest(variant, variantName) {
   return template;
 }
 
+// 共通 UI 文言 (l10n/shared/<code>.json) に variant 固有の 4 キーを先頭へ合成し、
+// _locales/<code>/messages.json を生成する（キー順は全言語で同一）。
+function buildLocales(variant) {
+  for (const code of LOCALES) {
+    const sharedFile = path.join(SHARED_MESSAGES_DIR, `${code}.json`);
+    if (!fs.existsSync(sharedFile)) fail(`共通メッセージがありません: ${sharedFile}`);
+    const shared = JSON.parse(fs.readFileSync(sharedFile, 'utf8'));
+    const entry = variant.locales[code];
+    const out = {};
+    for (const [field, key] of LOCALE_FIELDS) {
+      out[key] = { message: entry[field] };
+      // description (開発者向けメモ) は en にだけ付ける
+      if (code === 'en') out[key].description = `Variant-specific text: ${field}`;
+    }
+    Object.assign(out, shared);
+    const dir = path.join(LOCALES_OUT, code);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'messages.json'), JSON.stringify(out, null, 2) + '\n', 'utf8');
+  }
+}
+
 function buildVariantJs(variant) {
   // ISOLATED world / Service Worker / popup の全コンテキストから参照可能な形で出力。
   // CommonJS export は scripts/ や Node テストからの参照用フォールバック。
   const payload = {
     name: path.basename(process.argv[2] || 'default'),
     version: variant.version,
-    popupTitle: variant.popupTitle,
-    popupDescription: variant.popupDescription,
     lockedFonts: variant.lockedFonts,
     showFontSelector: variant.showFontSelector,
     // background.js の chrome.scripting.registerContentScripts / updateContentScripts に
@@ -136,6 +180,9 @@ function main() {
   }
   fs.writeFileSync(MANIFEST_OUT, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
   console.log(`✅ manifest.json を生成 (variant=${variantName}, version=${variant.version}, target=${isFirefox ? 'firefox' : 'chrome'})`);
+
+  buildLocales(variant);
+  console.log(`✅ _locales/<${LOCALES.length}言語>/messages.json を生成 (variant=${variantName})`);
 
   const variantJs = buildVariantJs(variant);
   fs.writeFileSync(VARIANT_JS_OUT, variantJs, 'utf8');

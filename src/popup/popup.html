@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" type="text/css" href="style.css">
+  <script src="../shared/ui-localizer.js"></script>
   <script src="../content/variant.js"></script>
   <script src="../content/font-config.js"></script>
   <script src="popup.js"></script>
@@ -30,9 +31,10 @@
           <span class="brand-mark__corner brand-mark__corner--br"></span>
         </div>
         <div class="header__text">
-          <h1 class="title" id="popup-title">目に優しいフォント置換</h1>
+          <h1 class="title" id="popup-title" data-i18n="popupTitle">Eye-Friendly Font Replacer</h1>
           <p class="title-sub" id="popup-subtitle">Font Replacement Studio</p>
         </div>
+        <select id="uiLanguage" class="weight-select header__lang" data-i18n-attr="aria-label:languageSelectLabel;title:languageSelectTitle"></select>
       </div>
     </header>
 
@@ -53,15 +55,15 @@
       <div class="status-row">
         <div class="status-indicator">
           <span class="dot active" id="status-dot" aria-hidden="true"></span>
-          <span class="status-text" id="status-text">動作中</span>
+          <span class="status-text" id="status-text" data-i18n="statusActive">Active</span>
         </div>
-        <label class="toggle-switch" aria-label="拡張機能の有効・無効を切り替え">
+        <label class="toggle-switch" data-i18n-attr="aria-label:statusToggleLabel" aria-label="Turn the extension on or off">
           <input type="checkbox" id="enabled-toggle" checked>
           <span class="toggle-slider"></span>
         </label>
       </div>
 
-      <p class="description" id="popup-description">読みづらいフォントを好みの日本語フォントに自動置換します</p>
+      <p class="description" id="popup-description" data-i18n="popupDescription">Automatically replaces hard-to-read fonts with your preferred Japanese fonts.</p>
     </section>
 
     <!-- セクション II: フォント設定（lockedFonts variant では非表示） -->
@@ -72,10 +74,10 @@
       </div>
 
       <div class="setting-row">
-        <label class="setting-label" for="body-font">本文フォント<span class="setting-label__en">Body</span></label>
+        <label class="setting-label" for="body-font"><span data-i18n="popupBodyFont">Body font</span><span class="setting-label__en">Body</span></label>
         <div class="setting-controls">
-          <select id="body-font" class="font-select" aria-label="本文フォント"></select>
-          <select id="body-weight" class="weight-select" aria-label="本文ウェイト">
+          <select id="body-font" class="font-select" data-i18n-attr="aria-label:popupBodyFont" aria-label="Body font"></select>
+          <select id="body-weight" class="weight-select" data-i18n-attr="aria-label:popupBodyWeight" aria-label="Body weight">
             <option value="400">Regular</option>
             <option value="500">Medium</option>
           </select>
@@ -83,12 +85,12 @@
       </div>
 
       <div class="setting-row">
-        <label class="setting-label" for="mono-font">等幅フォント<span class="setting-label__en">Mono</span></label>
-        <select id="mono-font" class="font-select" aria-label="等幅フォント"></select>
+        <label class="setting-label" for="mono-font"><span data-i18n="popupMonoFont">Monospace font</span><span class="setting-label__en">Mono</span></label>
+        <select id="mono-font" class="font-select" data-i18n-attr="aria-label:popupMonoFont" aria-label="Monospace font"></select>
       </div>
 
-      <div class="save-notice" id="save-notice" role="status" aria-live="polite">
-        ページを再読み込みすると反映されます
+      <div class="save-notice" id="save-notice" role="status" aria-live="polite" data-i18n="popupSaveNotice">
+        Reload the page to apply the changes.
       </div>
     </section>
 

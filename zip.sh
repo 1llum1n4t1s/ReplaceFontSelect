@@ -84,6 +84,7 @@ echo "📦 Chrome Web Store用のZIPファイルを作成中..."
 # preview.html はストア配信物に不要なので exclude
 zip -r "$ZIP_PATH" \
   manifest.json \
+  _locales/ \
   "$VARIANT_ICONS_DIR" \
   src/ \
   -x "*.DS_Store" "*.swp" "*~" "*/preview.html" "${extra_excludes[@]}"

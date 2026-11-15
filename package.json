@@ -12,9 +12,10 @@
     "generate-icons:notosans": "bun scripts/generate-icons.js notosans",
     "generate-css": "bun scripts/generate-css.js",
     "convert-fonts": "bun scripts/convert-fonts.js",
-    "generate-screenshots": "bun scripts/generate-screenshots.js",
-    "generate-screenshots:default": "bun scripts/generate-screenshots.js default",
-    "generate-screenshots:notosans": "bun scripts/generate-screenshots.js notosans",
+    "generate-screenshots": "bun webstore/run-vitrina.mjs all generate",
+    "generate-screenshots:default": "bun webstore/run-vitrina.mjs default generate",
+    "generate-screenshots:notosans": "bun webstore/run-vitrina.mjs notosans generate",
+    "verify-screenshots": "bun webstore/run-vitrina.mjs all verify",
     "build-variant": "bun scripts/build-variant.js",
     "build:default": "bun --bun run sync:support && bun scripts/generate-icons.js default && bun --bun run generate-css && bun scripts/build-variant.js default",
     "build:notosans": "bun --bun run sync:support && bun scripts/generate-icons.js notosans && bun --bun run generate-css && bun scripts/build-variant.js notosans",
@@ -23,7 +24,7 @@
     "test:dependencies": "bun test ./scripts/dependency-security.test.cjs"
   },
   "devDependencies": {
-    "@kagayoi/support-extension": "1.0.10",
+    "@kagayoi/support-extension": "1.0.12",
     "puppeteer": "^25.17.0",
     "ttf2woff2": "^8.0.1",
     "web-ext": "10.8.0"

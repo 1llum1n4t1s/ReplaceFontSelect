@@ -1,10 +1,62 @@
 {
-  "name": "目に優しいフォント置換",
-  "description": "読みづらいフォントを好みの日本語フォントに自動置換。フォント選択機能付き。",
+  "locales": {
+    "en": {
+      "name": "Eye-Friendly Font Replacer",
+      "description": "Automatically replaces hard-to-read fonts with your preferred Japanese fonts. Includes a font picker.",
+      "popupTitle": "Eye-Friendly Font Replacer",
+      "popupDescription": "Automatically replaces hard-to-read fonts with your preferred Japanese fonts."
+    },
+    "ja": {
+      "name": "目に優しいフォント置換",
+      "description": "読みづらいフォントを好みの日本語フォントに自動置換。フォント選択機能付き。",
+      "popupTitle": "目に優しいフォント置換",
+      "popupDescription": "読みづらいフォントを好みの日本語フォントに自動置換します"
+    },
+    "zh_CN": {
+      "name": "护眼字体替换",
+      "description": "自动将难以阅读的字体替换为所选的日文字体，并支持自行选择字体。",
+      "popupTitle": "护眼字体替换",
+      "popupDescription": "自动将难以阅读的字体替换为所选的日文字体。"
+    },
+    "zh_TW": {
+      "name": "護眼字體替換",
+      "description": "自動將難以閱讀的字體替換為所選的日文字體，並支援自行選擇字體。",
+      "popupTitle": "護眼字體替換",
+      "popupDescription": "自動將難以閱讀的字體替換為所選的日文字體。"
+    },
+    "ko": {
+      "name": "눈이 편한 글꼴 교체",
+      "description": "읽기 어려운 글꼴을 원하는 일본어 글꼴로 자동 교체합니다. 글꼴 선택 기능이 있습니다.",
+      "popupTitle": "눈이 편한 글꼴 교체",
+      "popupDescription": "읽기 어려운 글꼴을 원하는 일본어 글꼴로 자동 교체합니다."
+    },
+    "es": {
+      "name": "Sustituto de fuentes cómodas para la vista",
+      "description": "Sustituye automáticamente las fuentes difíciles de leer por las fuentes japonesas que usted prefiera. Incluye selector de fuentes.",
+      "popupTitle": "Sustituto de fuentes cómodas para la vista",
+      "popupDescription": "Sustituye automáticamente las fuentes difíciles de leer por las fuentes japonesas que usted prefiera."
+    },
+    "fr": {
+      "name": "Remplacement de polices reposantes",
+      "description": "Remplace automatiquement les polices difficiles à lire par les polices japonaises de votre choix. Sélecteur de polices inclus.",
+      "popupTitle": "Remplacement de polices reposantes",
+      "popupDescription": "Remplace automatiquement les polices difficiles à lire par les polices japonaises de votre choix."
+    },
+    "de": {
+      "name": "Augenfreundlicher Schriftersatz",
+      "description": "Ersetzt schwer lesbare Schriften automatisch durch Ihre bevorzugten japanischen Schriften. Mit Schriftauswahl.",
+      "popupTitle": "Augenfreundlicher Schriftersatz",
+      "popupDescription": "Ersetzt schwer lesbare Schriften automatisch durch Ihre bevorzugten japanischen Schriften."
+    },
+    "pt_BR": {
+      "name": "Troca de fontes que cansa menos a vista",
+      "description": "Substitui automaticamente fontes difíceis de ler por fontes japonesas de sua preferência. Inclui seletor de fontes.",
+      "popupTitle": "Troca de fontes que cansa menos a vista",
+      "popupDescription": "Substitui automaticamente fontes difíceis de ler por fontes japonesas de sua preferência."
+    }
+  },
   "version": "3.1.5",
   "geckoId": "{ee49eeb2-93a9-4062-ba75-06610054323f}",
-  "popupTitle": "目に優しいフォント置換",
-  "popupDescription": "読みづらいフォントを好みの日本語フォントに自動置換します",
   "lockedFonts": null,
   "showFontSelector": true,
   "excludeMatches": [

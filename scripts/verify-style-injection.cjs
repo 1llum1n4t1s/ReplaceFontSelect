@@ -8,7 +8,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-let browser, origin, cdn;
+let browser, origin, cdn, userDataDir, removeSeededProfile;
 const servers = [];
 
 async function serve() {
@@ -36,12 +36,18 @@ before(async () => {
   origin = await serve();
   cdn = await serve();
   const { default: puppeteer } = await import('puppeteer');
-  browser = await puppeteer.launch({ headless: true });
+  // Windows アカウントのロック防止（必須）: userDataDir 未指定だと新規プロファイルごとに空パスワード確認（LogonUser 失敗）が走るため、
+  // シード済みの一時プロファイルを渡し、終了時に片付ける。理由は scripts/chrome-profile-seed.mjs を参照。
+  const seed = await import('./chrome-profile-seed.mjs');
+  removeSeededProfile = seed.removeSeededProfile;
+  userDataDir = seed.createSeededProfile('rfs-style-injection');
+  browser = await puppeteer.launch({ headless: true, userDataDir });
   console.log('検証環境:', await browser.version(), root);
 });
 
 after(async () => {
   await browser?.close();
+  removeSeededProfile?.(userDataDir);
   await Promise.all(servers.map(server => new Promise(resolve => server.close(resolve))));
 });
 

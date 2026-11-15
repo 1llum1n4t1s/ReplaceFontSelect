@@ -16,6 +16,8 @@ temp-build/
 # src/content/variant.js も同様。Git 管理せず、ビルド時に必ず生成する。
 manifest.json
 src/content/variant.js
+# _locales は l10n/shared/<code>.json + variants/<name>.json の locales から variant ごとに生成する。
+_locales/
 
 # Generated icons (from scripts/generate-icons.js)
 # 旧パス: icons/icon-*.png は variant 化前の生成物。

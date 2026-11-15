@@ -1,0 +1,50 @@
+{
+  "statusActive": {
+    "message": "En cours"
+  },
+  "statusInactive": {
+    "message": "Désactivé"
+  },
+  "statusToggleLabel": {
+    "message": "Activer ou désactiver l’extension"
+  },
+  "popupBodyFont": {
+    "message": "Police du texte"
+  },
+  "popupBodyWeight": {
+    "message": "Graisse du texte"
+  },
+  "popupMonoFont": {
+    "message": "Police à chasse fixe"
+  },
+  "popupSaveNotice": {
+    "message": "Rechargez la page pour appliquer les modifications."
+  },
+  "popupSaveFailed": {
+    "message": "⚠️ Échec de l’enregistrement : $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "QUOTA_BYTES quota exceeded"
+      }
+    }
+  },
+  "popupConfigLoadError": {
+    "message": "⚠️ Impossible de charger le fichier de configuration des polices. Veuillez réinstaller l’extension."
+  },
+  "languageAuto": {
+    "message": "Automatique (navigateur)"
+  },
+  "languageSelectLabel": {
+    "message": "Langue"
+  },
+  "languageSelectTitle": {
+    "message": "Langue (les pages ouvertes se mettent à jour au rechargement)"
+  },
+  "kagayoiSupportContact": {
+    "message": "Contacter le support"
+  },
+  "kagayoiSupportRate": {
+    "message": "Évaluez-nous !"
+  }
+}

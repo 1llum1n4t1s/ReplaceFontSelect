@@ -1,10 +1,62 @@
 {
-  "name": "NotoSansへ置換するやつ(改修型)",
-  "description": "読みづらいフォントをNoto Sans JP / UDEV Gothic JPDOCに自動置換。パフォーマンス改善版。",
+  "locales": {
+    "en": {
+      "name": "NotoSans Replacer (Improved)",
+      "description": "Automatically replaces hard-to-read fonts with Noto Sans JP / UDEV Gothic JPDOC. Performance-improved version.",
+      "popupTitle": "NotoSans Replacer",
+      "popupDescription": "Automatically replaces hard-to-read fonts with Noto Sans JP / UDEV Gothic JPDOC."
+    },
+    "ja": {
+      "name": "NotoSansへ置換するやつ(改修型)",
+      "description": "読みづらいフォントをNoto Sans JP / UDEV Gothic JPDOCに自動置換。パフォーマンス改善版。",
+      "popupTitle": "NotoSansへ置換するやつ",
+      "popupDescription": "読みづらいフォントをNoto Sans JP / UDEV Gothic JPDOCに自動置換します"
+    },
+    "zh_CN": {
+      "name": "替换为NotoSans的工具（改进版）",
+      "description": "自动将难以阅读的字体替换为Noto Sans JP / UDEV Gothic JPDOC。性能改进版。",
+      "popupTitle": "替换为NotoSans的工具",
+      "popupDescription": "自动将难以阅读的字体替换为Noto Sans JP / UDEV Gothic JPDOC。"
+    },
+    "zh_TW": {
+      "name": "替換為NotoSans的工具（改良版）",
+      "description": "自動將難以閱讀的字體替換為Noto Sans JP / UDEV Gothic JPDOC。效能改良版。",
+      "popupTitle": "替換為NotoSans的工具",
+      "popupDescription": "自動將難以閱讀的字體替換為Noto Sans JP / UDEV Gothic JPDOC。"
+    },
+    "ko": {
+      "name": "NotoSans로 교체하는 확장 프로그램(개선형)",
+      "description": "읽기 어려운 글꼴을 Noto Sans JP / UDEV Gothic JPDOC로 자동 교체합니다. 성능을 개선한 버전입니다.",
+      "popupTitle": "NotoSans로 교체하는 확장 프로그램",
+      "popupDescription": "읽기 어려운 글꼴을 Noto Sans JP / UDEV Gothic JPDOC로 자동 교체합니다."
+    },
+    "es": {
+      "name": "Sustituto por NotoSans (versión mejorada)",
+      "description": "Sustituye automáticamente las fuentes difíciles de leer por Noto Sans JP / UDEV Gothic JPDOC. Versión con mejor rendimiento.",
+      "popupTitle": "Sustituto por NotoSans",
+      "popupDescription": "Sustituye automáticamente las fuentes difíciles de leer por Noto Sans JP / UDEV Gothic JPDOC."
+    },
+    "fr": {
+      "name": "Remplacement par NotoSans (version améliorée)",
+      "description": "Remplace automatiquement les polices difficiles à lire par Noto Sans JP / UDEV Gothic JPDOC. Version plus performante.",
+      "popupTitle": "Remplacement par NotoSans",
+      "popupDescription": "Remplace automatiquement les polices difficiles à lire par Noto Sans JP / UDEV Gothic JPDOC."
+    },
+    "de": {
+      "name": "Ersatz durch NotoSans (überarbeitet)",
+      "description": "Ersetzt schwer lesbare Schriften automatisch durch Noto Sans JP / UDEV Gothic JPDOC. Leistungsoptimierte Version.",
+      "popupTitle": "Ersatz durch NotoSans",
+      "popupDescription": "Ersetzt schwer lesbare Schriften automatisch durch Noto Sans JP / UDEV Gothic JPDOC."
+    },
+    "pt_BR": {
+      "name": "Substituição por NotoSans (versão melhorada)",
+      "description": "Substitui automaticamente fontes difíceis de ler por Noto Sans JP / UDEV Gothic JPDOC. Versão com desempenho melhorado.",
+      "popupTitle": "Substituição por NotoSans",
+      "popupDescription": "Substitui automaticamente fontes difíceis de ler por Noto Sans JP / UDEV Gothic JPDOC."
+    }
+  },
   "version": "3.1.5",
   "geckoId": "{ee49eeb2-93a9-4062-ba75-06610054323e}",
-  "popupTitle": "NotoSansへ置換するやつ",
-  "popupDescription": "読みづらいフォントをNoto Sans JP / UDEV Gothic JPDOCに自動置換します",
   "lockedFonts": {
     "bodyFont": "noto-sans-jp",
     "monoFont": "udev-gothic-jpdoc",

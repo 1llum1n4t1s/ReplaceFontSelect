@@ -30,22 +30,30 @@ function sourceSha(files) {
 function validateSource(files, variant, version, platform) {
   assert(/^[a-z][a-z0-9_-]*$/.test(variant) && /^\d+\.\d+\.\d+$/.test(version), 'variant/version が不正');
   const cfg = JSON.parse(fs.readFileSync(path.join(root, 'variants', `${variant}.json`)));
-  const required = ['manifest.json', 'src/content/variant.js', 'src/background/background.js', ...[16,48,128].map(n => `icons/${variant}/icon-${n}x${n}.png`), ...['footer','form','popup'].map(n => `src/shared/kagayoi-support-${n}.css`)];
+  const LOCALES = ['en','ja','zh_CN','zh_TW','ko','es','fr','de','pt_BR'];
+  const required = ['manifest.json', 'src/content/variant.js', 'src/shared/ui-localizer.js', ...LOCALES.map(l => `_locales/${l}/messages.json`), 'src/background/background.js', ...[16,48,128].map(n => `icons/${variant}/icon-${n}x${n}.png`), ...['footer','form','popup'].map(n => `src/shared/kagayoi-support-${n}.css`)];
   for (const name of required) assert(files.has(name) && files.get(name).length > 0, `必須ファイル不足: ${name}`);
   for (const name of files.keys()) {
-    assert(name === 'manifest.json' || name.startsWith(`icons/${variant}/`) || name.startsWith('src/'), `予期しないファイル: ${name}`);
+    assert(name === 'manifest.json' || name.startsWith('_locales/') || name.startsWith(`icons/${variant}/`) || name.startsWith('src/'), `予期しないファイル: ${name}`);
     assert(!/(?:^|\/)(?:\.DS_Store|preview\.html)$|\.swp$|~$/.test(name) && !(platform === 'firefox' && name.endsWith('.ttf')), `配布不要ファイル: ${name}`);
   }
   const m = JSON.parse(files.get('manifest.json'));
   const generatedManifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
   assert(isDeepStrictEqual(m, generatedManifest), '生成 manifest と配布 manifest が不一致');
-  assert(cfg.version === version && m.version === version && m.name === cfg.name && m.description === cfg.description && m.browser_specific_settings?.gecko?.id === cfg.geckoId, 'manifest の variant/version が不一致');
+  assert(cfg.version === version && m.version === version && m.name === '__MSG_appName__' && m.description === '__MSG_appDescription__' && m.default_locale === 'en' && m.browser_specific_settings?.gecko?.id === cfg.geckoId, 'manifest の variant/version が不一致');
   for (const n of [16,48,128]) assert(m.icons?.[n] === `icons/${variant}/icon-${n}x${n}.png`, 'manifest のアイコンが不一致');
   assert(platform === 'firefox' ? m.background?.scripts?.includes('src/background/background.js') : !m.background?.scripts, 'manifest の配布先が不一致');
   const generated = files.get('src/content/variant.js').toString('utf8').match(/const VARIANT = (\{[\s\S]*?\});/);
   assert(generated, 'variant.js の形式が不正');
   const data = JSON.parse(generated[1]);
-  for (const key of ['version','popupTitle','popupDescription','lockedFonts','showFontSelector','excludeMatches']) assert(JSON.stringify(data[key]) === JSON.stringify(cfg[key]), `variant.js の ${key} が不一致`);
+  // 拡張名・説明・popup 文言は _locales に variants/<name>.json の locales が反映されていること
+  for (const l of LOCALES) {
+    const msgs = JSON.parse(files.get(`_locales/${l}/messages.json`));
+    for (const [field, key] of [['name','appName'],['description','appDescription'],['popupTitle','popupTitle'],['popupDescription','popupDescription']]) {
+      assert(msgs[key]?.message === cfg.locales?.[l]?.[field], `_locales/${l} の ${key} が variant 設定と不一致`);
+    }
+  }
+  for (const key of ['version','lockedFonts','showFontSelector','excludeMatches']) assert(JSON.stringify(data[key]) === JSON.stringify(cfg[key]), `variant.js の ${key} が不一致`);
   assert(data.name === variant, 'variant.js の名前が不一致');
 }
 function referenceCandidates(variant, platform) {
@@ -65,6 +73,7 @@ function referenceCandidates(variant, platform) {
     }
   }
   walk(path.join(root, 'src'), 'src/');
+  walk(path.join(root, '_locales'), '_locales/');
   walk(path.join(root, 'icons', variant), 'icons/' + variant + '/');
   return names;
 }

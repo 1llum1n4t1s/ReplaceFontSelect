@@ -1,0 +1,50 @@
+{
+  "statusActive": {
+    "message": "运行中"
+  },
+  "statusInactive": {
+    "message": "已停用"
+  },
+  "statusToggleLabel": {
+    "message": "启用或停用扩展程序"
+  },
+  "popupBodyFont": {
+    "message": "正文字体"
+  },
+  "popupBodyWeight": {
+    "message": "正文字重"
+  },
+  "popupMonoFont": {
+    "message": "等宽字体"
+  },
+  "popupSaveNotice": {
+    "message": "刷新页面后生效。"
+  },
+  "popupSaveFailed": {
+    "message": "⚠️ 保存失败：$ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "QUOTA_BYTES quota exceeded"
+      }
+    }
+  },
+  "popupConfigLoadError": {
+    "message": "⚠️ 无法加载字体设置文件。请重新安装扩展程序。"
+  },
+  "languageAuto": {
+    "message": "自动（跟随浏览器）"
+  },
+  "languageSelectLabel": {
+    "message": "语言"
+  },
+  "languageSelectTitle": {
+    "message": "语言（已打开的页面需刷新后生效）"
+  },
+  "kagayoiSupportContact": {
+    "message": "联系支持"
+  },
+  "kagayoiSupportRate": {
+    "message": "请给我们评分！"
+  }
+}

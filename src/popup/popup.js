@@ -1,9 +1,24 @@
+// <html lang> を同期で表示言語へ合わせる（module script のサポートフッターより先に実行する）
+Localizer.applyDocumentLang();
+
 // ポップアップ初期化
 document.addEventListener('DOMContentLoaded', async () => {
+  // 保存済みの UI 言語を待ち、更新後に辞書が古ければ作り直してから文言を置換する
+  await Localizer.ready;
+  await Localizer.ensureFresh();
+  Localizer.localizeDocument();
+  // 言語切替（保存は storage.local。変更後は再読み込みで反映）
+  Localizer.mountLanguageSelect(document.getElementById('uiLanguage'));
+
   // font-config.js の読み込みに失敗した場合はサイレントクラッシュさせず、
   // UIで可視化して再インストールを促す
   if (typeof FONT_REGISTRY === 'undefined') {
-    document.body.innerHTML = '<div style="padding:16px;color:#c00;font:14px system-ui,sans-serif">⚠️ フォント設定ファイルの読み込みに失敗しました。拡張機能を再インストールしてください。</div>';
+    // 文言は textContent で入れる（innerHTML へ翻訳文を渡さない）
+    document.body.textContent = '';
+    const errorBox = document.createElement('div');
+    errorBox.style.cssText = 'padding:16px;color:#c00;font:14px system-ui,sans-serif';
+    errorBox.textContent = Localizer.t('popupConfigLoadError', undefined, '⚠️ Failed to load the font settings file. Please reinstall the extension.');
+    document.body.appendChild(errorBox);
     return;
   }
 
@@ -15,15 +30,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     versionElement.textContent = `v${manifest.version}`;
   }
 
-  // バリアント設定でタイトル・説明文を上書き
+  // バリアント設定で見た目（data-variant）を切り替える。
+  // タイトル・説明文は _locales の popupTitle / popupDescription（variant ごとに生成）を data-i18n で表示する。
   if (typeof VARIANT !== 'undefined' && VARIANT) {
     document.body.dataset.variant = VARIANT.name || 'default';
-    const titleEl = document.getElementById('popup-title');
-    const subtitleEl = document.getElementById('popup-subtitle');
-    const descEl = document.getElementById('popup-description');
-    if (titleEl && VARIANT.popupTitle) titleEl.textContent = VARIANT.popupTitle;
-    if (descEl && VARIANT.popupDescription) descEl.textContent = VARIANT.popupDescription;
-    if (subtitleEl) subtitleEl.textContent = 'Font Replacement Studio';
   } else {
     document.body.dataset.variant = 'default';
   }
@@ -61,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function updateToggleUI(enabled) {
     enabledToggle.checked = enabled;
     statusDot.className = enabled ? 'dot active' : 'dot inactive';
-    statusText.textContent = enabled ? '動作中' : '無効';
+    statusText.textContent = Localizer.t(enabled ? 'statusActive' : 'statusInactive', undefined, enabled ? 'Active' : 'Disabled');
     settingsSection.classList.toggle('disabled', !enabled);
     bodyFontSelect.disabled = !enabled;
     bodyWeightSelect.disabled = !enabled;
@@ -104,12 +114,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       await chrome.storage.local.set({ [storageKey]: settings });
       _lastSaved = settings;
-      saveNotice.textContent = 'ページを再読み込みすると反映されます';
+      saveNotice.textContent = Localizer.t('popupSaveNotice', undefined, 'Reload the page to apply the changes.');
       saveNotice.classList.add('visible');
       clearTimeout(noticeTimer);
       noticeTimer = setTimeout(() => saveNotice.classList.remove('visible'), 3000);
     } catch (e) {
-      saveNotice.textContent = `⚠️ 保存に失敗しました: ${e.message}`;
+      saveNotice.textContent = Localizer.t('popupSaveFailed', [e.message], `⚠️ Failed to save: ${e.message}`);
       saveNotice.classList.add('visible');
       clearTimeout(noticeTimer);
       noticeTimer = 0;

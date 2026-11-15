@@ -288,6 +288,16 @@ body[data-variant="notosans"] .bg-fx__grain {
   gap: 14px;
 }
 .header__text { min-width: 0; flex: 1; }
+/* 言語切替: ヘッダー右。幅は内容に合わせ、長い言語名は省略する */
+.header__brand .header__lang {
+  width: auto;
+  max-width: 152px;
+  flex-shrink: 0;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+}
 
 /* Brand Mark — “Aa” タイポと variant 別の枠 */
 .brand-mark {
@@ -371,9 +381,9 @@ body[data-variant="notosans"] .brand-mark__corner--br { bottom: 0; right: 0; bor
   line-height: 1.2;
   letter-spacing: 0.02em;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* 言語切替を右に置いたぶん幅が狭い。製品名は省略せず折り返して全文を見せる */
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 body[data-variant="notosans"] .title {
   letter-spacing: 0.04em;

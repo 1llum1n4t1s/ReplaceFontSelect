@@ -26,8 +26,10 @@ bun --bun run generate-css               # fallback / YouTube 用 CSS + 42 個�
 bun --bun run convert-fonts              # src/fonts/*.ttf → *.woff2 変換 (フォント追加時のみ手動実行、 variant 非依存)
 bun --bun run generate-icons:default     # icons/default/icon.svg から PNG (16/48/128) を再生成
 bun --bun run generate-icons:notosans    # icons/notosans/icon.svg から PNG (16/48/128) を再生成
-bun --bun run generate-screenshots:default  # webstore/screenshots/default/*.html → webstore/images/default/*.png (要 puppeteer)
-bun --bun run generate-screenshots:notosans # webstore/screenshots/notosans/*.html → webstore/images/notosans/*.png (要 puppeteer)
+bun --bun run generate-screenshots          # ストア掲載画像（vitrina）を両 variant で生成。notosans → default の順で、終了時は default の manifest.json が残る
+bun --bun run generate-screenshots:default  # default 版だけ: manifest 再生成 → webstore/images/default/<locale>/screenshot-NN.png と tile-*.png（9 言語・要 puppeteer・Windows）
+bun --bun run generate-screenshots:notosans # notosans 版だけ（同上。終了後の manifest.json は notosans なので、続けて build:default か build-variant default で戻す）
+bun --bun run verify-screenshots            # webstore/images/<variant> の枚数・寸法・命名・アルファ無し・英語フォールバック有無を検査
 bun --bun run sync:support                  # 共有パッケージ正本から問い合わせUIの JS / CSS 5資産を同期
 bun --bun run check:support                 # 同梱資産が共有パッケージ正本と一致することを読み取り専用で検査
 ```
@@ -42,6 +44,16 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 
 アイコン・スクショ生成には headless Chrome が必要。初回は `bun --bun run puppeteer browsers install chrome` で導入する。Puppeteer v25+ は ESM-only のため生成スクリプトは動的 import を使う。
 
+#### ストア掲載画像（vitrina）
+
+スクショ（1280x800・9 言語×4 枚）と小タイル・マーキーは、`webstore/vitrina/`（共通キット。`Kagayoi.Support/clients/chrome-extension/store-assets/` の `sync-kit.mjs --repo` で逐語同期。**直接編集しない**）が実拡張を Chrome for Testing へ読み込んで撮る。設定は variant ごとに `webstore/store-assets.<variant>.json`、固定ページは `webstore/fixtures/`、撮影前の操作は `webstore/store-assets.steps.mjs`、variant 切替の呼び出しは `webstore/run-vitrina.mjs`。
+
+- 実行前に対象 variant の `bun --bun run build:<variant>`（アイコン・preset CSS）が済んでいること。`generate-screenshots*` は撮影前に `build-variant` で manifest と `_locales` を作り直す。
+- ビフォーアフター（`compare-*`）は、同じ固定ページを拡張オン／オフで撮り、左カードをオフの実描画へ差し替える。置換元は読みづらい明朝体（MS PMincho / MS Mincho）の指定で、フォント名は画像に書かない（掲載文のキーワードスパム対策と同じ方針）。
+- 文言は `{ msg }` で `_locales` を参照するか、9 言語を `store-assets.<variant>.json` に直書きする（訳は `Kagayoi.Support/clients/chrome-extension/l10n/glossary.md` に従う）。
+- 撮影中に出た拡張側の欠陥は `<work-dir>/ui-defects.json`。固定ページが日本語本文のため、日本語以外のロケールで `kana-in-non-ja` / `font-mismatch` / `same-as-en`（固定ページ由来）が出るのは想定内。
+- 出力は `webstore/images/<variant>/`（gitignore 済み）。CI（Linux）は smoke プロファイル（en のみ・実UI枠は代替板）になり、verify は失敗する設計。
+
 ### Local Testing
 
 - **フォント注入の回帰検証**: `bun test ./scripts/verify-style-injection.cjs` — Puppeteer の実ブラウザで Shadow 初期化、遅延した外部 CSS / @import、DOM 更新時の再移動、ページの破棄・復帰イベントを検証する。拡張 API は fixture を使用し、Firefox 実機の代替にはしない。
@@ -51,6 +63,8 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 - コード変更後は拡張機能リストで再読み込み+対象ページをリロード (preset JS / CSS は `document_start` 時にキャッシュされるため)
 
 問い合わせUIまたはFirefoxの権限申告を変更するときは、[DESIGN.md の送信境界](DESIGN.md#問い合わせuiの共有資産同期)に従い、`manifest.template.json` の申告と共有部品の要求対象、popupの `firefox-data-consent` 属性を照合する。両variantのビルドと `bun --bun run check:support` に加え、Firefoxで任意許可を拒否・取得失敗した場合に確認コード送信・再送・認証・問い合わせ送信が止まり、フォント置換は利用できることを検証する。
+
+- **Chrome を起動するスクリプトを足すときはシード必須**: puppeteer.launch・chrome-launcher・Chrome の直接起動は、起動前に user-data-dir の `Local State` へ `{"password_manager":{"os_password_blank":false,"os_password_last_changed":"9223372036854775000"}}` を書く。Windows の Chromium は新規プロファイルごとに空パスワードで LogonUser を呼び（`password_manager_util_win.cc` の `CheckBlankPasswordWithPrefs`）、ログオン失敗（Security 4625）として数えられるため、並列・連続起動で Windows アカウントがロックされる（2026-11-15 実害）。`scripts/chrome-profile-seed.mjs` の `createSeededProfile()` / `seedChromeProfile()` を使い、userDataDir 未指定の起動は作らない（`webstore/vitrina/` は逐語コピーで対策済み）。
 
 ## Variant System
 
@@ -65,7 +79,7 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 
 1. `variants/<name>.json` を作成 (既存 default.json をコピーして編集が早い)
 2. `icons/<name>/icon.svg` を配置
-3. (任意) `webstore/screenshots/<name>/*.html` をコピー
+3. (任意) `webstore/store-assets.<name>.json` を作成（ストア掲載画像。`webstore/store-assets.steps.mjs` に variant 固有の撮影操作があれば追加）
 4. (任意) `docs/<name>/privacy-policy.md` / `privacy.html` / `index.html` を用意
 5. (任意) `changelog/<name>.md` を作成
 6. `package.json` の `scripts` に `build:<name>` / `generate-icons:<name>` / `generate-screenshots:<name>` を追加
@@ -162,6 +176,20 @@ bun scripts/release.js --yes    # 直接呼び（確認プロンプト省略、C
 ##### Privacy practices
 
 CWS の公開で必須情報不足なら Developer Dashboard の Privacy practices で single-purpose / data usage / data collection を入力し、提出状態を確認して上記の手動再開手順を使う。
+
+##### CWS のアップロードと申請の分離
+
+`publish.yml` は検証済みZIPを `-Stage Upload` で下書きとしてアップロードするだけで、審査へは申請しない。新ロケールの掲載画像欄はアップロード後でないと Dashboard に出ないため、申請は別workflow `.github/workflows/cws-submit.yml`（手動実行、`-Stage Publish`）で行う。
+
+1. `release/x.y.z` を push する（publish.yml がアップロードする）
+2. Dashboard（Edictora）でロケール別の掲載画像などを整えて下書き保存する
+3. `gh workflow run cws-submit.yml -f version=x.y.z --ref release/x.y.z` で申請する
+
+- API v2 は未申請の下書き版を返さないため、下書きの版そのものは確認できない。`cws-submit.yml` は次を満たす場合だけ `:publish` する: 実行 ref が `release/<version>` で manifest の版が入力と一致する。`publish.yml` の直近のアップロード成功 run（固定ステップ名 `Chrome Web Store にアップロード（下書き）`。`actions: read` で履歴を参照）が同じ commit である。fetchStatus で item identity・直近アップロード状態・公開/審査中の版を確認できる。
+- 同版が申請済み・公開済み（PENDING_REVIEW / STAGED / PUBLISHED / PUBLISHED_TO_TESTERS）なら再送せず成功終了する。別版の審査中、より新しい版の存在、直近アップロードの進行中・失敗、状態不明は申請せず停止する。
+- Dashboard で手動アップロードした下書きなど、同じ commit のアップロード成功 run が無い場合は申請されない。その場合は Dashboard から手動で申請する。
+- 両workflowは同じ concurrency group で直列化する。申請中は Dashboard の操作を並行しない。
+- variant（default / notosans）ごとに matrix で申請し、アップロード履歴は job 名 `Publish <variant>` で確認する。
 
 #### Firefox AMO (addons.mozilla.org)
 - **提出ツール**: 最終XPIをverifierで照合後、receiptのSHA-256を `scripts/Publish-Amo.ps1` へ渡す。既存GUIDへのPUTで新versionを提出し、人手レビューの承認は待たない。

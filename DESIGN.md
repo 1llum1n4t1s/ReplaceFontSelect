@@ -9,7 +9,7 @@
 - `default`: 本文7種、等幅3種、本文weight 400/500をポップアップで選択する通常版
 - `notosans`: Noto Sans JP、UDEV Gothic JPDOC、weight 400へ固定した版
 
-`../vps-web/lp/replacefont/` はVPSから配信する製品ページとプライバシーポリシーであり、拡張機能のランタイムには含まれない。`docs/`、`webstore/`、`changelog/` はストア掲載・公開文書である。
+`../vps-web/lp/replacefont/` はVPSから配信する製品ページとプライバシーポリシーであり、拡張機能のランタイムには含まれない。`docs/`、`webstore/`、`changelog/` はストア掲載・公開文書である。`webstore/` の掲載画像は共通キット `webstore/vitrina/` が variant ごとの `store-assets.<variant>.json` から生成する（手順は [AGENTS.md](AGENTS.md#ストア掲載画像vitrina)）。
 
 ## 主要コンポーネントと責務
 

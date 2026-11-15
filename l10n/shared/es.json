@@ -1,0 +1,50 @@
+{
+  "statusActive": {
+    "message": "En funcionamiento"
+  },
+  "statusInactive": {
+    "message": "Desactivado"
+  },
+  "statusToggleLabel": {
+    "message": "Activar o desactivar la extensión"
+  },
+  "popupBodyFont": {
+    "message": "Fuente del texto"
+  },
+  "popupBodyWeight": {
+    "message": "Grosor del texto"
+  },
+  "popupMonoFont": {
+    "message": "Fuente monoespaciada"
+  },
+  "popupSaveNotice": {
+    "message": "Recargue la página para aplicar los cambios."
+  },
+  "popupSaveFailed": {
+    "message": "⚠️ Error al guardar: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "QUOTA_BYTES quota exceeded"
+      }
+    }
+  },
+  "popupConfigLoadError": {
+    "message": "⚠️ No se pudo cargar el archivo de configuración de fuentes. Reinstale la extensión."
+  },
+  "languageAuto": {
+    "message": "Automático (navegador)"
+  },
+  "languageSelectLabel": {
+    "message": "Idioma"
+  },
+  "languageSelectTitle": {
+    "message": "Idioma (las páginas abiertas se actualizan al recargar)"
+  },
+  "kagayoiSupportContact": {
+    "message": "Contactar con soporte"
+  },
+  "kagayoiSupportRate": {
+    "message": "¡Déjenos su valoración!"
+  }
+}

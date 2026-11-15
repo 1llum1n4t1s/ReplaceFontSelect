@@ -1,0 +1,59 @@
+{
+  "statusActive": {
+    "message": "Active",
+    "description": "Status text while the extension is running"
+  },
+  "statusInactive": {
+    "message": "Disabled",
+    "description": "Status text while the extension is turned off"
+  },
+  "statusToggleLabel": {
+    "message": "Turn the extension on or off",
+    "description": "Accessible name of the on/off switch"
+  },
+  "popupBodyFont": {
+    "message": "Body font",
+    "description": "Label of the body font selector"
+  },
+  "popupBodyWeight": {
+    "message": "Body weight",
+    "description": "Accessible name of the body font weight selector"
+  },
+  "popupMonoFont": {
+    "message": "Monospace font",
+    "description": "Label of the monospace font selector"
+  },
+  "popupSaveNotice": {
+    "message": "Reload the page to apply the changes.",
+    "description": "Notice shown after saving settings"
+  },
+  "popupSaveFailed": {
+    "message": "⚠️ Failed to save: $ERROR$",
+    "description": "Error shown when saving settings fails. $ERROR$ is the error message.",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "QUOTA_BYTES quota exceeded"
+      }
+    }
+  },
+  "popupConfigLoadError": {
+    "message": "⚠️ Failed to load the font settings file. Please reinstall the extension.",
+    "description": "Error shown when the bundled font settings fail to load"
+  },
+  "languageAuto": {
+    "message": "Auto (browser)"
+  },
+  "languageSelectLabel": {
+    "message": "Language"
+  },
+  "languageSelectTitle": {
+    "message": "Language. Open pages need a reload to update."
+  },
+  "kagayoiSupportContact": {
+    "message": "Contact support"
+  },
+  "kagayoiSupportRate": {
+    "message": "Please rate us!"
+  }
+}
