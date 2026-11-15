@@ -20,74 +20,121 @@ NotoSansへ置換するやつ(改修型)
 
 ■ 説明（16,000文字以内）
 ウェブサイト上の読みづらいフォントを、Noto Sans JP と UDEV Gothic JPDOC に自動で置き換える拡張機能です。
-読みづらい指定フォントだけを狙い撃ちで置換するため、サイトのデザインを極力崩さずに視認性を大幅に向上させます。
+サイトが指定した読みづらいフォントを狙って置き換えるため、サイトのレイアウトを大きく崩さずに
+文字を読みやすくします。フォントの選択は不要で、インストールするだけで使えます。
 
 特徴
 
-・高速 & 軽量
-  ページの表示速度に影響を与えないよう、徹底的に最適化されています。
+・インストールするだけで自動置換
+  対応するサイトでは、ページを開くだけでフォントが自動的に置き換わります。
+  文書作成・デザイン・コード編集・チャットなどの一部のオンラインサービスは、
+  編集の操作感やアイコン表示を守るため対象外です。ブラウザの設定画面など、
+  拡張機能が動作できないページも対象外です。
 
-・完全自動
-  インストールするだけで、あらゆるサイトのフォントが自動的に置換されます。
+・オン/オフ切り替え
+  ポップアップのスイッチで、拡張機能の有効／無効を切り替えられます。
 
-・モダンなWeb対応
-  一般的な拡張機能では対応が難しい Shadow DOM 内のフォントも漏らさず置換します
-  （YouTube や各種モダンなWebアプリに対応）。
+・本文と等幅を区別して置換
+  本文に使われるゴシック体・明朝体・欧文のフォントは Noto Sans JP へ、コードなどの等幅フォントは
+  UDEV Gothic JPDOC へ置き換えます。コードの桁ぞろえは保たれ、太字（Bold）は太字のまま表示されます。
 
-・デザインを尊重
-  フォントの種類（ゴシック体／明朝体／等幅）を判別し、元のデザイン意図を維持したまま
-  最適なフォントへ置き換えます。
+・表示を崩しにくい配慮
+  アイコンフォントで描かれたアイコンや、入力欄・エディターなどの文字を編集する部分には、
+  本文フォントの強制的な適用を行いません。
 
-・広範なサポート
-  OS 標準のフォントから主要な Web フォントまで幅広くカバーしています。
+・モダンなWebにも対応
+  open / closed の Shadow DOM 内や、ページ内のフレームにも置換を適用します
+  （YouTube などのWebアプリにも対応）。
+
+・表示への影響を抑えた設計
+  置換用のスタイルをあらかじめ用意し、ページの読み込み開始時に適用します。
+  配布パッケージには、この版で使うフォントだけを同梱しています。
+
+・お問い合わせ
+  ポップアップから、メール認証を経て開発元（Kagayoi Support）へ問い合わせを送れます。
 
 置換の仕組み
 
-・本文 → Noto Sans JP
+・本文 → Noto Sans JP（Regular）
   サイトが指定した日本語のゴシック体・明朝体と、欧文やシステム既定のフォントを
   Noto Sans JP に置換します。読みづらい明朝体も視認性の高い書体に置き換わるため、
   長文の閲覧も快適になります。
 
 ・等幅・コード → UDEV Gothic JPDOC
-  サイトが指定した等幅フォントを、プログラミングや文書作成に最適な UDEV Gothic JPDOC に
-  置換します。GitHub のコード表示や、技術ブログのコードブロック、入力フォームなども
-  圧倒的に読みやすくなります。
+  サイトが指定した等幅フォントやコードの表示部分を、UDEV Gothic JPDOC に置換します。
+  技術ブログのコードブロックなども読みやすくなります。
 
   UDEV Gothic JPDOC は、濁点・半濁点（「バ」と「パ」など）の判別がしやすく、
   英数字（「1」と「l」、「0」と「O」）もはっきり区別できる等幅フォントです。
 
-同梱フォントはすべて拡張機能のパッケージに含まれており、実行時に外部から取得するものはありません。
+・置換フォントに含まれない文字（アラビア文字やタイ文字など）は、ブラウザがサイト指定の
+  元のフォントへ自動で切り替えて表示します。
+
+フォントや太さを選びたい場合は、10種類のフォントから選べる姉妹版「目に優しいフォント置換」を
+ご利用ください。
+
+使い方
+
+1. インストールすると、対応するサイトで自動的に置換が始まります。
+2. 無効にしたいときは、ブラウザのツールバー（拡張機能メニュー）からポップアップを開き、
+   スイッチを切り替えます。
+3. オン/オフを切り替えたあとは、開いているページを再読み込みすると反映されます。
+
+同梱フォントはすべて拡張機能のパッケージに含まれており、フォントを外部から読み込むことは
+ありません。
 
 ライセンス
 ・プロジェクト本体: MIT License
 ・同梱フォント: SIL Open Font License 1.1
 
-------------------------------------------------------------
-
-■ English（説明欄の後半に併記）
 
 This extension automatically replaces hard-to-read fonts on websites with Noto Sans JP and
-UDEV Gothic JPDOC. It targets only hard-to-read fonts to improve legibility while preserving
-the original site design.
+UDEV Gothic JPDOC. It targets only the fonts that are hard to read, so text becomes easier to
+read without disrupting the site's layout. There is nothing to configure: just install it.
 
 Features
-・Fast & Lightweight: Optimized for minimal impact on page load speed.
-・Fully Automatic: Works instantly across all websites without configuration.
-・Modern Web Support: Supports Shadow DOM elements (works on YouTube and modern web apps).
-・Preserve Intent: Replaces fonts based on their category (sans-serif, serif, or monospace)
-  to maintain the intended layout.
-・Broad Coverage: Covers everything from OS standard fonts to popular web fonts.
+・Automatic replacement: Fonts are replaced as soon as you open a supported page. Some online
+  services for document editing, design, coding, and chat are excluded to keep their editing
+  experience and icons intact, as are browser settings pages and other pages where extensions
+  cannot run.
+・On/Off toggle: Turn the extension on or off with the switch in the popup.
+・Body text and monospace handled separately: Gothic, Mincho (serif), and Latin fonts used for
+  body text become Noto Sans JP, while monospace fonts used for code become UDEV Gothic JPDOC,
+  so code stays aligned. Bold text stays bold.
+・Layout-friendly: Text in icon fonts and editable areas such as input fields and editors is not
+  forced to the body font.
+・Modern web support: Works inside open and closed Shadow DOM and in embedded frames (including
+  web apps such as YouTube).
+・Low overhead: The replacement styles are prepared in advance and applied as the page starts
+  loading. The package includes only the fonts this edition uses.
+・Contact form: Send an inquiry to the developer (Kagayoi Support) from the popup after verifying
+  your email address.
 
-Replacement Logic
-・Body text: replaced with Noto Sans JP for better screen legibility.
-・Monospace and code: replaced with UDEV Gothic JPDOC, a high-legibility font optimized for
-  coding and documentation.
+How it works
+・Body text: replaced with Noto Sans JP (Regular) for better on-screen legibility.
+・Monospace and code: replaced with UDEV Gothic JPDOC, a monospace font that makes Japanese
+  voiced sound marks and look-alike characters such as 1/l and 0/O easy to tell apart.
+・Characters not covered by the replacement fonts (such as Arabic or Thai) are shown in the
+  site's original font by the browser's normal fallback.
 
-All bundled fonts ship inside the extension package; nothing is fetched at runtime.
+If you want to choose fonts or the body text weight, try the sister extension
+"目に優しいフォント置換", which offers a choice of 10 fonts.
 
-------------------------------------------------------------
+How to use
+1. Once installed, fonts are replaced automatically on supported sites.
+2. To turn it off, open the popup from the browser toolbar (extensions menu) and flip the switch.
+3. After turning it on or off, reload open pages to apply the change.
+
+All bundled fonts ship inside the extension package; no fonts are loaded from external sources.
+
+License
+・Project: MIT License
+・Bundled fonts: SIL Open Font License 1.1
 
 ■ プライバシー関連（【プライバシー】タブ）
+
+単一の目的の説明
+ウェブページ上のフォントを置き換えます。
 
 プライバシーポリシー URL
 https://replacefont.kagayoi.com/privacy
@@ -96,6 +143,21 @@ https://replacefont.kagayoi.com/privacy
 ・個人を特定できる情報   … 問い合わせフォームのメールアドレス・お名前
 ・認証に関する情報       … 6桁の確認コード、アクセストークン
 ・個人的コミュニケーション … 問い合わせの件名・本文
+・上記以外（健康・財務・位置情報・ウェブ履歴・ユーザーのアクティビティ・ウェブサイトのコンテンツ）は収集しない
+・ユーザーデータの販売: しない
+・ユーザーデータの本来の目的以外への使用や転送: しない
+・信用力の判定や貸付目的での使用や転送: しない
+
+■ 権限の正当性
+
+  storage:
+  拡張機能の有効/無効の状態とフォント設定（本文フォント・太さ・等幅フォント）、およびスタイル登録済みかを示す内部フラグを chrome.storage.local に保存するために使用します。端末内にのみ保存し、外部へ送信しません。
+
+  scripting:
+  有効時に、同梱のフォント置換スタイル用スクリプトと Shadow DOM 対応用スクリプトを chrome.scripting.registerContentScripts で document_start に登録するために使用します。有効/無効の切り替えに応じて登録・解除する必要があるため、静的な content_scripts だけでは対応できません。外部コードの取得は行いません。
+
+  ホスト権限:
+  読みづらいフォントの置換は、ユーザーが開くすべてのウェブページ（iframe を含む）で、描画開始前にコンテンツスクリプトがフォント置換用のスタイルを適用して行うため、全サイト（<all_urls>）へのアクセスが必要です。フォントとスタイルは拡張機能に同梱しており、ページの内容を収集・送信しません。外部との通信は、ユーザーがポップアップのお問い合わせフォームを送信したときの support.kagayoi.com への通信だけです。
 
 サポート URL
 https://support.kagayoi.com/

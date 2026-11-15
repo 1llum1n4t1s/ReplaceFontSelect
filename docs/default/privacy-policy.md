@@ -1,14 +1,23 @@
 # プライバシーポリシー / Privacy Policy
 
-最終更新日: 2026年9月5日 / Last Updated: September 5, 2026
+最終更新日: 2026年11月15日 / Last Updated: November 15, 2026
 
 ---
 
 ## 日本語
 
+### 対象製品
+
+このポリシーは、次の 2 つの拡張機能に共通で適用されます（同じ公開ページ `https://replacefont.kagayoi.com/privacy` を共用しています）。以下、単に「本拡張機能」と書くときは両方を指します。
+
+- **目に優しいフォント置換** — 本文用 7 種類・等幅用 3 種類のフォントから選べる版
+- **NotoSansへ置換するやつ(改修型)** — 本文を Noto Sans JP、等幅を UDEV Gothic JPDOC に固定した版（フォント選択の画面はありません）
+
+2 つは同じソースから作られ、収集するデータ・外部通信・保存先・権限は同じです。違いはフォントを選べるかどうかだけで、以下のフォント選択に関する記述は「目に優しいフォント置換」の説明です。NotoSansへ置換するやつ(改修型)では、固定のフォント設定が同じ場所に保存されます。
+
 ### 概要
 
-「目に優しいフォント置換」（以下「本拡張機能」）は、ウェブページ上の読みづらいフォントをユーザーが選択したフォントに自動置換するブラウザ拡張機能です。本文用 7 種類・等幅用 3 種類のフォントから選択できます。置換はユーザーが選んだフォントが持つグリフ範囲に従い、そのフォントに含まれない文字（アラビア文字・タイ文字など一部言語）は CSS font fallback によって元サイト指定のフォントへ自動的に戻ります。
+「目に優しいフォント置換」は、ウェブページ上の読みづらいフォントをユーザーが選択したフォントに自動置換するブラウザ拡張機能です。本文用 7 種類・等幅用 3 種類のフォントから選択できます。置換はユーザーが選んだフォントが持つグリフ範囲に従い、そのフォントに含まれない文字（アラビア文字・タイ文字など一部言語）は CSS font fallback によって元サイト指定のフォントへ自動的に戻ります。
 
 > **重要:** フォント置換の動作で**個人データを収集・送信することはありません**。フォント選択設定のみをブラウザのローカルストレージに保存し、置換処理はブラウザ内で完結します。外部への送信は、利用者が自分でお問い合わせフォームを送信したときだけ発生します（「お問い合わせフォーム」の項を参照）。
 
@@ -63,6 +72,15 @@ Firefox では、個人識別情報（メールアドレス・お名前）と認
 ---
 
 ## English
+
+### Covered products
+
+This policy applies to both of the following extensions, which share the same public page (`https://replacefont.kagayoi.com/privacy`). "This extension" below means either of them.
+
+- **目に優しいフォント置換** (Eye-Friendly Font Replacer) — lets you choose from 7 body fonts and 3 monospace fonts
+- **NotoSansへ置換するやつ(改修型)** (Replace with Noto Sans, improved version) — fixed to Noto Sans JP for body text and UDEV Gothic JPDOC for monospace, with no font-selection screen
+
+Both are built from the same source and have the same data collection, external communication, storage, and permissions. The only difference is whether you can choose fonts; the font-selection statements below describe "目に優しいフォント置換". NotoSansへ置換するやつ(改修型) stores its fixed font settings in the same place.
 
 ### Overview
 
