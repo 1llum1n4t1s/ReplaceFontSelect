@@ -55,7 +55,7 @@
       "popupDescription": "Substitui automaticamente fontes difíceis de ler por fontes japonesas de sua preferência."
     }
   },
-  "version": "3.1.5",
+  "version": "3.1.6",
   "geckoId": "{ee49eeb2-93a9-4062-ba75-06610054323f}",
   "lockedFonts": null,
   "showFontSelector": true,

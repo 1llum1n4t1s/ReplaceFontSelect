@@ -1,0 +1,73 @@
+Diese Erweiterung ersetzt schwer lesbare Schriften auf Websites automatisch durch die japanischen Schriften Ihrer Wahl.
+Sie können aus 10 Schriften wählen (7 für den Text und 3 Festbreitenschriften) und die Einstellungen bequem im Popup ändern.
+Da nur die von der Website vorgegebenen, schwer lesbaren Schriften ersetzt werden, wird der Text besser lesbar, ohne das Layout der Website stark zu stören.
+
+Funktionen
+
+・Schriftauswahl
+  Wählen Sie im Popup Ihre bevorzugte Schrift aus 7 Textschriften und 3 Festbreitenschriften.
+  Auch die Stärke der Textschrift (Regular / Medium) können Sie wählen. Die Einstellungen werden automatisch gespeichert.
+
+・Ein-/Aus-Schalter
+  Mit dem Schalter im Popup können Sie die Erweiterung ein- oder ausschalten.
+
+・Automatischer Ersatz direkt nach der Installation
+  Auf unterstützten Websites werden die Schriften beim Öffnen der Seite automatisch ersetzt.
+  Einige Online-Dienste für Dokumentbearbeitung, Design, Code-Bearbeitung und Chat sind ausgenommen, damit Bedienkomfort und Symboldarstellung erhalten bleiben. Seiten, auf denen Erweiterungen nicht funktionieren können, etwa die Einstellungsseiten des Browsers, sind ebenfalls ausgenommen.
+
+・Getrennter Ersatz für Text und Festbreitenschrift
+  Für den Text verwendete Gothic-, Mincho- (Serifen-) und lateinische Schriften werden durch die Textschrift ersetzt, für Code verwendete Festbreitenschriften durch die Festbreitenschrift. Die Ausrichtung des Codes bleibt erhalten, und Fettdruck (Bold) bleibt fett.
+
+・Rücksicht auf die Darstellung
+  Auf Symbole, die mit Symbolschriften dargestellt werden, und auf Bereiche zum Bearbeiten von Text wie Eingabefelder und Editoren wird die Textschrift nicht zwangsweise angewendet.
+
+・Auch für das moderne Web
+  Der Ersatz gilt auch innerhalb von open / closed Shadow DOM und in eingebetteten Frames der Seite (auch bei Web-Apps wie YouTube).
+
+・Darstellung möglichst wenig beeinträchtigt
+  Die Stile für die gewählte Kombination werden vorab bereitgestellt und beim Start des Seitenladens angewendet.
+
+・Kontakt
+  Über das Popup können Sie nach einer E-Mail-Bestätigung eine Anfrage an den Entwickler (Kagayoi Support) senden.
+
+Verfügbare Schriften
+
+Textschriften (7)
+・IBM Plex Sans JP (Standard) … Schrift aus dem Designsystem von IBM. Verbindet Lesbarkeit mit modernem Eindruck.
+・Noto Sans JP … Von Google. Unterstützt viele Schriftstärken und wirkt in jeder Größe schön.
+・M PLUS 2 … Etwas breiter, abgerundeter Entwurf. Wirkt weich und vertraut.
+・M PLUS Rounded 1c … Abgerundete Gothic mit runden Strichenden. Wirkt weich und vertraut.
+・Murecho … Klarer Entwurf mit geraden Linien. Passt gut zu Oberflächen und Dashboards.
+・Zen Kaku Gothic New … Moderne Schrift, die den Charakter der traditionellen Gothic bewahrt.
+・LINE Seed JP … Von LINE entwickelte Schrift. Abgerundet, freundlich und gut lesbar.
+
+Festbreitenschriften (3)
+・UDEV Gothic JPDOC (Standard) … Lässt sich bei den Lautzeichen (Dakuten und Handakuten) leicht unterscheiden und ist besonders gut für die Lesbarkeit von Code geeignet.
+・PlemolJP … Sowohl für Programmierung als auch für japanischen Text optimiert.
+・Moralerspace Neon JPDOC … Zusammengesetzte Festbreitenschrift, entworfen fürs Programmieren.
+
+Bei den Textschriften können Sie die Stärke zwischen Regular (400) und Medium (500) wählen (Standard: Regular).
+LINE Seed JP wird auch bei Medium in Regular angezeigt.
+Festbreitenschriften sind fest auf Regular (400) eingestellt. Fettdruck (Bold) bleibt unverändert.
+
+So funktioniert der Ersatz
+
+・Text → gewählte Textschrift
+  Von der Website vorgegebene japanische Gothic- und Mincho-Schriften sowie lateinische und systemeigene Standardschriften werden durch die gewählte Textschrift ersetzt. Auch schwer lesbare Mincho-Schriften werden zu einer gut erkennbaren Schrift, sodass sich lange Texte angenehmer lesen lassen.
+
+・Festbreite und Code → gewählte Festbreitenschrift
+  Von der Website vorgegebene Festbreitenschriften und Code-Darstellungen werden durch die gewählte Festbreitenschrift ersetzt. Auch Codeblöcke in technischen Blogs werden dadurch besser lesbar.
+
+・Zeichen, die in den Ersatzschriften nicht enthalten sind (etwa arabische oder thailändische Schrift), zeigt der Browser durch automatisches Ausweichen in der ursprünglichen Schrift der Website an.
+
+Verwendung
+
+1. Öffnen Sie das Popup über die Symbolleiste des Browsers (Erweiterungsmenü).
+2. Wählen Sie Textschrift, Schriftstärke Text und Festbreitenschrift.
+3. Die Einstellungen werden automatisch gespeichert. Laden Sie nach dem Ändern der Einstellungen oder dem Ein- oder Ausschalten die geöffneten Seiten neu, damit die Änderung wirksam wird.
+
+Alle mitgelieferten Schriften sind im Erweiterungspaket enthalten; Schriften werden nicht von außen geladen.
+
+Lizenz
+・Projekt: MIT License
+・Mitgelieferte Schriften: alle unter SIL Open Font License 1.1

@@ -1,0 +1,73 @@
+Extensão que substitui automaticamente as fontes difíceis de ler dos sites pelas fontes japonesas de sua preferência.
+Você pode escolher entre 10 fontes (7 para o texto e 3 monoespaçadas) e alterar as configurações com facilidade pelo pop-up.
+Como substitui apenas as fontes difíceis de ler indicadas pelo site, o texto fica mais legível sem desorganizar muito o layout da página.
+
+Recursos
+
+・Seleção de fonte
+  No pop-up, você escolhe sua fonte preferida entre 7 fontes de texto e 3 fontes monoespaçadas.
+  Também é possível escolher o peso da fonte do texto (Regular / Medium). As configurações são salvas automaticamente.
+
+・Chave de ativação
+  Com a chave do pop-up, você ativa ou desativa a extensão.
+
+・Substituição automática logo após a instalação
+  Nos sites compatíveis, as fontes são substituídas automaticamente ao abrir a página.
+  Alguns serviços on-line de edição de documentos, design, edição de código e chat ficam de fora para preservar a experiência de edição e a exibição dos ícones. Páginas em que as extensões não podem funcionar, como as de configurações do navegador, também ficam de fora.
+
+・Substituição separada para texto e monoespaçadas
+  As fontes gothic, mincho (com serifa) e latinas usadas no texto são substituídas pela fonte do texto, e as fontes monoespaçadas usadas em código, pela fonte monoespaçada. O alinhamento do código é mantido, e o negrito (Bold) continua em negrito.
+
+・Cuidado com a exibição
+  A fonte do texto não é aplicada à força em ícones desenhados com fontes de ícones nem em áreas de edição de texto, como campos de entrada e editores.
+
+・Compatível com a web moderna
+  A substituição também vale dentro de Shadow DOM open / closed e em quadros da página (inclusive em aplicativos web como o YouTube).
+
+・Projeto que reduz o impacto na exibição
+  Os estilos da combinação escolhida são preparados com antecedência e aplicados quando a página começa a carregar.
+
+・Contato
+  Pelo pop-up, você pode enviar uma mensagem ao desenvolvedor (Kagayoi Support) depois de verificar seu e-mail.
+
+Fontes disponíveis
+
+Fontes de texto (7)
+・IBM Plex Sans JP (padrão) … Fonte do sistema de design da IBM. Une legibilidade e aparência moderna.
+・Noto Sans JP … Criada pelo Google. Oferece vários pesos e fica bonita em qualquer tamanho.
+・M PLUS 2 … Desenho um pouco largo e arredondado. Passa uma impressão suave e acolhedora.
+・M PLUS Rounded 1c … Gothic arredondada, com pontas de traço redondas. Tem um aspecto suave e acolhedor.
+・Murecho … Desenho limpo, de linhas retas. Combina bem com interfaces e painéis.
+・Zen Kaku Gothic New … Fonte moderna que mantém o ar da gothic tradicional.
+・LINE Seed JP … Fonte desenvolvida pela LINE. Arredondada, simpática e fácil de ler.
+
+Fontes monoespaçadas (3)
+・UDEV Gothic JPDOC (padrão) … Facilita distinguir os sinais de sonorização (dakuten e handakuten) e se destaca pela legibilidade do código.
+・PlemolJP … Otimizada tanto para programação quanto para texto em japonês.
+・Moralerspace Neon JPDOC … Fonte monoespaçada composta, criada para programar.
+
+Nas fontes de texto, você pode escolher o peso entre Regular (400) e Medium (500) (padrão: Regular).
+A LINE Seed JP é exibida em Regular mesmo que você escolha Medium.
+As fontes monoespaçadas são fixas em Regular (400). O negrito (Bold) é mantido como está.
+
+Como funciona a substituição
+
+・Texto → a fonte de texto escolhida
+  As fontes gothic e mincho japonesas indicadas pelo site, assim como as fontes latinas e as padrão do sistema, são substituídas pela fonte de texto escolhida. As mincho difíceis de ler também passam a uma fonte bem legível, o que torna a leitura de textos longos mais confortável.
+
+・Monoespaçadas e código → a fonte monoespaçada escolhida
+  As fontes monoespaçadas e as áreas de código indicadas pelo site são substituídas pela fonte monoespaçada escolhida. Blocos de código de blogs técnicos, por exemplo, também ficam mais legíveis.
+
+・Os caracteres que as fontes de substituição não incluem (como árabes ou tailandeses) são exibidos pelo navegador com a fonte original do site, por meio da substituição automática.
+
+Como usar
+
+1. Abra o pop-up pela barra de ferramentas do navegador (menu de extensões).
+2. Escolha a fonte do texto, o peso do texto e a fonte monoespaçada.
+3. As configurações são salvas automaticamente. Depois de alterar as configurações ou ativar ou desativar a extensão, recarregue as páginas abertas para aplicar a mudança.
+
+Todas as fontes incluídas estão no pacote da extensão, e nenhuma fonte é carregada de fontes externas.
+
+Licença
+・Projeto: MIT License
+・Fontes incluídas: todas sob a SIL Open Font License 1.1

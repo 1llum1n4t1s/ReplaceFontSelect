@@ -1,0 +1,73 @@
+Cette extension remplace automatiquement les polices difficiles à lire des sites web par les polices japonaises de votre choix.
+Vous pouvez choisir parmi 10 polices (7 pour le texte et 3 à chasse fixe) et modifier facilement les réglages depuis la fenêtre contextuelle.
+Comme elle ne remplace que les polices difficiles à lire imposées par le site, le texte devient plus lisible sans bouleverser la mise en page.
+
+Fonctionnalités
+
+・Choix de la police
+  Dans la fenêtre contextuelle, choisissez votre police préférée parmi 7 polices de texte et 3 polices à chasse fixe.
+  Vous pouvez aussi choisir la graisse de la police du texte (Regular / Medium). Les réglages sont enregistrés automatiquement.
+
+・Interrupteur d’activation
+  L’interrupteur de la fenêtre contextuelle permet d’activer ou de désactiver l’extension.
+
+・Remplacement automatique dès l’installation
+  Sur les sites pris en charge, les polices sont remplacées automatiquement dès l’ouverture de la page.
+  Certains services en ligne de rédaction de documents, de conception, d’édition de code et de messagerie sont exclus afin de préserver le confort d’édition et l’affichage des icônes. Les pages où les extensions ne peuvent pas fonctionner, comme les pages de réglages du navigateur, sont également exclues.
+
+・Remplacement distinct pour le texte et la chasse fixe
+  Les polices gothic, mincho (à empattements) et latines utilisées pour le texte sont remplacées par la police du texte, et les polices à chasse fixe utilisées pour le code par la police à chasse fixe. L’alignement du code est conservé et le gras (Bold) reste en gras.
+
+・Souci de préserver l’affichage
+  La police du texte n’est pas appliquée de force aux icônes dessinées avec des polices d’icônes ni aux zones où l’on modifie du texte, comme les champs de saisie et les éditeurs.
+
+・Compatible avec le web moderne
+  Le remplacement s’applique aussi dans les Shadow DOM open / closed et dans les cadres de la page (y compris les applications web comme YouTube).
+
+・Conception limitant l’impact sur l’affichage
+  Les styles de la combinaison choisie sont préparés à l’avance et appliqués dès le début du chargement de la page.
+
+・Contact
+  Depuis la fenêtre contextuelle, vous pouvez envoyer une demande au développeur (Kagayoi Support) après avoir vérifié votre adresse e-mail.
+
+Polices disponibles
+
+Polices de texte (7)
+・IBM Plex Sans JP (par défaut) … Police du système de design d’IBM. Allie lisibilité et aspect moderne.
+・Noto Sans JP … Créée par Google. Prend en charge de nombreuses graisses et s’affiche joliment quelle que soit la taille.
+・M PLUS 2 … Dessin un peu large aux formes arrondies. Une impression douce et chaleureuse.
+・M PLUS Rounded 1c … Gothic arrondie aux extrémités de traits rondes. Une allure douce et chaleureuse.
+・Murecho … Dessin net aux lignes droites. S’accorde bien avec les interfaces et les tableaux de bord.
+・Zen Kaku Gothic New … Police moderne qui garde l’esprit de la gothic traditionnelle.
+・LINE Seed JP … Police développée par LINE. Arrondie, chaleureuse et facile à lire.
+
+Polices à chasse fixe (3)
+・UDEV Gothic JPDOC (par défaut) … Permet de distinguer facilement les signes de sonorisation (dakuten et handakuten) et offre une excellente lisibilité du code.
+・PlemolJP … Optimisée à la fois pour la programmation et pour le japonais.
+・Moralerspace Neon JPDOC … Police à chasse fixe composite conçue pour le codage.
+
+Pour les polices de texte, vous pouvez choisir la graisse entre Regular (400) et Medium (500) (par défaut  Regular).
+LINE Seed JP s’affiche en Regular même si vous choisissez Medium.
+Les polices à chasse fixe sont en Regular (400) uniquement. Le gras (Bold) est conservé tel quel.
+
+Fonctionnement du remplacement
+
+・Texte → la police de texte choisie
+  Les polices gothic et mincho japonaises imposées par le site, ainsi que les polices latines et les polices système par défaut, sont remplacées par la police de texte choisie. Les mincho difficiles à lire deviennent elles aussi une police très lisible, ce qui rend la lecture de textes longs plus confortable.
+
+・Chasse fixe et code → la police à chasse fixe choisie
+  Les polices à chasse fixe et les zones de code imposées par le site sont remplacées par la police à chasse fixe choisie. Les blocs de code des blogs techniques, par exemple, deviennent eux aussi plus lisibles.
+
+・Les caractères absents des polices de remplacement (comme l’arabe ou le thaï) sont affichés par le navigateur avec la police d’origine du site grâce au repli automatique.
+
+Utilisation
+
+1. Ouvrez la fenêtre contextuelle depuis la barre d’outils du navigateur (menu des extensions).
+2. Choisissez la police du texte, la graisse du texte et la police à chasse fixe.
+3. Les réglages sont enregistrés automatiquement. Après avoir modifié les réglages ou activé ou désactivé l’extension, rechargez les pages ouvertes pour appliquer le changement.
+
+Toutes les polices fournies sont incluses dans le paquet de l’extension  aucune police n’est chargée depuis l’extérieur.
+
+Licence
+・Projet  MIT License
+・Polices fournies  toutes sous SIL Open Font License 1.1

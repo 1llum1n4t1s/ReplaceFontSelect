@@ -1,0 +1,73 @@
+This extension automatically replaces hard-to-read fonts on websites with the Japanese fonts of your choice.
+Choose from 10 fonts (7 for body text and 3 monospace fonts), and change the settings easily from the popup.
+It targets only the fonts that sites specify and that are hard to read, so text becomes easier to read without disrupting the site's layout.
+
+Features
+
+・Font selection
+  Choose your preferred font in the popup from 7 body fonts and 3 monospace fonts.
+  You can also choose the body font weight (Regular / Medium). Settings are saved automatically.
+
+・On/Off toggle
+  Turn the extension on or off with the switch in the popup.
+
+・Automatic replacement just by installing
+  On supported sites, fonts are replaced automatically as soon as you open a page.
+  Some online services for document editing, design, coding, and chat are excluded to keep their editing experience and icons intact. Browser settings pages and other pages where extensions cannot run are also excluded.
+
+・Body text and monospace handled separately
+  Gothic, Mincho (serif), and Latin fonts used for body text become the body font, while monospace fonts used for code become the monospace font. Code stays aligned, and bold text (Bold) stays bold.
+
+・Layout-friendly
+  The body font is not forcibly applied to icons drawn with icon fonts or to editable areas such as input fields and editors.
+
+・Modern web support
+  Replacement also applies inside open and closed Shadow DOM and in embedded frames (including web apps such as YouTube).
+
+・Low impact on rendering
+  Styles for the combination you chose are prepared in advance and applied as the page starts loading.
+
+・Contact form
+  From the popup, you can send an inquiry to the developer (Kagayoi Support) after verifying your email address.
+
+Available fonts
+
+Body fonts (7)
+・IBM Plex Sans JP (default) … A font from IBM's design system. Combines legibility with a modern look.
+・Noto Sans JP … Made by Google. Supports a wide range of weights and looks good at any size.
+・M PLUS 2 … A slightly wide design with rounded forms. Soft and approachable.
+・M PLUS Rounded 1c … A rounded gothic with round stroke ends. Soft and approachable.
+・Murecho … A clean design with straight lines. Works well with UIs and dashboards.
+・Zen Kaku Gothic New … A modern take that keeps the feel of traditional gothic type.
+・LINE Seed JP … A font developed by LINE. Rounded, friendly, and easy to read.
+
+Monospace fonts (3)
+・UDEV Gothic JPDOC (default) … Makes voiced and semi-voiced sound marks easy to tell apart and is excellent for code readability.
+・PlemolJP … Optimized for both programming and Japanese text.
+・Moralerspace Neon JPDOC … A composite monospace font designed for coding.
+
+For body fonts, you can choose a weight of Regular (400) or Medium (500) (default: Regular).
+LINE Seed JP is displayed in Regular even if you choose Medium.
+Monospace fonts are fixed at Regular (400). Bold text (Bold) is kept as is.
+
+How replacement works
+
+・Body text → the body font you chose
+  Japanese gothic and Mincho fonts specified by the site, as well as Latin and system default fonts, are replaced with the body font you chose. Hard-to-read Mincho text also becomes a highly legible typeface, which makes long articles more comfortable to read.
+
+・Monospace and code → the monospace font you chose
+  Monospace fonts and code display areas specified by the site are replaced with the monospace font you chose. Code blocks in technical blogs and similar pages also become easier to read.
+
+・Characters not included in the replacement fonts (such as Arabic or Thai) are shown by the browser in the site's original font through automatic fallback.
+
+How to use
+
+1. Open the popup from the browser toolbar (extensions menu).
+2. Choose the body font, body weight, and monospace font.
+3. Settings are saved automatically. After changing settings or turning the extension on or off, reload open pages to apply the change.
+
+All bundled fonts are included in the extension package, and no fonts are loaded from external sources.
+
+License
+・Project: MIT License
+・Bundled fonts: all under SIL Open Font License 1.1

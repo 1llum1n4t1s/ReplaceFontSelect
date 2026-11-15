@@ -1,0 +1,53 @@
+Extensión que sustituye automáticamente las fuentes difíciles de leer de los sitios web por Noto Sans JP y UDEV Gothic JPDOC.
+Como sustituye únicamente las fuentes difíciles de leer que indica el sitio, el texto resulta más legible sin alterar apenas el diseño de la página. No hace falta elegir fuentes: basta con instalarla.
+
+Características
+
+・Sustitución automática con solo instalarla
+  En los sitios compatibles, las fuentes se sustituyen automáticamente al abrir la página.
+  Algunos servicios en línea de edición de documentos, diseño, edición de código y chat quedan excluidos para preservar la comodidad de edición y la visualización de los iconos. Tampoco se aplica en páginas donde las extensiones no pueden funcionar, como las de ajustes del navegador.
+
+・Interruptor de activación
+  Con el interruptor de la ventana emergente puede activar o desactivar la extensión.
+
+・Sustitución diferenciada para texto y monoespaciadas
+  Las fuentes gothic, mincho (con serifas) y latinas que se usan en el texto se sustituyen por Noto Sans JP, y las fuentes monoespaciadas que se usan en el código, por UDEV Gothic JPDOC. La alineación del código se mantiene y la negrita (Bold) se sigue mostrando en negrita.
+
+・Cuidado con el diseño de la página
+  No se aplica a la fuerza la fuente del texto a los iconos dibujados con fuentes de iconos ni a las zonas donde se edita texto, como los campos de entrada y los editores.
+
+・Compatible con la web moderna
+  La sustitución también se aplica dentro de Shadow DOM open / closed y en los marcos de la página (también en aplicaciones web como YouTube).
+
+・Diseño que reduce el impacto en la visualización
+  Los estilos de sustitución se preparan de antemano y se aplican al empezar a cargarse la página.
+  El paquete de distribución incluye únicamente las fuentes que usa esta versión.
+
+・Contacto
+  Desde la ventana emergente puede enviar una consulta al desarrollador (Kagayoi Support) tras verificar su correo electrónico.
+
+Cómo funciona la sustitución
+
+・Texto → Noto Sans JP (Regular)
+  Las fuentes gothic y mincho japonesas que indica el sitio, así como las fuentes latinas y las predeterminadas del sistema, se sustituyen por Noto Sans JP. Las mincho difíciles de leer también pasan a una tipografía muy legible, de modo que leer textos largos resulta más cómodo.
+
+・Monoespaciadas y código → UDEV Gothic JPDOC
+  Las fuentes monoespaciadas y las zonas de código que indica el sitio se sustituyen por UDEV Gothic JPDOC. Los bloques de código de los blogs técnicos, por ejemplo, también resultan más legibles.
+
+  UDEV Gothic JPDOC es una fuente monoespaciada que permite distinguir fácilmente los signos de sonorización (dakuten y handakuten, como en «バ» y «パ») y diferenciar con claridad los caracteres alfanuméricos («1» y «l», «0» y «O»).
+
+・Los caracteres que no incluyen las fuentes de sustitución (como los árabes o los tailandeses) los muestra el navegador con la fuente original del sitio mediante el cambio automático.
+
+Si desea elegir la fuente o el grosor del texto, utilice la versión hermana «Sustituto de fuentes cómodas para la vista», que permite elegir entre 10 fuentes.
+
+Cómo usarla
+
+1. Una vez instalada, las fuentes se sustituyen automáticamente en los sitios compatibles.
+2. Para desactivarla, abra la ventana emergente desde la barra de herramientas del navegador (menú de extensiones) y cambie el interruptor.
+3. Tras activarla o desactivarla, recargue las páginas abiertas para que se aplique el cambio.
+
+Todas las fuentes incluidas están en el paquete de la extensión y no se cargan fuentes desde el exterior.
+
+Licencia
+・Proyecto: MIT License
+・Fuentes incluidas: SIL Open Font License 1.1

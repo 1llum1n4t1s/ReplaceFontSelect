@@ -1,0 +1,53 @@
+Diese Erweiterung ersetzt schwer lesbare Schriften auf Websites automatisch durch Noto Sans JP und UDEV Gothic JPDOC.
+Da nur die von der Website vorgegebenen, schwer lesbaren Schriften ersetzt werden, wird der Text besser lesbar, ohne das Layout der Website stark zu stören. Eine Schriftauswahl ist nicht nötig: Einfach installieren und loslegen.
+
+Funktionen
+
+・Automatischer Ersatz direkt nach der Installation
+  Auf unterstützten Websites werden die Schriften beim Öffnen der Seite automatisch ersetzt.
+  Einige Online-Dienste für Dokumentbearbeitung, Design, Code-Bearbeitung und Chat sind ausgenommen, damit Bedienkomfort und Symboldarstellung erhalten bleiben. Seiten, auf denen Erweiterungen nicht funktionieren können, etwa die Einstellungsseiten des Browsers, sind ebenfalls ausgenommen.
+
+・Ein-/Aus-Schalter
+  Mit dem Schalter im Popup können Sie die Erweiterung ein- oder ausschalten.
+
+・Getrennter Ersatz für Text und Festbreitenschrift
+  Für den Text verwendete Gothic-, Mincho- (Serifen-) und lateinische Schriften werden durch Noto Sans JP ersetzt, für Code verwendete Festbreitenschriften durch UDEV Gothic JPDOC. Die Ausrichtung des Codes bleibt erhalten, und Fettdruck (Bold) bleibt fett.
+
+・Rücksicht auf die Darstellung
+  Auf Symbole, die mit Symbolschriften dargestellt werden, und auf Bereiche zum Bearbeiten von Text wie Eingabefelder und Editoren wird die Textschrift nicht zwangsweise angewendet.
+
+・Auch für das moderne Web
+  Der Ersatz gilt auch innerhalb von open / closed Shadow DOM und in eingebetteten Frames der Seite (auch bei Web-Apps wie YouTube).
+
+・Darstellung möglichst wenig beeinträchtigt
+  Die Ersatzstile werden vorab bereitgestellt und beim Start des Seitenladens angewendet.
+  Das Verteilungspaket enthält nur die Schriften, die diese Version verwendet.
+
+・Kontakt
+  Über das Popup können Sie nach einer E-Mail-Bestätigung eine Anfrage an den Entwickler (Kagayoi Support) senden.
+
+So funktioniert der Ersatz
+
+・Text → Noto Sans JP (Regular)
+  Von der Website vorgegebene japanische Gothic- und Mincho-Schriften sowie lateinische und systemeigene Standardschriften werden durch Noto Sans JP ersetzt. Auch schwer lesbare Mincho-Schriften werden zu einer gut erkennbaren Schrift, sodass sich lange Texte angenehmer lesen lassen.
+
+・Festbreite und Code → UDEV Gothic JPDOC
+  Von der Website vorgegebene Festbreitenschriften und Code-Darstellungen werden durch UDEV Gothic JPDOC ersetzt. Auch Codeblöcke in technischen Blogs werden dadurch besser lesbar.
+
+  UDEV Gothic JPDOC ist eine Festbreitenschrift, bei der sich Lautzeichen (Dakuten und Handakuten, etwa „バ“ und „パ“) leicht unterscheiden lassen und auch alphanumerische Zeichen („1“ und „l“, „0“ und „O“) klar auseinanderzuhalten sind.
+
+・Zeichen, die in den Ersatzschriften nicht enthalten sind (etwa arabische oder thailändische Schrift), zeigt der Browser durch automatisches Ausweichen in der ursprünglichen Schrift der Website an.
+
+Wenn Sie Schrift oder Schriftstärke selbst wählen möchten, nutzen Sie bitte die Schwestererweiterung „Augenfreundlicher Schriftersatz“, bei der Sie aus 10 Schriften wählen können.
+
+Verwendung
+
+1. Nach der Installation beginnt der Ersatz auf unterstützten Websites automatisch.
+2. Zum Ausschalten öffnen Sie das Popup über die Symbolleiste des Browsers (Erweiterungsmenü) und betätigen den Schalter.
+3. Laden Sie nach dem Ein- oder Ausschalten die geöffneten Seiten neu, damit die Änderung wirksam wird.
+
+Alle mitgelieferten Schriften sind im Erweiterungspaket enthalten; Schriften werden nicht von außen geladen.
+
+Lizenz
+・Projekt: MIT License
+・Mitgelieferte Schriften: SIL Open Font License 1.1

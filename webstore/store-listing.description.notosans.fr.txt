@@ -1,0 +1,53 @@
+Cette extension remplace automatiquement les polices difficiles à lire des sites web par Noto Sans JP et UDEV Gothic JPDOC.
+Comme elle ne remplace que les polices difficiles à lire imposées par le site, le texte devient plus lisible sans bouleverser la mise en page. Aucun choix de police n’est nécessaire  il suffit de l’installer.
+
+Fonctionnalités
+
+・Remplacement automatique dès l’installation
+  Sur les sites pris en charge, les polices sont remplacées automatiquement dès l’ouverture de la page.
+  Certains services en ligne de rédaction de documents, de conception, d’édition de code et de messagerie sont exclus afin de préserver le confort d’édition et l’affichage des icônes. Les pages où les extensions ne peuvent pas fonctionner, comme les pages de réglages du navigateur, sont également exclues.
+
+・Interrupteur d’activation
+  L’interrupteur de la fenêtre contextuelle permet d’activer ou de désactiver l’extension.
+
+・Remplacement distinct pour le texte et la chasse fixe
+  Les polices gothic, mincho (à empattements) et latines utilisées pour le texte sont remplacées par Noto Sans JP, et les polices à chasse fixe utilisées pour le code par UDEV Gothic JPDOC. L’alignement du code est conservé et le gras (Bold) reste en gras.
+
+・Souci de préserver l’affichage
+  La police du texte n’est pas appliquée de force aux icônes dessinées avec des polices d’icônes ni aux zones où l’on modifie du texte, comme les champs de saisie et les éditeurs.
+
+・Compatible avec le web moderne
+  Le remplacement s’applique aussi dans les Shadow DOM open / closed et dans les cadres de la page (y compris les applications web comme YouTube).
+
+・Conception limitant l’impact sur l’affichage
+  Les styles de remplacement sont préparés à l’avance et appliqués dès le début du chargement de la page.
+  Le paquet de distribution ne contient que les polices utilisées par cette version.
+
+・Contact
+  Depuis la fenêtre contextuelle, vous pouvez envoyer une demande au développeur (Kagayoi Support) après avoir vérifié votre adresse e-mail.
+
+Fonctionnement du remplacement
+
+・Texte → Noto Sans JP (Regular)
+  Les polices gothic et mincho japonaises imposées par le site, ainsi que les polices latines et les polices système par défaut, sont remplacées par Noto Sans JP. Les mincho difficiles à lire deviennent elles aussi une police très lisible, ce qui rend la lecture de textes longs plus confortable.
+
+・Chasse fixe et code → UDEV Gothic JPDOC
+  Les polices à chasse fixe et les zones de code imposées par le site sont remplacées par UDEV Gothic JPDOC. Les blocs de code des blogs techniques, par exemple, deviennent eux aussi plus lisibles.
+
+  UDEV Gothic JPDOC est une police à chasse fixe qui permet de distinguer facilement les signes de sonorisation (dakuten et handakuten, comme dans « バ  et « パ ) et de bien différencier les caractères alphanumériques (« 1  et « l , « 0  et « O ).
+
+・Les caractères absents des polices de remplacement (comme l’arabe ou le thaï) sont affichés par le navigateur avec la police d’origine du site grâce au repli automatique.
+
+Si vous souhaitez choisir la police ou la graisse du texte, utilisez la version sœur « Remplacement de polices reposantes , qui propose 10 polices au choix.
+
+Utilisation
+
+1. Une fois l’extension installée, les polices sont remplacées automatiquement sur les sites pris en charge.
+2. Pour la désactiver, ouvrez la fenêtre contextuelle depuis la barre d’outils du navigateur (menu des extensions) et basculez l’interrupteur.
+3. Après avoir activé ou désactivé l’extension, rechargez les pages ouvertes pour appliquer le changement.
+
+Toutes les polices fournies sont incluses dans le paquet de l’extension  aucune police n’est chargée depuis l’extérieur.
+
+Licence
+・Projet  MIT License
+・Polices fournies  SIL Open Font License 1.1
