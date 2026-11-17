@@ -166,6 +166,7 @@ bun scripts/release.js --yes    # 直接呼び（確認プロンプト省略、C
 - **トリガー**: `release/<X.Y.Z>` 形式のブランチへの push (例: `release/3.0.3`, `release/3.1.0`)
 - **matrix strategy**: 現在 `variant: [default, notosans]` の 2 要素で並列公開。 将来 variant を追加する場合は配列を拡張
 - **整合性チェック**: ブランチ末尾の `X.Y.Z` と `variants/<matrix.variant>.json` の `version` と生成された `manifest.json` の `version` が一致しないと該当 variant のジョブが失敗
+- **公開前ゲート**: `verify` job（`.github/workflows/verify.yml` を workflow_call で呼ぶ）が、共通部品の同期確認・両 variant のビルド・`verify-style-injection.cjs` を実行する。失敗すると publish job は走らない。同じ verify.yml は main への push と全 PR でも実行される（Dependabot 再検証は従来どおり `dependency-validation.yml`）
 - **公開先**: Chrome Web Store と Firefox AMO の **両方** に並列公開
 
 #### Chrome Web Store

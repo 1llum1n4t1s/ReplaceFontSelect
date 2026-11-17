@@ -1,0 +1,53 @@
+name: Verify
+
+# 本体の検証（共通部品の同期・両 variant のビルド・フォント注入の回帰テスト）。
+# - main への push と全 PR（Dependabot 以外も）で実行する。
+# - publish.yml が release/** の公開前ゲートとして workflow_call で呼ぶ。失敗したら公開 job が走らない。
+# Dependabot 専用の再検証（dependency-validation.yml の入力 guard・PR 証跡）には手を入れず、そちらは別 workflow のまま維持する。
+# 実機ブラウザでの確認と、画像生成（generate-screenshots・実 UI 枠が要る verify）は対象外。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify
+    # 同じ PR の古い実行は取り消す（main push と公開前ゲートは取り消さない）。
+    # 呼び出し元（publish.yml）の concurrency と衝突しないよう、workflow ではなく job に置く。
+    concurrency:
+      group: verify-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Setup Bun
+        shell: pwsh
+        run: ./scripts/Initialize-BunBuild.ps1 -VersionFile package.json
+      - name: Install locked dependencies
+        run: bun run deps
+      - name: Validate dependency security patches
+        run: bun run test:dependencies
+      - name: Sync support assets
+        run: bun --bun run sync:support
+      - name: Check support assets
+        run: bun --bun run check:support
+      - name: Build default variant
+        run: bun --bun run build:default
+      - name: Build notosans variant
+        run: bun --bun run build:notosans
+      - name: Font injection regression
+        run: bun test ./scripts/verify-style-injection.cjs

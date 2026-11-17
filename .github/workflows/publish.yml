@@ -44,7 +44,17 @@ concurrency:
   queue: max
 
 jobs:
+  # 公開前ゲート: 本体の検証（verify.yml）が通らなければ publish job は走らない。
+  # 条件は publish と同じ（release ブランチの初回 push / 手動再開のみ）。
+  verify:
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.created == true)) }}
+    name: Verify before publish
+    uses: ./.github/workflows/verify.yml
+    permissions:
+      contents: read
+
   publish:
+    needs: verify
     # 修復 push や GitHub rerun は自動提出しない。再開は対象を指定する。
     if: ${{ startsWith(github.ref, 'refs/heads/release/') && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.created == true)) }}
     name: Publish ${{ matrix.variant }}
