@@ -95,6 +95,8 @@ jobs:
         run: pwsh -NoProfile -File scripts/Test-PublishAmo.ps1 -WorkDirectory "$RUNNER_TEMP/amo-publisher-tests"
       - name: Validate dependency validation dispatch guards
         run: bun test ./scripts/verify-dependency-validation.cjs
+      - name: Validate Dependabot auto-merge decisions
+        run: bun test ./scripts/verify-dependabot-auto-merge.cjs
       - name: Validate 1
         run: bun --bun run check:support
       - name: Validate 2
