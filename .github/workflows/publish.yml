@@ -3,20 +3,20 @@ name: Publish to Chrome Web Store & Firefox AMO
 # この workflow は検証済みZIPを下書きとしてアップロードするだけで、申請しない。
 # 申請は掲載画像などを Dashboard で整えた後に、cws-submit.yml を手動で実行する。
 
-# ブランチ命名規約:
-#   release/X.Y.Z (例: release/3.0.0)
+# タグ命名規約:
+#   main のコミットに付けた軽量タグ v<X.Y.Z> (例: v3.0.0)
 #
-# `release/<X.Y.Z>` の新規作成時の初回 push で variant matrix を並列実行 (default + notosans)。
+# `v<X.Y.Z>` の新規 push で variant matrix を並列実行 (default + notosans)。
 # 全 variant が同じ version を共有し、 matrix strategy で並列公開する。
-# variants/<name>.json の version とブランチ末尾の X.Y.Z が一致する必要がある。
+# variants/<name>.json の version とタグの X.Y.Z が一致する必要がある。
 #
 # 公開先:
 #   - Chrome Web Store (scripts/Publish-Cws.ps1。アップロードのみ。申請は cws-submit.yml)
 
 on:
   push:
-    branches:
-      - 'release/**'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
     inputs:
       variant:
@@ -37,7 +37,7 @@ on:
 permissions:
   contents: read
 
-# 同一リポジトリの全 release branch と手動実行を直列化する。
+# 同一リポジトリの全タグ run と手動実行を直列化する。
 concurrency:
   group: publish-${{ github.repository }}
   cancel-in-progress: false
@@ -45,9 +45,9 @@ concurrency:
 
 jobs:
   # 公開前ゲート: 本体の検証（verify.yml）が通らなければ publish job は走らない。
-  # 条件は publish と同じ（release ブランチの初回 push / 手動再開のみ）。
+  # 条件は publish と同じ（版タグの初回 push / 手動再開のみ）。
   verify:
-    if: ${{ startsWith(github.ref, 'refs/heads/release/') && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.created == true)) }}
+    if: ${{ github.ref_type == 'tag' && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.created == true)) }}
     name: Verify before publish
     uses: ./.github/workflows/verify.yml
     permissions:
@@ -56,7 +56,7 @@ jobs:
   publish:
     needs: verify
     # 修復 push や GitHub rerun は自動提出しない。再開は対象を指定する。
-    if: ${{ startsWith(github.ref, 'refs/heads/release/') && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.created == true)) }}
+    if: ${{ github.ref_type == 'tag' && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.created == true)) }}
     name: Publish ${{ matrix.variant }}
     runs-on: ubuntu-latest
     # matrix で全 variant を並列実行。1 variant が失敗しても他は続行。
@@ -128,18 +128,28 @@ jobs:
           fi
           echo "再開対象 source SHA: $checkout_sha"
 
-      - name: ブランチ名から version を抽出
+      - name: タグの整合性を確認して version を抽出
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         id: parse
+        # タグ（厳密な v<x.y.z>・軽量タグがこの commit を指す・既定ブランチの祖先）を無条件に確認し、タグ名から version を取り出す。
+        # Secrets を使う step より前に置く。
         env:
-          BRANCH: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # 期待形式: release/<X.Y.Z>
-          if [[ ! "$BRANCH" =~ ^release/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-            echo "::error::ブランチ名がフォーマット release/<X.Y.Z> に一致しません: $BRANCH"
-            exit 1
-          fi
+          set -euo pipefail
+          [[ "$GITHUB_REF_TYPE" == tag ]] || { echo "::error::タグ以外では配信しません: $GITHUB_REF"; exit 1; }
+          # 期待形式: v<X.Y.Z>
+          [[ "$GITHUB_REF_NAME" =~ ^v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$ ]] || { echo "::error::版タグ v<x.y.z> の形ではありません: $GITHUB_REF_NAME"; exit 1; }
           version="${BASH_REMATCH[1]}"
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::commit id が不正です"; exit 1; }
+          # 軽量タグで、いまもこの commit を指すこと（注釈付きタグ・付け替え済みのタグを拒否する）。
+          [[ "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" --jq '.object.type + " " + .object.sha')" == "commit $GITHUB_SHA" ]] \
+            || { echo "::error::タグ $GITHUB_REF_NAME が $GITHUB_SHA を指す軽量タグではありません"; exit 1; }
+          # 既定ブランチの祖先であること（depth=1 の checkout では判定できないので compare API を使う）。
+          default="$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)"
+          [[ "$default" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "::error::既定ブランチ名が不正です"; exit 1; }
+          cmp="$(gh api "repos/$GITHUB_REPOSITORY/compare/$GITHUB_SHA...$default?per_page=1" --jq '.status + " " + (.behind_by | tostring)')"
+          [[ "$cmp" == "ahead 0" || "$cmp" == "identical 0" ]] || { echo "::error::$default の祖先ではありません ($cmp)"; exit 1; }
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "🎯 version=$version (variant=${{ matrix.variant }})"
 
@@ -148,7 +158,7 @@ jobs:
         shell: pwsh
         run: ./scripts/Initialize-BunBuild.ps1 -VersionFile package.json
 
-      - name: バリアントの version とブランチ version の整合性チェック
+      - name: バリアントの version とタグ version の整合性チェック
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         env:
           VARIANT: ${{ matrix.variant }}
@@ -160,10 +170,10 @@ jobs:
           fi
           variant_version=$(bun -p "require('./variants/${VARIANT}.json').version")
           if [ "$variant_version" != "$BRANCH_VERSION" ]; then
-            echo "::error::variants/${VARIANT}.json の version ($variant_version) とブランチ ($BRANCH_VERSION) が一致しません"
+            echo "::error::variants/${VARIANT}.json の version ($variant_version) とタグ ($BRANCH_VERSION) が一致しません"
             exit 1
           fi
-          echo "✅ variants/${VARIANT}.json の version とブランチ一致: $variant_version"
+          echo "✅ variants/${VARIANT}.json の version とタグ一致: $variant_version"
 
       - name: 依存インストール
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
@@ -212,7 +222,7 @@ jobs:
         run: |
           manifest_version=$(bun -p "require('./manifest.json').version")
           if [ "$manifest_version" != "$BRANCH_VERSION" ]; then
-            echo "::error::manifest.json の version ($manifest_version) とブランチ ($BRANCH_VERSION) が一致しません"
+            echo "::error::manifest.json の version ($manifest_version) とタグ ($BRANCH_VERSION) が一致しません"
             exit 1
           fi
           echo "✅ manifest.json の version: $manifest_version"

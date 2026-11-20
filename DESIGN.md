@@ -24,7 +24,7 @@
 | `src/content/inject.js` | MAIN worldで`attachShadow`を捕捉し、open rootを通知しつつclosed rootへ直接CSSを適用 |
 | `src/popup/` | 有効状態・フォント・weightの設定UI。`chrome.storage.local`へ保存 |
 | `@kagayoi/support-extension` / `src/shared/kagayoi-support-*` | 共有パッケージを正本として問い合わせUIのJS/CSS 5資産を同梱し、Kagayoi Supportへの送信境界を形成。Firefoxでは個人識別・認証情報をrequiredとして申告し、通信内容のoptional permissionを送信前に取得 |
-| `.github/workflows/publish.yml` | `release/X.Y.Z`を起点に2バリアントを生成し、Chrome Web StoreとFirefox AMOへ提出 |
+| `.github/workflows/publish.yml` | 版タグ`vX.Y.Z`のpushを起点に2バリアントを生成し、Chrome Web StoreとFirefox AMOへ提出 |
 
 ## ビルド時データフロー
 
@@ -84,7 +84,7 @@ popupは`body[data-variant]`と`prefers-color-scheme`でテーマを切り替え
 - サイト除外は宣言的・動的の両経路で一致させ、編集体験やアイコンフォントを保護する。
 - open / closed Shadow DOMのstylesheetはworldごとに共有し、root単位の複製を避ける。
 - 問い合わせUIの同梱5資産は共有パッケージと逐語一致させ、拡張側で派生実装を作らない。
-- versionは全バリアントと`package.json`で同期し、release branch名とも一致させる。
+- versionは全バリアントと`package.json`で同期し、版タグ名とも一致させる。
 
 ## 採用済み設計判断とトレードオフ
 
