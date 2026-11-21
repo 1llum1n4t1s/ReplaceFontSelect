@@ -54,28 +54,41 @@ function getExcludedFiles(variant, sourceRoot = root) {
   ).sort();
 }
 
+// ストア配信に不要なOS・エディタの残骸とプレビュー。firefoxはソース由来のTTFも載せない。
+function isJunkFile(file, platform) {
+  const base = path.posix.basename(file);
+  return base.endsWith('.DS_Store') || base.endsWith('.swp') || base.endsWith('~') ||
+    base === 'preview.html' || (platform === 'firefox' && base.endsWith('.ttf'));
+}
+
+// manifest.json・_locales・icons/<variant>・src を新規ディレクトリへ集約する。
+// 生成済みの manifest 等を前提とし、再生成と削除は行わない。
+function stagePackage(name, variant, platform, stageDir, sourceRoot = root) {
+  if (platform !== 'chrome' && platform !== 'firefox') throw new Error(`配布先が不正です: ${platform}`);
+  const target = path.resolve(stageDir);
+  if (fs.existsSync(target)) throw new Error(`コピー先は新規ディレクトリにしてください: ${target}`);
+  if (!fs.existsSync(path.join(sourceRoot, 'manifest.json'))) throw new Error('manifest.json がありません');
+  const skipped = new Set(getExcludedFiles(variant, sourceRoot));
+  const files = ['manifest.json'];
+  for (const directory of ['_locales', `icons/${name}`, 'src']) {
+    if (!fs.existsSync(path.join(sourceRoot, directory))) throw new Error(`必要なディレクトリがありません: ${directory}`);
+    files.push(...sourceFiles(path.join(sourceRoot, directory), directory));
+  }
+  for (const file of files) {
+    if (skipped.has(file) || isJunkFile(file, platform)) continue;
+    const output = path.join(target, ...file.split('/'));
+    fs.mkdirSync(path.dirname(output), { recursive: true });
+    fs.copyFileSync(path.join(sourceRoot, ...file.split('/')), output);
+  }
+}
+
 function main(args) {
-  const [name, option, destination] = args;
-  if (!name || !/^[a-z][a-z0-9_-]*$/.test(name) ||
-      (args.length !== 1 && !(args.length === 3 && option === '--copy' && destination))) {
-    throw new Error('使い方: bun scripts/package-source.js <variant> [--copy <新規srcディレクトリ>]');
+  const [name, option, platform, stageDir] = args;
+  if (args.length !== 4 || !/^[a-z][a-z0-9_-]*$/.test(name) || option !== '--stage' || !platform || !stageDir) {
+    throw new Error('使い方: bun scripts/package-source.js <variant> --stage <chrome|firefox> <新規ディレクトリ>');
   }
   const variant = JSON.parse(fs.readFileSync(path.join(root, 'variants', `${name}.json`), 'utf8'));
-  const excluded = getExcludedFiles(variant);
-  if (!destination) {
-    if (excluded.length) process.stdout.write(`${excluded.join('\n')}\n`);
-    return;
-  }
-  const target = path.resolve(destination);
-  // 既存内容の混入・上書きを防ぎ、コピーだけで成果物を構成する。
-  if (fs.existsSync(target)) throw new Error(`コピー先は新規ディレクトリにしてください: ${target}`);
-  const skipped = new Set(excluded);
-  for (const file of sourceFiles(path.join(root, 'src'))) {
-    if (skipped.has(file)) continue;
-    const output = path.join(target, file.slice('src/'.length));
-    fs.mkdirSync(path.dirname(output), { recursive: true });
-    fs.copyFileSync(path.join(root, file), output);
-  }
+  stagePackage(name, variant, platform, stageDir);
 }
 
 if (require.main === module) {
@@ -83,4 +96,4 @@ if (require.main === module) {
   catch (error) { console.error(error.message); process.exitCode = 1; }
 }
 
-module.exports = { getExcludedFiles };
+module.exports = { getExcludedFiles, stagePackage };

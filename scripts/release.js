@@ -21,7 +21,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const os = require('os');
+const { execSync, execFileSync } = require('child_process');
 const readline = require('readline');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -75,6 +76,47 @@ function run(cmd, opts = {}) {
     return '';
   }
   return execSync(cmd, { encoding: 'utf8', stdio: ['inherit', 'inherit', 'inherit'], cwd: ROOT });
+}
+
+// run() と同じ3点（コマンド表示・dry-run スキップ・cwd: ROOT）を持つ、シェルを介さない版。
+function runFile(file, fileArgs, opts = {}) {
+  console.log(`$ ${file} ${fileArgs.join(' ')}`);
+  if (DRY_RUN && opts.modifyState) {
+    console.log('  (dry-run — skipped)');
+    return '';
+  }
+  return execFileSync(file, fileArgs, { encoding: 'utf8', stdio: ['inherit', 'inherit', 'inherit'], cwd: ROOT });
+}
+
+// 非 ASCII のコミット文は引数で渡さず、UTF-8（BOM なし）のファイルで渡す。
+// commit 後に実際の文面を読み戻して予定文と照合する。不一致なら巻き戻さず、push せずに停止する。
+function commitWithMessageFile(message, branch) {
+  if (DRY_RUN) {
+    console.log('$ git -c i18n.commitEncoding=UTF-8 commit --file <message-file>');
+    console.log('  (dry-run — skipped)');
+    return;
+  }
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-commit-'));
+  try {
+    const file = path.join(dir, 'COMMIT_MESSAGE.txt');
+    fs.writeFileSync(file, message + '\n', 'utf8');
+    runFile('git', ['-c', 'i18n.commitEncoding=UTF-8', 'commit', '--file', file], { modifyState: true });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+  const actual = execFileSync('git', ['-c', 'i18n.logOutputEncoding=UTF-8', 'log', '-1', '--format=%B'], { encoding: 'utf8', cwd: ROOT }).replace(/[\r\n]+$/, '');
+  if (actual !== message || actual.includes('\uFFFD')) {
+    const sha = runQuiet('git rev-parse HEAD');
+    fail(
+      `コミット文が予定文と一致しません。push せずに停止します（自動では巻き戻していません）。\n` +
+      `  コミット: ${sha}（未 push）\n` +
+      `  予定文: ${message}\n` +
+      `  実際の文: ${actual}\n` +
+      `  原因（commit-msg hook・文字コード設定など）を確認してください。このまま再実行すると main が origin と不一致で停止し、main を push した後に再実行すると版がもう一度上がるため、次のどちらかで進めてください。\n` +
+      `  - 取り消す: version の書き換えごと main を origin/main と同じ状態へ戻してから再実行する。\n` +
+      `  - 修正して続行する: 再実行せず、コミット文を直したうえで git push origin main → git branch ${branch} → git push -u origin ${branch} を手動で行う。`
+    );
+  }
 }
 
 function runQuiet(cmd) {
@@ -211,7 +253,7 @@ async function main() {
   ].join(' ');
   const commitMsg = `v${newVersion} をリリース`;
   run(`git add ${stagedFiles}`, { modifyState: true });
-  run(`git commit -m "${commitMsg}"`, { modifyState: true });
+  commitWithMessageFile(commitMsg, branch);
   run('git push origin main', { modifyState: true });
 
   // 4. release/<X.Y.Z> ブランチを作成・push

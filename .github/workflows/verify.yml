@@ -1,6 +1,7 @@
 name: Verify
 
-# 本体の検証（共通部品の同期・両 variant のビルド・フォント注入の回帰テスト）。
+# 本体の検証（依存パッチの検証・置換除外リストの判定・共通部品の同期・両 variant のビルド・フォント注入の回帰テスト・
+# 配布 stage・アーカイブ・verifier の実行、CWS / AMO publisher と Firefox XPI builder の fixture テスト）。
 # - main への push と全 PR（Dependabot 以外も）で実行する。
 # - publish.yml が release/** の公開前ゲートとして workflow_call で呼ぶ。失敗したら公開 job が走らない。
 # Dependabot 専用の再検証（dependency-validation.yml の入力 guard・PR 証跡）には手を入れず、そちらは別 workflow のまま維持する。
@@ -41,6 +42,8 @@ jobs:
         run: bun run deps
       - name: Validate dependency security patches
         run: bun run test:dependencies
+      - name: Site exclusion rules
+        run: bun --bun run test:exclusions
       - name: Sync support assets
         run: bun --bun run sync:support
       - name: Check support assets
@@ -51,3 +54,34 @@ jobs:
         run: bun --bun run build:notosans
       - name: Font injection regression
         run: bun test ./scripts/verify-style-injection.cjs
+      - name: Package stage tests
+        run: bun --bun run test:package
+      - name: Package stage and archive verification
+        # publish.yml・zip.ps1 と同じ stage → アーカイブ → 検証を variant × 配布先の4組で直列に実行する。
+        # verifier は配布 manifest と生成済み manifest の一致を見るため、組ごとに build-variant を先に適用する。
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/package-verify"
+          export RELEASE_ZIP_PYTHON=python
+          for variant in default notosans; do
+            version=$(bun -p "require('./variants/${variant}.json').version")
+            for platform in chrome firefox; do
+              if [ "$platform" = firefox ]; then
+                bun scripts/build-variant.js "$variant" --firefox
+              else
+                bun scripts/build-variant.js "$variant"
+              fi
+              stage="$work/$variant-$platform"
+              archive="$work/$variant-$platform.zip"
+              bun scripts/package-source.js "$variant" --stage "$platform" "$stage"
+              pwsh -NoProfile -File scripts/New-FirefoxArchive.ps1 -SourceDirectory "$stage" -Archive "$archive" > /dev/null
+              bun scripts/verify-release-archive.js verify "$variant" "$version" "$stage" "$archive" "$platform"
+            done
+          done
+          bun scripts/build-variant.js default
+      - name: CWS publisher fixture tests
+        run: pwsh -NoProfile -File scripts/Test-PublishCws.ps1 -WorkDirectory "$RUNNER_TEMP/cws-publisher-tests"
+      - name: AMO publisher fixture tests
+        run: pwsh -NoProfile -File scripts/Test-PublishAmo.ps1 -WorkDirectory "$RUNNER_TEMP/amo-publisher-tests"
+      - name: Firefox archive builder fixture tests
+        run: pwsh -NoProfile -File scripts/Test-FirefoxArchive.ps1 -WorkDirectory "$RUNNER_TEMP/firefox-archive-tests"

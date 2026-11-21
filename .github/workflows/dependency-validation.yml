@@ -91,15 +91,15 @@ jobs:
         run: bun run test:dependencies
       - name: Sync support assets
         run: bun --bun run sync:support
-      - name: Validate web-ext release contract
+      - name: AMO publisher fixture tests
         run: pwsh -NoProfile -File scripts/Test-PublishAmo.ps1 -WorkDirectory "$RUNNER_TEMP/amo-publisher-tests"
       - name: Validate dependency validation dispatch guards
         run: bun test ./scripts/verify-dependency-validation.cjs
-      - name: Validate 1
+      - name: Check support assets
         run: bun --bun run check:support
-      - name: Validate 2
+      - name: Build default variant
         run: bun --bun run build:default
-      - name: Validate 3
+      - name: Build notosans variant
         run: bun --bun run build:notosans
-      - name: Validate 4
+      - name: Font injection regression
         run: bun test ./scripts/verify-style-injection.cjs

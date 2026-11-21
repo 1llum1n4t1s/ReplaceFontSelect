@@ -79,6 +79,5 @@
     "https://www.overleaf.com/*",
     "https://discord.com/*"
   ],
-  "zipBaseName": "replace-font-select",
-  "secretsKey": "DEFAULT"
+  "zipBaseName": "replace-font-select"
 }

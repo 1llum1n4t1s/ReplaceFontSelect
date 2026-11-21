@@ -5,6 +5,9 @@
 #   .\zip.ps1 -Variant notosans   # notosans variant をビルド
 #
 # variants/<name>.json の version / zipBaseName を真実の源として使用する。
+# 同梱ファイルの選定は scripts/package-source.js --stage、アーカイブ化は scripts/New-FirefoxArchive.ps1、
+# 検証は scripts/verify-release-archive.js で、publish.yml・verify.yml と同じ経路を使う。
+# 検証には Python 3 が必要（RELEASE_ZIP_PYTHON で実行ファイルを指定できる）。
 
 param(
     [string]$Variant = "default"
@@ -39,6 +42,42 @@ function Remove-LocalWorkItem {
     }
 }
 
+# 検証用の Python 3 を探す（Windows の WindowsApps エイリアスは import 確認で弾く）。
+# RELEASE_ZIP_PYTHON が設定されていればその値だけを試し、無効でも他へはフォールバックしない。
+function Resolve-ReleasePython {
+    if ($env:RELEASE_ZIP_PYTHON) {
+        $candidates = @(, @($env:RELEASE_ZIP_PYTHON))
+    } else {
+        $candidates = @(@('py', '-3'), @('python3'), @('python'))
+    }
+    foreach ($candidate in $candidates) {
+        if (-not (Get-Command $candidate[0] -ErrorAction SilentlyContinue)) { continue }
+        $rest = @($candidate | Select-Object -Skip 1)
+        $path = & $candidate[0] @rest -I -c 'import sys, zipfile; print(sys.executable)' 2>$null
+        if ($LASTEXITCODE -eq 0 -and $path) { return ($path | Select-Object -First 1) }
+    }
+    return $null
+}
+
+# 配布物を stage → アーカイブ → 検証の順で作る（publish.yml / verify.yml と同じ手順）。
+function New-VerifiedArchive {
+    param([string]$Platform, [string]$Stage, [string]$Archive)
+    bun scripts/package-source.js $Variant --stage $Platform $Stage
+    if ($LASTEXITCODE -ne 0) { throw "$Platform 用ソースの構築に失敗しました" }
+    pwsh -NoProfile -File scripts/New-FirefoxArchive.ps1 -SourceDirectory $Stage -Archive $Archive | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "$Platform 用アーカイブの作成に失敗しました" }
+    # 見つけた Python は verifier の実行中だけ渡し、呼び出し元セッションの環境変数を残さない。
+    $previousPython = $env:RELEASE_ZIP_PYTHON
+    try {
+        $env:RELEASE_ZIP_PYTHON = $python
+        bun scripts/verify-release-archive.js verify $Variant $version $Stage $Archive $Platform
+        $verifyExit = $LASTEXITCODE
+    } finally {
+        $env:RELEASE_ZIP_PYTHON = $previousPython
+    }
+    if ($verifyExit -ne 0) { throw "$Platform 用アーカイブの検証に失敗しました" }
+}
+
 $ErrorActionPreference = "Stop"
 
 # バリアント設定を読み込む
@@ -53,6 +92,28 @@ $zipBase = $variantConfig.zipBaseName
 Write-Host "🎯 Variant: $Variant (version=$version, zipBase=$zipBase)" -ForegroundColor Cyan
 Write-Host ""
 
+$python = Resolve-ReleasePython
+if (-not $python) {
+    if ($env:RELEASE_ZIP_PYTHON) {
+        Write-Host "❌ RELEASE_ZIP_PYTHON に指定された Python を実行できません: $($env:RELEASE_ZIP_PYTHON)" -ForegroundColor Red
+    } else {
+        Write-Host "❌ 検証用の Python 3 が見つかりません（RELEASE_ZIP_PYTHON で指定できます）" -ForegroundColor Red
+    }
+    exit 1
+}
+
+# 出力パッケージ名は variant ごと。古い成果物は build より前に消し、消せなければ停止する。
+$zipPath = Join-Path $PSScriptRoot "$zipBase-chrome.zip"
+$xpiPath = Join-Path $PSScriptRoot "$zipBase-firefox.xpi"
+foreach ($old in @($zipPath, $xpiPath)) {
+    try {
+        if (Test-Path -LiteralPath $old) { Remove-LocalWorkItem -LiteralPath $old -AllowedRoot $PSScriptRoot }
+    } catch {
+        Write-Host "❌ 既存の成果物を削除できません: $old ($($_.Exception.Message))" -ForegroundColor Red
+        exit 1
+    }
+}
+
 # 依存関係のインストール（bun.lock の整合性チェック付き）
 # bun run deps: lockfile に厳密に従い、差分があれば失敗する。サプライチェーン攻撃対策
 Write-Host "📦 依存関係をインストール中（bun run deps）..." -ForegroundColor Cyan
@@ -63,151 +124,78 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host ""
 
-# 共通サポート部品を npm package の正本から同期する。
-# build:* を経由しないこの包装経路でも、問い合わせ UI の JS 2本 + CSS 3本を必ず揃える。
-Write-Host "🧩 共通サポート部品を同期中..." -ForegroundColor Cyan
-bun --bun run sync:support
+# 共通部品の同期・アイコン・CSS・variant manifest は build:<variant> に一本化している。
+# フォント変換（convert-fonts）は WOFF2 をコミット済みで扱うため、フォント追加時だけ手動で実行する。
+Write-Host "🏗️ ビルド中（bun run build:$Variant）..." -ForegroundColor Cyan
+bun --bun run "build:$Variant"
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ 共通サポート部品の同期に失敗しました" -ForegroundColor Red
+    Write-Host "❌ ビルドに失敗しました" -ForegroundColor Red
     exit 1
 }
 Write-Host ""
 
-# アイコン生成
-Write-Host "🎨 アイコンを生成中..." -ForegroundColor Cyan
-bun scripts/generate-icons.js $Variant
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ アイコン生成に失敗しました" -ForegroundColor Red
-    exit 1
-}
-Write-Host ""
+# 作業ディレクトリ（.gitignore 済み）。失敗しても必ず片付け、manifest.json を Chrome 版へ戻す。
+# アーカイブも作業ディレクトリ内で作って検証し、両方通ってから最終名へ移す。
+# 最終名は開始時に消してあるため、検証を通っていないアーカイブは最終名に置かれない。
+# 最終名へ移す途中で失敗した場合は置いた分を外す。Ctrl+C などの中断では、検証済みの片方だけが最終名に残ることがある。
+$workDir = Join-Path $PSScriptRoot "temp-build"
+if (Test-Path $workDir) { Remove-LocalWorkItem -LiteralPath $workDir -AllowedRoot $PSScriptRoot }
+New-Item -ItemType Directory -Path $workDir | Out-Null
+$workZip = Join-Path $workDir "chrome.zip"
+$workXpi = Join-Path $workDir "firefox.xpi"
 
-# フォント変換（TTFがある場合）
-if (Test-Path "src/fonts/*.ttf") {
-    Write-Host "🔄 フォントを変換中..." -ForegroundColor Cyan
-    bun scripts/convert-fonts.js
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ フォント変換に失敗しました" -ForegroundColor Red
-        exit 1
-    }
+try {
+    # Chrome: manifest.json は Chrome 版のまま包装し、検証する。
+    Write-Host "📂 Chrome 用パッケージを作成・検証中..." -ForegroundColor Yellow
+    New-VerifiedArchive -Platform chrome -Stage (Join-Path $workDir "chrome") -Archive $workZip
+
+    # Firefox: AMO MV3 validator は service_worker 単独を reject するため、
+    # build-variant.js --firefox で background.scripts を併記した manifest を作り直してから固める。
     Write-Host ""
-}
+    Write-Host "🦊 Firefox AMO用のXPIファイルを作成・検証中..." -ForegroundColor Cyan
+    bun scripts/build-variant.js $Variant --firefox
+    if ($LASTEXITCODE -ne 0) { throw "Firefox 用 manifest の生成に失敗しました" }
+    New-VerifiedArchive -Platform firefox -Stage (Join-Path $workDir "firefox") -Archive $workXpi
 
-# CSS生成
-Write-Host "🎨 CSSを生成中..." -ForegroundColor Cyan
-bun scripts/generate-css.js
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ CSS生成に失敗しました" -ForegroundColor Red
-    exit 1
+    # 両方の検証が通った後で2件を最終名へ移す。新版と旧版を混在させないため、失敗したら置いた分を外す。
+    try {
+        Move-Item -LiteralPath $workZip -Destination $zipPath
+        Move-Item -LiteralPath $workXpi -Destination $xpiPath
+    } catch {
+        foreach ($path in @($zipPath, $xpiPath)) {
+            try { Remove-LocalWorkItem -LiteralPath $path -AllowedRoot $PSScriptRoot -IgnoreMissing } catch { }
+        }
+        foreach ($path in @($zipPath, $xpiPath)) {
+            $state = if (Test-Path -LiteralPath $path) { "存在します" } else { "ありません" }
+            Write-Host "❌ 最終名への移動に失敗しました。最終名の現状: $path は$state" -ForegroundColor Red
+        }
+        throw
+    }
 }
+finally {
+    # finally 内では throw / exit しない（元の失敗理由を置き換えないため）。失敗はフラグで後へ伝える。
+    # manifest.json を Chrome 版へ戻す (Firefox 版のまま残すと "Load unpacked" が壊れる)
+    bun scripts/build-variant.js $Variant
+    $manifestRestored = ($LASTEXITCODE -eq 0)
+    if (-not $manifestRestored) {
+        Write-Host "❌ Chrome 用 manifest への復帰に失敗しました" -ForegroundColor Red
+    }
+    try {
+        if (Test-Path $workDir) { Remove-LocalWorkItem -LiteralPath $workDir -AllowedRoot $PSScriptRoot }
+    } catch {
+        Write-Host "⚠️ 作業ディレクトリを片付けられませんでした: $workDir ($($_.Exception.Message))" -ForegroundColor Yellow
+    }
+}
+# ここへ来るのは成功時だけ。manifest を戻せなかった場合は失敗として終える。
+if (-not $manifestRestored) { exit 1 }
+
 Write-Host ""
-
-# variant manifest / variant.js を生成
-Write-Host "🧬 バリアント設定を適用中..." -ForegroundColor Cyan
-bun scripts/build-variant.js $Variant
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ バリアントビルドに失敗しました" -ForegroundColor Red
-    exit 1
-}
-Write-Host ""
-
-# 出力パッケージ名は variant ごと
-$zipPath = "./$zipBase-chrome.zip"
-$xpiPath = "./$zipBase-firefox.xpi"
-
-# 古いZIPファイルを削除
-if (Test-Path $zipPath) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($zipPath)) -AllowedRoot $PSScriptRoot }
-
-# 一時ディレクトリを作成
-$tempDir = "./temp-build"
-if (Test-Path $tempDir) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($tempDir)) -AllowedRoot $PSScriptRoot }
-New-Item -ItemType Directory -Path $tempDir | Out-Null
-
-# 必要なファイルをコピー (icons は対象 variant のみ同梱して別ブランドのアイコンが混入しないようにする)
-Write-Host "📂 必要なファイルをコピー中..." -ForegroundColor Yellow
-Copy-Item "manifest.json" -Destination $tempDir
-# 拡張名・UI 文言の 9 言語辞書 (build-variant.js が variant ごとに生成)
-Copy-Item "_locales" -Destination $tempDir -Recurse
-$variantIconsSrc = "icons/$Variant"
-if (-not (Test-Path $variantIconsSrc)) {
-    Write-Host "❌ variant 用のアイコンディレクトリが見つかりません: $variantIconsSrc" -ForegroundColor Red
-    exit 1
-}
-New-Item -ItemType Directory -Path "$tempDir/icons/$Variant" -Force | Out-Null
-Copy-Item "$variantIconsSrc/*" -Destination "$tempDir/icons/$Variant/" -Recurse
-bun scripts/package-source.js $Variant --copy "$tempDir/src"
-if ($LASTEXITCODE -ne 0) { throw "Chrome用ソースのコピーに失敗しました" }
-
-# 不要なファイルを除外
-# - preview.html はストア配信に不要 (SVG はインストール時不要だが残してもOK)
-# - replacefont-extension.css は Path B (preload-fonts.js の TEMPLATE_CSS_URL fetch) が
-#   web_accessible_resources 経由で参照するため配布に含める (publish.yml と同じ方針)
-Get-ChildItem -Path $tempDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html" | ForEach-Object {  Remove-LocalWorkItem -LiteralPath $_.FullName -AllowedRoot $PSScriptRoot -IgnoreMissing }
-
-# ZIPファイルを作成
-Compress-Archive -Path "$tempDir/*" -DestinationPath $zipPath -Force
- Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($tempDir)) -AllowedRoot $PSScriptRoot
-
-if (-not (Test-Path $zipPath)) {
-    Write-Host "❌ ZIPファイルの作成に失敗しました" -ForegroundColor Red
-    exit 1
-}
-
 Write-Host "✅ ZIPファイルを作成しました: $zipPath" -ForegroundColor Green
-Write-Host ""
 Write-Host "📊 ファイルサイズ:" -ForegroundColor Cyan
-$fileSize = (Get-Item $zipPath).Length
-$fileSizeMB = [math]::Round($fileSize / 1MB, 2)
-Write-Host "   $fileSizeMB MB" -ForegroundColor White
-Write-Host ""
+Write-Host ("   {0} MB" -f [math]::Round((Get-Item $zipPath).Length / 1MB, 2)) -ForegroundColor White
 Write-Host "✨ Chrome Web Store Developer Dashboardにアップロードできます！" -ForegroundColor Green
 Write-Host "   https://chrome.google.com/webstore/devconsole" -ForegroundColor Blue
-
-# Firefox AMO用のXPIファイルを作成
-# Chrome ZIP の単純コピーでは AMO MV3 validator が service_worker 単独を reject するため、
-# build-variant.js --firefox で background.scripts を併記した manifest を作り直してから固める
-# (publish.yml の「Firefox 用ソースディレクトリを準備」ステップと同じ構成)。
 Write-Host ""
-Write-Host "🦊 Firefox AMO用のXPIファイルを作成中..." -ForegroundColor Cyan
-if (Test-Path $xpiPath) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($xpiPath)) -AllowedRoot $PSScriptRoot }
-
-bun scripts/build-variant.js $Variant --firefox
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Firefox 用 manifest の生成に失敗しました" -ForegroundColor Red
-    exit 1
-}
-
-$firefoxDir = "./firefox-build"
-if (Test-Path $firefoxDir) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($firefoxDir)) -AllowedRoot $PSScriptRoot }
-New-Item -ItemType Directory -Path $firefoxDir | Out-Null
-Copy-Item "manifest.json" -Destination $firefoxDir
-Copy-Item "_locales" -Destination $firefoxDir -Recurse
-New-Item -ItemType Directory -Path "$firefoxDir/icons/$Variant" -Force | Out-Null
-Copy-Item "$variantIconsSrc/*" -Destination "$firefoxDir/icons/$Variant/" -Recurse
-bun scripts/package-source.js $Variant --copy "$firefoxDir/src"
-if ($LASTEXITCODE -ne 0) { throw "Firefox用ソースのコピーに失敗しました" }
-# Chrome ZIP と同じ除外ポリシー + TTF 除外 (AMO はソース由来の TTF を配信物に含めない)
-Get-ChildItem -Path $firefoxDir -Recurse -Include "*.DS_Store","*.swp","*~","preview.html","*.ttf" | ForEach-Object {  Remove-LocalWorkItem -LiteralPath $_.FullName -AllowedRoot $PSScriptRoot -IgnoreMissing }
-
-# Compress-Archive は .zip 前提なので一旦 zip で固めてから .xpi へリネームする
-$xpiTempZip = "./$zipBase-firefox-temp.zip"
-if (Test-Path $xpiTempZip) {  Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($xpiTempZip)) -AllowedRoot $PSScriptRoot }
-Compress-Archive -Path "$firefoxDir/*" -DestinationPath $xpiTempZip -Force
- Remove-LocalWorkItem -LiteralPath ($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($firefoxDir)) -AllowedRoot $PSScriptRoot
-Move-Item $xpiTempZip $xpiPath -Force
-
-# manifest.json を Chrome 版へ戻す (Firefox 版のまま残すと "Load unpacked" が壊れる)
-bun scripts/build-variant.js $Variant
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Chrome 用 manifest への復帰に失敗しました" -ForegroundColor Red
-    exit 1
-}
-
-if (Test-Path $xpiPath) {
-    Write-Host "✅ XPIファイルを作成しました: $xpiPath" -ForegroundColor Green
-    Write-Host "✨ Firefox AMO Developer Hubにアップロードできます！" -ForegroundColor Green
-    Write-Host "   https://addons.mozilla.org/developers/" -ForegroundColor Blue
-} else {
-    Write-Host "❌ XPIファイルの作成に失敗しました" -ForegroundColor Red
-    exit 1
-}
+Write-Host "✅ XPIファイルを作成しました: $xpiPath" -ForegroundColor Green
+Write-Host "✨ Firefox AMO Developer Hubにアップロードできます！" -ForegroundColor Green
+Write-Host "   https://addons.mozilla.org/developers/" -ForegroundColor Blue

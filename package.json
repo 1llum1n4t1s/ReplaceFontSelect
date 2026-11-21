@@ -21,11 +21,13 @@
     "build:notosans": "bun --bun run sync:support && bun scripts/generate-icons.js notosans && bun --bun run generate-css && bun scripts/build-variant.js notosans",
     "build": "bun --bun run build:default",
     "release": "bun scripts/release.js",
-    "test:dependencies": "bun test ./scripts/dependency-security.test.cjs"
+    "test:dependencies": "bun test ./scripts/dependency-security.test.cjs",
+    "test:exclusions": "bun test ./scripts/site-exclusions.test.cjs",
+    "test:package": "bun test ./scripts/package-source.test.cjs"
   },
   "devDependencies": {
     "@kagayoi/support-extension": "1.0.12",
-    "puppeteer": "^25.17.0",
+    "puppeteer": "^25.18.1",
     "ttf2woff2": "^8.0.1",
     "web-ext": "10.8.0"
   },
@@ -37,7 +39,7 @@
   ],
   "author": "ゆろち",
   "license": "MIT",
-  "packageManager": "bun@1.4.4",
+  "packageManager": "bun@1.4.5",
   "overrides": {
     "node-forge": "1.4.3",
     "ip-address": "10.7.5",

@@ -90,7 +90,7 @@ foreach($case in 'success','async-stopped','wrong-version','failed-upload','wron
   $writer=[IO.StreamWriter]::new($z.CreateEntry('changed.txt').Open());$writer.Write('changed after verified receipt');$writer.Dispose();$z.Dispose()
  }
  $failed=$false
- try { & "$PSScriptRoot/Publish-Cws.ps1" -Archive $caseArchive -ExpectedSha256 $verifiedHash -CheckExistingVersion:($case -like 'preflight-*') -AllowUnpublishedItem:($case -eq 'preflight-unpublished-allowed') -ExistingVersionPolicy:$(if($case -eq 'preflight-accepted-idempotent'){'Accepted'}elseif($case -in @('preflight-published-idempotent','preflight-pending-published-only')){'Published'}else{'Fail'}) -HttpHandler $handler } catch {$failed=$true}
+ try { & "$PSScriptRoot/Publish-Cws.ps1" -Archive $caseArchive -Stage All -ExpectedSha256 $verifiedHash -CheckExistingVersion:($case -like 'preflight-*') -AllowUnpublishedItem:($case -eq 'preflight-unpublished-allowed') -ExistingVersionPolicy:$(if($case -eq 'preflight-accepted-idempotent'){'Accepted'}elseif($case -in @('preflight-published-idempotent','preflight-pending-published-only')){'Published'}else{'Fail'}) -HttpHandler $handler } catch {$failed=$true}
  if($failed -ne ($case -notin @('success','preflight-clear','preflight-unpublished-allowed','preflight-accepted-idempotent','preflight-published-idempotent'))) {throw "Unexpected result: $case"}
  $expected=if($case -in @('preflight-clear','preflight-unpublished-allowed')){4}elseif($case -eq 'post-verify-change'){0}elseif($case -in @('success','bad-publish')){3}else{2}
  if($handler.Requests.Count -ne $expected){throw "Unsafe request count: $case"}
@@ -105,7 +105,7 @@ function Invoke-BoundaryCase {
  $handler=[FixtureHandler]::new()
  foreach($body in $Bodies){$handler.Bodies.Enqueue($body)}
  $message='';$failed=$false
- try { $message=(& $EntryPoint -Archive $CaseArchive -CheckExistingVersion:$Preflight -ExistingVersionPolicy $Policy -HttpHandler $handler | Out-String) }
+ try { $message=(& $EntryPoint -Archive $CaseArchive -Stage All -CheckExistingVersion:$Preflight -ExistingVersionPolicy $Policy -HttpHandler $handler | Out-String) }
  catch {$failed=$true;$message=$_.ToString()}
  if($failed -ne $ShouldFail){throw "Unexpected boundary result: $Name"}
  if($handler.Requests.Count -ne $Requests){throw "Unsafe boundary request count: $Name"}
@@ -150,7 +150,7 @@ foreach($stage in 'oauth','preflight') {
   $handler.Bodies.Enqueue($status)
  }
  $handler.Bodies.Enqueue($upload);$handler.Bodies.Enqueue($published)
- & "$PSScriptRoot/Publish-Cws.ps1" -Archive $snapshotArchive -ExpectedSha256 $verifiedHash -CheckExistingVersion:($stage -eq 'preflight') -HttpHandler $handler | Out-Null
+ & "$PSScriptRoot/Publish-Cws.ps1" -Archive $snapshotArchive -Stage All -ExpectedSha256 $verifiedHash -CheckExistingVersion:($stage -eq 'preflight') -HttpHandler $handler | Out-Null
  if($handler.SwapPath -or [Convert]::ToBase64String([IO.File]::ReadAllBytes($snapshotArchive)) -cne $replacementBase64){throw 'ZIP replacement did not occur at the requested stage'}
  if([Convert]::ToBase64String($handler.UploadContent) -cne $snapshotBase64){throw 'Upload bytes differ from the verified snapshot'}
  $expectedRequests=if($stage -eq 'preflight'){4}else{3}
@@ -225,6 +225,14 @@ Invoke-StageCase -Name 'upload-stage-wrong-version-stops' -Stage Upload -CaseArc
 Invoke-StageCase -Name 'upload-stage-existing-version-stops' -Stage Upload -CaseArchive $archive -Preflight -Bodies @($oauth,(New-StageStatus -CrxVersion '1.2.3')) -Requests 2 -ShouldFail $true -Forbid ':upload'
 Invoke-StageCase -Name 'upload-stage-rejects-version-param' -Stage Upload -CaseArchive $archive -Version '1.2.3' -Bodies @() -Requests 0 -ShouldFail $true
 Invoke-StageCase -Name 'upload-stage-requires-archive' -Stage Upload -Bodies @() -Requests 0 -ShouldFail $true
+# Stage未指定は既定値で All に倒れず、通信前に Stage 起因のエラーで止まる。
+$noStageHandler=[FixtureHandler]::new()
+$noStageText='';$noStageFailed=$false
+try { $noStageText=(& "$PSScriptRoot/Publish-Cws.ps1" -Archive $archive -HttpHandler $noStageHandler | Out-String) } catch {$noStageFailed=$true;$noStageText=$_.ToString()}
+if(!$noStageFailed){throw 'Stage omitted was accepted'}
+if($noStageHandler.Requests.Count -ne 0){throw 'Stage omitted sent requests'}
+if(!$noStageText.Contains('-Stage is required')){throw 'Stage omitted message mismatch'}
+[Console]::WriteLine('PASS stage-omitted-rejected-before-requests')
 # Publish段: ZIPを送らず、fetchStatusで確認できる範囲を満たす場合だけ:publishを送る。
 Invoke-StageCase -Name 'publish-stage-submits-without-upload' -Stage Publish -Version '1.2.3' -Bodies @($oauth,(New-StageStatus),$published) -Requests 3 -ShouldFail $false -Forbid ':upload' -Require ':publish' -Message 'accepted version 1.2.3'
 Invoke-StageCase -Name 'publish-stage-numeric-version-order' -Stage Publish -Version '1.10.0' -Bodies @($oauth,(New-StageStatus -CrxVersion '1.9.0'),$published) -Requests 3 -ShouldFail $false -Forbid ':upload' -Require ':publish'
@@ -278,7 +286,7 @@ try {
  try {$probe.GetAsync('https://192.0.2.1/cws-offline-probe').GetAwaiter().GetResult()|Out-Null}catch{$blockedError=$true}
  if($guard.Blocked -lt 1 -or $guard.Connections -lt 1 -or !$blockedError){throw 'Child offline HTTP guard negative probe failed'}
 }finally{$probe.Dispose()}
-try { & $EntryPoint -Archive $Archive }finally{$guard.Dispose()}
+try { & $EntryPoint -Archive $Archive -Stage All }finally{$guard.Dispose()}
 '@
 [IO.File]::WriteAllText($driverPath,$driver)
 $start=[Diagnostics.ProcessStartInfo]::new((Get-Process -Id $PID).Path)

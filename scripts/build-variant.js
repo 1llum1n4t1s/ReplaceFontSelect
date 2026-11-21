@@ -32,7 +32,7 @@ const LOCALE_FIELDS = [
 const REQUIRED_KEYS = [
   'locales', 'version', 'geckoId',
   'lockedFonts', 'showFontSelector', 'excludeMatches',
-  'zipBaseName', 'secretsKey'
+  'zipBaseName'
 ];
 
 function fail(msg) {
@@ -127,11 +127,11 @@ function buildLocales(variant) {
   }
 }
 
-function buildVariantJs(variant) {
+function buildVariantJs(variant, variantName) {
   // ISOLATED world / Service Worker / popup の全コンテキストから参照可能な形で出力。
   // CommonJS export は scripts/ や Node テストからの参照用フォールバック。
   const payload = {
-    name: path.basename(process.argv[2] || 'default'),
+    name: variantName,
     version: variant.version,
     lockedFonts: variant.lockedFonts,
     showFontSelector: variant.showFontSelector,
@@ -184,7 +184,7 @@ function main() {
   buildLocales(variant);
   console.log(`✅ _locales/<${LOCALES.length}言語>/messages.json を生成 (variant=${variantName})`);
 
-  const variantJs = buildVariantJs(variant);
+  const variantJs = buildVariantJs(variant, variantName);
   fs.writeFileSync(VARIANT_JS_OUT, variantJs, 'utf8');
   console.log(`✅ src/content/variant.js を生成 (lockedFonts=${variant.lockedFonts ? 'on' : 'off'}, showFontSelector=${variant.showFontSelector})`);
 }

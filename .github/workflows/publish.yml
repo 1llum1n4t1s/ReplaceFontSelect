@@ -12,6 +12,7 @@ name: Publish to Chrome Web Store & Firefox AMO
 #
 # 公開先:
 #   - Chrome Web Store (scripts/Publish-Cws.ps1。アップロードのみ。申請は cws-submit.yml)
+#   - Firefox AMO (scripts/Publish-Amo.ps1。既存 GUID への新 version 提出。審査完了は待たない)
 
 on:
   push:
@@ -171,38 +172,17 @@ jobs:
       - name: Validate dependency security patches
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         run: bun run test:dependencies
-      - name: Sync support assets
+      # 共通部品の同期・アイコン・CSS・variant manifest は package.json の build:<variant> に一本化する。
+      # フォント変換（convert-fonts）は WOFF2 をコミット済みで扱うため配布経路では行わない。
+      - name: variant をビルド（共通部品の同期・アイコン・CSS・manifest）
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        run: bun --bun run sync:support
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: bun --bun run "build:$VARIANT"
 
       - name: 共通サポート部品の同期を確認
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
         run: bun --bun run check:support
-
-      - name: アイコン生成
-        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        env:
-          VARIANT: ${{ matrix.variant }}
-        run: bun scripts/generate-icons.js "$VARIANT"
-
-      - name: フォント変換（TTFがある場合）
-        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        run: |
-          if ls src/fonts/*.ttf >/dev/null 2>&1; then
-            bun scripts/convert-fonts.js
-          else
-            echo "TTFファイルなし、スキップ"
-          fi
-
-      - name: CSS生成
-        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        run: bun scripts/generate-css.js
-
-      - name: variant manifest / variant.js を生成
-        if: ${{ success() && steps.select.outputs.enabled == 'true' }}
-        env:
-          VARIANT: ${{ matrix.variant }}
-        run: bun scripts/build-variant.js "$VARIANT"
 
       - name: 生成された manifest の version を確認
         if: ${{ success() && steps.select.outputs.enabled == 'true' }}
@@ -224,19 +204,9 @@ jobs:
         run: |
           zip_base=$(bun -p "require('./variants/${VARIANT}.json').zipBaseName")
           zip_path="${zip_base}-chrome.zip"
-          variant_icons_dir="icons/${VARIANT}"
-          if [ ! -d "$variant_icons_dir" ]; then
-            echo "::error::variant 用のアイコンディレクトリが見つかりません: $variant_icons_dir"
-            exit 1
-          fi
           # 配布内容を ZIP と照合するため専用ディレクトリに固定する。
           chrome_dir="chrome-build"
-          mkdir -p "$chrome_dir/icons"
-          cp manifest.json "$chrome_dir/"
-          cp -r _locales "$chrome_dir/_locales"
-          cp -r "$variant_icons_dir" "$chrome_dir/icons/${VARIANT}"
-          bun scripts/package-source.js "$VARIANT" --copy "$chrome_dir/src"
-          find "$chrome_dir" \( -name "*.DS_Store" -o -name "*.swp" -o -name "*~" -o -name "preview.html" \) -delete
+          bun scripts/package-source.js "$VARIANT" --stage chrome "$chrome_dir"
           (cd "$chrome_dir" && zip -r "$GITHUB_WORKSPACE/$zip_path" manifest.json _locales "icons/${VARIANT}" src)
           echo "CHROME_SOURCE_DIR=$chrome_dir" >> "$GITHUB_ENV"
           ls -lh "$zip_path"
@@ -300,26 +270,10 @@ jobs:
         # Chrome step はこれより前に実行済みなので、 Chrome 用 manifest が上書きされても問題ない。
         run: |
           firefox_dir="firefox-build"
-          variant_icons_dir="icons/${VARIANT}"
-          if [ ! -d "$variant_icons_dir" ]; then
-            echo "::error::variant 用のアイコンディレクトリが見つかりません: $variant_icons_dir"
-            exit 1
-          fi
           bun scripts/build-variant.js "${VARIANT}" --firefox
-          mkdir -p "$firefox_dir/icons"
-          cp manifest.json "$firefox_dir/"
-          cp -r _locales "$firefox_dir/_locales"
-          cp -r "$variant_icons_dir" "$firefox_dir/icons/${VARIANT}"
-          bun scripts/package-source.js "$VARIANT" --copy "$firefox_dir/src"
-          # ストア配信に不要なファイルを除外 (Chrome ZIP と同じポリシー + TTF 除外)。
-          # v3.0.3 戦略: replacefont-extension.css は WAR から fetch するので配布に含める (削除しない)。
-          find "$firefox_dir" \( \
-            -name "*.DS_Store" -o \
-            -name "*.swp" -o \
-            -name "*~" -o \
-            -name "preview.html" -o \
-            -name "*.ttf" \
-          \) -delete
+          # ストア配信に不要なファイルの除外 (Chrome ZIP と同じポリシー + TTF 除外) は --stage が行う。
+          # v3.0.3 戦略: replacefont-extension.css は WAR から fetch するので配布に含める。
+          bun scripts/package-source.js "$VARIANT" --stage firefox "$firefox_dir"
           echo "FIREFOX_SOURCE_DIR=$firefox_dir" >> "$GITHUB_ENV"
           echo "📦 Firefox source dir contents:"
           ls -la "$firefox_dir"

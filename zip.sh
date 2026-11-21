@@ -29,29 +29,10 @@ echo "📦 依存関係をインストール中（bun run deps）..."
 bun run deps
 echo ""
 
-# 問い合わせUIの共有資産を正本から同期
-bun --bun run sync:support
-
-# アイコン生成
-echo "🎨 アイコンを生成中..."
-bun scripts/generate-icons.js "$VARIANT"
-echo ""
-
-# フォント変換（TTFがある場合）
-if ls src/fonts/*.ttf 1> /dev/null 2>&1; then
-  echo "🔄 フォントを変換中..."
-  bun scripts/convert-fonts.js
-  echo ""
-fi
-
-# CSS生成
-echo "🎨 CSSを生成中..."
-bun scripts/generate-css.js
-echo ""
-
-# variant manifest / variant.js を生成
-echo "🧬 バリアント設定を適用中..."
-bun scripts/build-variant.js "$VARIANT"
+# 共通部品の同期・アイコン・CSS・variant manifest は build:<variant> に一本化している。
+# フォント変換（convert-fonts）は WOFF2 をコミット済みで扱うため、フォント追加時だけ手動で実行する。
+echo "🏗️ ビルド中（bun run build:$VARIANT）..."
+bun --bun run "build:$VARIANT"
 echo ""
 
 # zipコマンドの確認
@@ -66,28 +47,15 @@ ZIP_PATH="./$ZIP_BASE-chrome.zip"
 # 古いZIPファイルを削除
 rm -f "$ZIP_PATH"
 
-# icons は対象 variant のみ同梱 (他 variant のアセットがストア掲載物に混入するのを防ぐ)
-VARIANT_ICONS_DIR="icons/$VARIANT"
-if [ ! -d "$VARIANT_ICONS_DIR" ]; then
-  echo "❌ variant 用のアイコンディレクトリが見つかりません: $VARIANT_ICONS_DIR"
-  exit 1
-fi
-
-# 同梱資産の選定はCI・Windowsと同じ処理を使う。失敗はset -eで伝播する。
-excluded_assets=$(bun scripts/package-source.js "$VARIANT")
-extra_excludes=()
-while IFS= read -r file; do
-  [ -z "$file" ] || extra_excludes+=("$file")
-done <<< "$excluded_assets"
+# 同梱資産の選定はCI・Windowsと同じ --stage を使い、別ブランドのアイコンや不要ファイルを混入させない。
+# 作業ディレクトリは mktemp で新規に作り、その配下の stage だけを使って終了時に片付ける。
+WORK_DIR=$(mktemp -d)
+trap 'rm -rf "$WORK_DIR"' EXIT
+bun scripts/package-source.js "$VARIANT" --stage chrome "$WORK_DIR/chrome"
 
 echo "📦 Chrome Web Store用のZIPファイルを作成中..."
-# preview.html はストア配信物に不要なので exclude
-zip -r "$ZIP_PATH" \
-  manifest.json \
-  _locales/ \
-  "$VARIANT_ICONS_DIR" \
-  src/ \
-  -x "*.DS_Store" "*.swp" "*~" "*/preview.html" "${extra_excludes[@]}"
+ZIP_ABS="$(cd "$(dirname "$ZIP_PATH")" && pwd)/$(basename "$ZIP_PATH")"
+(cd "$WORK_DIR/chrome" && zip -r "$ZIP_ABS" manifest.json _locales "icons/$VARIANT" src)
 
 echo "✅ ZIPファイルを作成しました: $ZIP_PATH"
 echo ""
