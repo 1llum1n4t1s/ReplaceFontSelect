@@ -36,29 +36,29 @@ bun --bun run check:support                 # 同梱資産が共有パッケー�
 
 `manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。初回 checkout 後と `bun.lock` の変更後は `bun run deps` で依存を同期する。"Load unpacked" の前には対象 variant のフルビルドを 1 回走らせる。`bun test ./scripts/verify-style-injection.cjs` はソースを直接読み込むためフルビルドは前提にしない。開発には Bun 1.4.5 を使用する（package.json の packageManager と CI を同じ版に固定）。PowerShell のパッケージ処理には pwsh 7.7.0 以降を推奨する。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
 
-`ttf2woff2@8.0.1` のフォント変換は Bun では同梱 WASM への自動フォールバックを使う。ネイティブ addon を必須にせず、実 TTF から WOFF2 が生成できることを確認する。
+`ttf2woff2@8.0.1` は Bun では同梱 WASM へ自動フォールバックする。実 TTF から WOFF2 が生成できることを確認する。
 
-依存関係は `bun.lock` で固定し、`bun run deps` で再現する。`package.json` の overrides / trustedDependencies と `bunfig.toml` の公開後24時間待機・検証済み版の例外を維持する。
+依存は `bun.lock` で固定し、`package.json` の overrides / trustedDependencies と `bunfig.toml` の公開後24時間待機・検証済み版の例外を維持する。
 
-Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-extension` を正本とし、`src/shared/` の `kagayoi-support-footer.{js,css}`、`kagayoi-support-popup.{js,css}`、`kagayoi-support-form.css` へ逐語同期する。これら5資産を拡張側で直接改変しない。`build:default` / `build:notosans` と `zip.ps1` は実行前に自動同期し、CIは `check:support` とChrome ZIP内のCSS存在確認で欠落・乖離を拒否する。共有部品を更新するときは依存versionを更新してから `bun --bun run sync:support` と両variantのbuildを実行する。
+Kagayoi Support の問い合わせUIは、exact pin した `@kagayoi/support-extension` を正本とし、`src/shared/` の `kagayoi-support-{footer,popup}.{js,css}` と `kagayoi-support-form.css` の5資産へ逐語同期する。拡張側で直接改変しない。`build:*` と `zip.ps1` は実行前に自動同期し、CI は `check:support` で乖離を拒否する。更新時は依存 version を上げてから `bun --bun run sync:support` と両 variant の build を実行する。
 
 アイコン・スクショ生成には headless Chrome が必要。初回は `bun --bun run puppeteer browsers install chrome` で導入する。Puppeteer v25+ は ESM-only のため生成スクリプトは動的 import を使う。
 
 #### ストア掲載画像（vitrina）
 
-スクショ（1280x800・9 言語×4 枚）と小タイル・マーキーは、`webstore/vitrina/`（共通キット。`Kagayoi.Support/clients/chrome-extension/store-assets/` の `sync-kit.mjs --repo` で逐語同期。**直接編集しない**）が実拡張を Chrome for Testing へ読み込んで撮る。設定は variant ごとに `webstore/store-assets.<variant>.json`、固定ページは `webstore/fixtures/`、撮影前の操作は `webstore/store-assets.steps.mjs`、variant 切替の呼び出しは `webstore/run-vitrina.mjs`。
+スクショ（1280x800・9 言語×4 枚）と小タイル・マーキーは、`webstore/vitrina/`（共通キット。`Kagayoi.Support` の `sync-kit.mjs --repo` で逐語同期。**直接編集しない**）が実拡張を Chrome for Testing へ読み込んで撮る。設定は `webstore/store-assets.<variant>.json`、固定ページは `webstore/fixtures/`、撮影前の操作は `webstore/store-assets.steps.mjs`、variant 切替は `webstore/run-vitrina.mjs`。
 
 - 実行前に対象 variant の `bun --bun run build:<variant>`（アイコン・preset CSS）が済んでいること。`generate-screenshots*` は撮影前に `build-variant` で manifest と `_locales` を作り直す。
-- ビフォーアフター（`compare-*`）は、同じ固定ページを拡張オン／オフで撮り、左カードをオフの実描画へ差し替える。置換元は読みづらい明朝体（MS PMincho / MS Mincho）の指定で、フォント名は画像に書かない（掲載文のキーワードスパム対策と同じ方針）。
-- 文言は `{ msg }` で `_locales` を参照するか、9 言語を `store-assets.<variant>.json` に直書きする（訳は `Kagayoi.Support/clients/chrome-extension/l10n/glossary.md` に従う）。
-- 撮影中に出た拡張側の欠陥は `<work-dir>/ui-defects.json`。固定ページが日本語本文のため、日本語以外のロケールで `kana-in-non-ja` / `font-mismatch` / `same-as-en`（固定ページ由来）が出るのは想定内。
-- 出力は `webstore/images/<variant>/`（gitignore 済み）。CI（Linux）は smoke プロファイル（en のみ・実UI枠は代替板）になり、verify は失敗する設計。
+- ビフォーアフター（`compare-*`）は同じ固定ページを拡張オン／オフで撮り、左カードをオフの実描画へ差し替える。置換元は読みづらい明朝体の指定で、フォント名は画像に書かない。
+- 文言は `{ msg }` で `_locales` を参照するか、9 言語を `store-assets.<variant>.json` に直書きする（訳は `Kagayoi.Support` の `l10n/glossary.md` に従う）。
+- 撮影中の欠陥は `<work-dir>/ui-defects.json`。固定ページが日本語本文のため、日本語以外のロケールで `kana-in-non-ja` / `font-mismatch` / `same-as-en` が出るのは想定内。
+- 出力は `webstore/images/<variant>/`（gitignore 済み）。CI（Linux）は smoke プロファイル（en のみ）で verify は失敗する設計。
 
 ### Local Testing
 
-- **フォント注入の回帰検証**: `bun test ./scripts/verify-style-injection.cjs` — Puppeteer の実ブラウザで Shadow 初期化、遅延した外部 CSS / @import、DOM 更新時の再移動、ページの破棄・復帰イベント、置換除外リスト一致時の preset・closed Shadow CSS の撤去を検証する。拡張 API は fixture を使用し、Firefox 実機の代替にはしない。
+- **フォント注入の回帰検証**: `bun test ./scripts/verify-style-injection.cjs` — Puppeteer の実ブラウザで Shadow 初期化、遅延した外部 CSS / @import、DOM 更新時の再移動、ページの破棄・復帰、除外リスト一致時の撤去を検証する。拡張 API は fixture で、Firefox 実機の代替にはしない。
 - **置換除外リストの判定**: `bun --bun run test:exclusions` — 規則の正規化・glob/前方一致・match pattern への変換を検証する（CI の verify でも実行）。
-- **配布 stage の選定規則**: `bun --bun run test:package` — `package-source.js` の `stagePackage` が OS 残骸・preview.html・firefox の TTF を除外し、既存パス・不正な配布先・リンクを拒否し、固定版の除外を適用することを一時 fixture で検証する（CI の verify でも実行）。
+- **配布 stage の選定規則**: `bun --bun run test:package` — `stagePackage` の除外・拒否・固定版の除外を一時 fixture で検証する（CI の verify でも実行）。
 - **Chrome**: `chrome://extensions` → Developer mode ON → "Load unpacked" でリポジトリルートを選択
 - **Firefox**: `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on..." で `manifest.json` を選択 (desktop 140+ / Android 142+)
 - Firefox の読み込み前はフルビルド後に `bun scripts/build-variant.js <variant> --firefox` を実行する。Chrome の検証へ戻るときは `bun --bun run build-variant <variant>` で Chrome 用 manifest を再生成する。
@@ -66,7 +66,7 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 
 問い合わせUIまたはFirefoxの権限申告を変更するときは、[DESIGN.md の送信境界](DESIGN.md#問い合わせuiの共有資産同期)に従い、`manifest.template.json` の申告と共有部品の要求対象、popupの `firefox-data-consent` 属性を照合する。両variantのビルドと `bun --bun run check:support` に加え、Firefoxで任意許可を拒否・取得失敗した場合に確認コード送信・再送・認証・問い合わせ送信が止まり、フォント置換は利用できることを検証する。
 
-- **Chrome を起動するスクリプトを足すときはシード必須**: puppeteer.launch・chrome-launcher・Chrome の直接起動は、起動前に user-data-dir の `Local State` へ `{"password_manager":{"os_password_blank":false,"os_password_last_changed":"9223372036854775000"}}` を書く。Windows の Chromium は新規プロファイルごとに空パスワードで LogonUser を呼び（`password_manager_util_win.cc` の `CheckBlankPasswordWithPrefs`）、ログオン失敗（Security 4625）として数えられるため、並列・連続起動で Windows アカウントがロックされる（2026-11-15 実害）。`scripts/chrome-profile-seed.mjs` の `createSeededProfile()` / `seedChromeProfile()` を使い、userDataDir 未指定の起動は作らない（`webstore/vitrina/` は逐語コピーで対策済み）。
+- **Chrome を起動するスクリプトはシード必須**: puppeteer.launch・chrome-launcher・Chrome の直接起動は、起動前に user-data-dir の `Local State` へ `{"password_manager":{"os_password_blank":false,"os_password_last_changed":"9223372036854775000"}}` を書く。Windows の Chromium は新規プロファイルごとに空パスワードで LogonUser を呼びログオン失敗（Security 4625）として数えられ、並列・連続起動でアカウントがロックされる（実害あり）。`scripts/chrome-profile-seed.mjs` の `createSeededProfile()` / `seedChromeProfile()` を使い、userDataDir 未指定の起動は作らない。
 
 ## Variant System
 
@@ -75,25 +75,25 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 `mergeFontSettings()` は保存値に `VARIANT.lockedFonts` を後勝ちで適用し、固定版ではユーザー保存値より優先する。
 ### Variant の運用方針 — default / notosans 並行維持 💖
 
-公開済み variant (default / notosans) は **現状の 2 variant 並行運用を維持** する。 「機能の重複」「YAGNI」「scope creep」「default に統合できる」 といった技術的合理性で退役を推奨したくなった場合は、 実装せず **ストア掲載済みの拡張機能 ID と既存ユーザー資産に直結するビジネス判断マター** として議題化し、 ゆろさんの明示承認を得てから進める。
+公開済み variant (default / notosans) は **2 variant 並行運用を維持** する。「機能の重複」「YAGNI」「default に統合できる」等の技術的合理性で退役を推奨したくなった場合は、実装せず、ストア掲載済みの拡張機能 ID と既存ユーザー資産に直結するビジネス判断として議題化し、ゆろさんの明示承認を得てから進める。
 
 ### 新しい variant を追加する手順 (将来用)
 
 1. `variants/<name>.json` を作成 (既存 default.json をコピーして編集が早い)
 2. `icons/<name>/icon.svg` を配置
-3. (任意) `webstore/store-assets.<name>.json` を作成（ストア掲載画像。`webstore/store-assets.steps.mjs` に variant 固有の撮影操作があれば追加）
-4. (任意) `docs/<name>/privacy-policy.md` / `privacy.html` / `index.html` を用意
+3. (任意) `webstore/store-assets.<name>.json`（固有の撮影操作は `store-assets.steps.mjs`）
+4. (任意) `docs/<name>/` の privacy-policy.md / privacy.html / index.html
 5. (任意) `changelog/<name>.md` を作成
 6. `package.json` の `scripts` に `build:<name>` / `generate-icons:<name>` / `generate-screenshots:<name>` を追加
 7. 次の variant 列挙箇所すべてに新 variant を追加する
-   - `.github/workflows/publish.yml`: `workflow_dispatch.inputs.variant.options`、`strategy.matrix.variant` 配列、`対象を選択` ステップ（id: select）の `case` 文、`variant に対応する EXTENSION_ID を決定` ステップの `case` 文（`CWS_EXTENSION_ID_<UPPER>` の env も追加）
-   - `.github/workflows/cws-submit.yml`: `strategy.matrix.variant` 配列と、extension ID を選ぶ `case` 文（`CWS_EXTENSION_ID_<UPPER>` の env も追加）
-   - `.github/workflows/verify.yml` と `.github/workflows/dependency-validation.yml`: variant 別のビルドステップ（`build:<name>`）
-   - `webstore/run-vitrina.mjs`: `VARIANTS` 配列（`generate-screenshots:<name>` が参照する）
+   - `publish.yml`: `workflow_dispatch.inputs.variant.options`、`strategy.matrix.variant`、`対象を選択` と EXTENSION_ID 決定の `case` 文（`CWS_EXTENSION_ID_<UPPER>` の env も）
+   - `cws-submit.yml`: `strategy.matrix.variant` と extension ID の `case` 文（env も）
+   - `verify.yml` と `dependency-validation.yml`: `build:<name>` ステップ
+   - `webstore/run-vitrina.mjs`: `VARIANTS` 配列
 8. GitHub Secrets に `CWS_EXTENSION_ID_<UPPER>` を登録
 9. `variants/<新>.json` の `version` を default と同じ値に揃える
 10. **新変数を `variant.json` に追加した場合は `scripts/build-variant.js` の `REQUIRED_KEYS` 配列も更新**
-11. リポジトリ直下に `.amo-metadata-<name>.json` を作成（既存の `.amo-metadata-default.json` を参考にする）。`publish.yml` が `Publish-Amo.ps1 -Metadata` に渡す必須ファイルで、無いと Firefox AMO への提出だけが失敗する
+11. リポジトリ直下に `.amo-metadata-<name>.json` を作成（`.amo-metadata-default.json` を参考）。`Publish-Amo.ps1 -Metadata` の必須ファイルで、無いと AMO 提出だけが失敗する
 
 ## Architecture
 
@@ -125,187 +125,96 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 
 ## Release Automation
 
-### Release Kick-off (`scripts/release.js`)
+### リリース起動
 
-`scripts/release.js` は `variants/*.json` の version を patch +1 し、 main に commit・push し、同じ commit に軽量タグ `v<X.Y.Z>` を付けてそのタグだけを push する (`git push --tags` は使わない)。 タグの push が CI のトリガーになり、 GitHub Actions の matrix strategy が default + notosans を並列公開する。
+- `bun --bun run release`（`scripts/release.js`、`--dry-run`/`-n`、`--yes`/`-y`）は `variants/*.json` の版を patch +1 し、main へ commit・push して、同じ commit に軽量タグ `v<X.Y.Z>` を付け、そのタグだけを push する（`git push --tags` は使わない）。タグ push が `publish.yml` を起動し、matrix で default + notosans を並列公開する。
+- 実行は clean かつリモートと同期済みの main から。同名タグがリモートにあれば abort し、タグの付け替え・force push はしない。preset JS と `manifest.json` は CI がビルドで生成する。
+- minor / major は `/vava` で版を決め、全 `variants/*.json` と `package.json` を手動で更新して main に commit・push し、同じ commit に軽量タグを付けてそのタグだけを push する（`release.js` は使わない）。タグ push はストア提出を起動するため、公開依頼の範囲でのみ行う。patch の `/vava` は `release.js` に委譲する。
 
-```bash
-bun --bun run release                 # variant patch +1 → main push → タグ v<X.Y.Z> push
-bun scripts/release.js --yes    # 直接呼び（確認プロンプト省略、CI / Codex から）
+### 失敗時のリカバリー
 
-# フラグ
---dry-run / -n  計画だけ表示。 書き込み・push しない
---yes / -y      対話確認をスキップ
-```
+版タグの新規 push だけが自動提出を開始する。修復 push や rerun は提出を開始しない。同一 job で Chrome が失敗すると後続の Firefox は skip される。
 
-#### minor / major bump の運用
+1. 各 variant・ストアの提出状態をストアと Actions で確認し、未提出・再提出が必要な対象を特定する。受付済みか不明な間は再提出しない。
+2. 版タグは動かさない（削除・付け替え・force push 禁止）。コード・workflow の修正が要るなら patch を上げて新タグで公開し直す（/vava）。runner・外部障害・secret・Environment など修正不要な原因は解消し、タグの 40 桁 SHA を確認する。
+3. Publish workflow を `--ref v<X.Y.Z>` で手動実行し、`variant`・`target`（chrome / firefox）・`expected_sha` を指定する。対象ごとに実行し、結果とストア状態を確認する。
 
-スクリプトは patch +1 専用。minor / major は `/vava` で指定版を決定し、全 `variants/*.json` と `package.json` をその版に手動更新して main に commit・push し、同じ commit に軽量タグ `v<X.Y.Z>` を付けてそのタグだけを push する。`release.js` は実行しない。タグ push はストア提出を起動するため、公開依頼の範囲でのみ実行する。
+### ローカル梱包（手動アップロード用）
 
-#### 前提条件と挙動
-- 実行は **clean な main ブランチ** から (リモートと同期済みであること)。 違反時は abort
-- リモートに同名タグ `v<X.Y.Z>` が既存なら abort (タグの付け替え・force push はしない)
-- preset JS や `manifest.json` はビルド時に CI 側で生成されるため、 ローカルでの再生成は不要 (variants/*.json だけが真実の源泉)
+- `.\zip.ps1 [-Variant <name>]`（Windows、既定 `default`）: `bun run deps` → `build:<variant>` → `package-source.js --stage` → `New-FirefoxArchive.ps1` で `temp-build` 内に `chrome.zip` + `firefox.xpi` を作り、`verify-release-archive.js`（Python 3 が必要。`RELEASE_ZIP_PYTHON` 設定時はその値のみ使う）で検証してから最終名 `<zipBaseName>-chrome.zip` / `-firefox.xpi` へ移す。検証前のアーカイブは最終名に置かない。既存の最終名は build 前に削除する。Chrome 用 manifest へ戻せなければ失敗終了する。`convert-fonts` は自動実行しない。
+- `./zip.sh [<name>]`（Linux/Mac）は Chrome ZIP のみで verifier を呼ばない。Firefox XPI を含むフルリリースは `zip.ps1` 必須。
+- 同梱ファイル（manifest.json・_locales・icons/<variant>・src）の選定と OS 残骸・preview.html・Firefox の TTF 除外は `scripts/package-source.js <variant> --stage <chrome|firefox> <新規dir>` に一本化している（事前に `build-variant` で manifest を生成する）。
 
-### リリース失敗時のリカバリー
+### CI 自動公開（`.github/workflows/publish.yml`）
 
-版タグ `v<X.Y.Z>` の push 後の CI で一部のストア publish が失敗した場合の対処。
-
-#### 対象を指定して再開
-
-版タグの新規 push だけが両 variant の自動提出を開始する。同一 job の Chrome が失敗すると後続の Firefox は skip される。修復 push や GitHub の rerun は提出を開始しない。
-
-1. 各 variant・ストアの提出状態をストアと Actions で確認し、未提出または再提出が必要な対象を特定する。受付済みか不明な場合は確認が済むまで再提出しない。
-2. 版タグは動かさず、削除・付け替え・force push もしない。コード・workflow の修正が要る場合は patch を 1 つ上げて新しい版タグで公開し直す（/vava）。runner・外部障害・secret・Environment の許可 ref など修正が要らない原因は解消したうえで、タグの完全な 40 桁 SHA を確認する。
-3. Actions の Publish workflow を該当タグ（`--ref v<X.Y.Z>`）で手動実行し、`variant`（default / notosans）、`target`（chrome / firefox）、`expected_sha`（確認したタグの SHA）を指定する。対象ごとに実行し、結果とストア側の状態を確認する。
-
-全 job が build / 認証等で失敗した場合も同じ手順で未提出対象ごとに再開する。新しい version を公開する場合は /vava を使う。
-
-### Local Packaging (手動 Web Store アップロード用)
-- `.\zip.ps1 [-Variant <name>]` (Windows): `bun run deps` → `build:<variant>` → `package-source.js --stage` で Chrome / Firefox 用ディレクトリを構築 → `New-FirefoxArchive.ps1` で作業ディレクトリ `temp-build` 内に `chrome.zip` + `firefox.xpi` を生成 → `verify-release-archive.js` で検証（Python 3 が必要。`RELEASE_ZIP_PYTHON` を設定した場合はその値だけを使い、無効なら停止する。未設定時のみ `py -3` → `python3` → `python` を探す）→ 両方の検証後に最終名 `<zipBaseName>-chrome.zip` / `<zipBaseName>-firefox.xpi` へ移す。Chrome 用 manifest へ戻せなかった場合は失敗終了する。既存の最終名2件は build より前に削除する（消せなければ停止する。旧版は保護しない。成果物は git 管理外で作り直せる）。検証を通っていないアーカイブは最終名に置かず、最終名への移動に失敗したら置いた分を外して最終名の現状を表示し失敗終了する。Ctrl+C などの中断では、検証済みの片方だけが最終名に残ることがある。 引数省略時は `default`。フォント変換（`convert-fonts`）は自動実行しない
-- `./zip.sh [<name>]` (Linux/Mac): `bun run deps` → `build:<variant>` → 既存の最終名 ZIP を `rm -f` → `package-source.js --stage chrome` で `mktemp` の作業ディレクトリ（終了時に trap で片付け）内の stage から最終名へ直接 `zip` する Chrome ZIP のみ（verifier は呼ばない）。 Firefox XPI を含むフルリリースは `zip.ps1` 必須
-- 同梱ファイル（manifest.json・_locales・icons/<variant>・src）の選定と OS 残骸・preview.html・Firefox の TTF 除外は `scripts/package-source.js <variant> --stage <chrome|firefox> <新規dir>` に一本化している（manifest は事前に `build-variant` で生成しておく）
-
-### `/vava` スキル経由の起動
-
-このプロジェクトの `/vava` は patch リリースに限り `bun --bun run release`（`scripts/release.js`）に委譲する。patch 版の同期、main への commit・push と軽量タグ `v<X.Y.Z>` の作成・push を行う。minor / major は上記の手動手順に従う。
-
-### CI 自動公開 (`.github/workflows/publish.yml`)
-
-- **トリガー**: main のコミットに付けた軽量タグ `v<X.Y.Z>` の push (例: `v3.0.3`, `v3.1.0`)。`workflow_dispatch` は push の run が出なかったときや対象を指定した再開用。配信前に、タグの形・軽量タグ・main の祖先を Secrets を使う step より前に確認する
-- **matrix strategy**: 現在 `variant: [default, notosans]` の 2 要素で並列公開。 将来 variant を追加する場合は配列を拡張
-- **整合性チェック**: タグの `X.Y.Z` と `variants/<matrix.variant>.json` の `version` と生成された `manifest.json` の `version` が一致しないと該当 variant のジョブが失敗
-- **公開前ゲート**: `verify` job（`.github/workflows/verify.yml` を workflow_call で呼ぶ）が、依存パッチの検証（`test:dependencies`）・置換除外リストの判定（`test:exclusions`）・配布 stage の選定規則の直接テスト（`test:package`）・共通部品の同期確認・両 variant のビルド・`verify-style-injection.cjs`・配布 stage → アーカイブ → verifier（variant × 配布先）・CWS / AMO publisher と Firefox XPI builder の fixture テスト（`Test-PublishCws.ps1`・`Test-PublishAmo.ps1`・`Test-FirefoxArchive.ps1`）を実行する。失敗すると publish job は走らない。同じ verify.yml は main への push と全 PR でも実行される（Dependabot 再検証は従来どおり `dependency-validation.yml`）
-- **公開先**: Chrome Web Store と Firefox AMO の **両方** に並列公開
+- トリガーは main のコミットに付けた軽量タグ `v<X.Y.Z>` の push。`workflow_dispatch` は再開・対象指定用。Secrets を使う step より前にタグの形・軽量タグ・main の祖先を確認する。
+- 公開前ゲートの `verify` job（`verify.yml` を呼ぶ）が依存検証・除外判定・配布 stage 規則・共通部品同期・両 variant のビルド・`verify-style-injection.cjs`・アーカイブ verifier・各 publisher の fixture テストを実行し、失敗すると publish は走らない。`verify.yml` は main への push と全 PR でも動く。
+- タグの `X.Y.Z`、`variants/<variant>.json` の `version`、生成 `manifest.json` の `version` が一致しなければ該当 variant の job は失敗する。
+- 公開workflowはネイティブgit・公式BunアーカイブとSHA-256検証・PowerShellのHTTP publisherを使い、公開専用CLI/NodeActionsは使わない。CWS・AMO workflow は同じ repository 固定の concurrency group で直列化し、提出中は Dashboard など他の公開操作を並行しない。
 
 #### Chrome Web Store
-- **拡張機能 ID の選択**: matrix の variant 値から `case` 文で `CWS_EXTENSION_ID_<UPPER>` シークレットを選ぶ (`default` → `CWS_EXTENSION_ID_DEFAULT`)
-- **共通シークレット**: `CWS_CLIENT_ID` / `CWS_CLIENT_SECRET` / `CWS_REFRESH_TOKEN` / `CWS_PUBLISHER_ID` は全 variant 共有 (同一 Google アカウントの OAuth 認証情報 + publisher ID。 publisher ID は secrets.json の `chrome_web_store.publisher_id` にも保管)
-- アップロードは `scripts/Publish-Cws.ps1` のネイティブHTTP API v2を使う。既存OAuth secretsとpublisher/item IDを維持する。
 
-##### Privacy practices
+- 拡張機能 ID は variant から `CWS_EXTENSION_ID_<UPPER>`（immutable）を選ぶ。`CWS_CLIENT_ID` / `CWS_CLIENT_SECRET` / `CWS_REFRESH_TOKEN` / `CWS_PUBLISHER_ID` は全 variant 共通。アップロードは `scripts/Publish-Cws.ps1`（API v2）。必須情報不足なら Dashboard の Privacy practices を入力し、提出状態を確認して手動再開する。
+- `publish.yml` は `-Stage Upload` で下書きをアップロードするだけで申請しない。Dashboard（Edictora）でロケール別掲載画像などを整えた後、`gh workflow run cws-submit.yml -f version=x.y.z --ref vx.y.z` で申請（`-Stage Publish`、variant ごとの matrix）する。
+- `cws-submit.yml` が `:publish` するのは、実行 ref が `main` の祖先の軽量タグ `v<version>` で manifest の版が入力と一致し、`publish.yml` の直近のアップロード成功 run（ステップ名 `Chrome Web Store にアップロード（下書き）`、job 名 `Publish <variant>`）が同じ commit・同じタグから起動している場合だけ。同版が申請済み・公開済みなら再送せず成功終了する。別版の審査中・より新しい版の存在・アップロード進行中/失敗・状態不明は停止する。Dashboard で手動アップロードした下書きは申請されないので Dashboard から手動で申請する。
 
-CWS の公開で必須情報不足なら Developer Dashboard の Privacy practices で single-purpose / data usage / data collection を入力し、提出状態を確認して上記の手動再開手順を使う。
+#### Firefox AMO
 
-##### CWS のアップロードと申請の分離
-
-`publish.yml`（版タグ `v<X.Y.Z>` の push で起動）は検証済みZIPを `-Stage Upload` で下書きとしてアップロードするだけで、審査へは申請しない。新ロケールの掲載画像欄はアップロード後でないと Dashboard に出ないため、申請は別workflow `.github/workflows/cws-submit.yml`（手動実行、`-Stage Publish`）で行う。
-
-1. `main` を push してから、同じ commit に軽量タグ `vx.y.z` を付けて push する（publish.yml がアップロードする）
-2. Dashboard（Edictora）でロケール別の掲載画像などを整えて下書き保存する
-3. `gh workflow run cws-submit.yml -f version=x.y.z --ref vx.y.z` で申請する
-
-- API v2 は未申請の下書き版を返さないため、下書きの版そのものは確認できない。`cws-submit.yml` は次を満たす場合だけ `:publish` する: 実行 ref が軽量タグ `v<version>`（`main` の祖先）で manifest の版が入力と一致する。`publish.yml` の直近のアップロード成功 run（固定ステップ名 `Chrome Web Store にアップロード（下書き）`。`actions: read` で履歴を参照）が同じ commit で、同じタグから起動している。fetchStatus で item identity・直近アップロード状態・公開/審査中の版を確認できる。
-- 同版が申請済み・公開済み（PENDING_REVIEW / STAGED / PUBLISHED / PUBLISHED_TO_TESTERS）なら再送せず成功終了する。別版の審査中、より新しい版の存在、直近アップロードの進行中・失敗、状態不明は申請せず停止する。
-- Dashboard で手動アップロードした下書きなど、同じ commit のアップロード成功 run が無い場合は申請されない。その場合は Dashboard から手動で申請する。
-- 両workflowは同じ concurrency group で直列化する。申請中は Dashboard の操作を並行しない。
-- variant（default / notosans）ごとに matrix で申請し、アップロード履歴は job 名 `Publish <variant>` で確認する。
-
-#### Firefox AMO (addons.mozilla.org)
-- **提出ツール**: 最終XPIをverifierで照合後、receiptのSHA-256を `scripts/Publish-Amo.ps1` へ渡す。既存GUIDへのPUTで新versionを提出し、人手レビューの承認は待たない。
-- **ソースディレクトリ**: `firefox-build/` を CI 内で `package-source.js --stage firefox` により構築 (Chrome ZIP と同じ `manifest.json + _locales + icons/<variant> + src` 構成、 TTF / preview.html / OS メタファイル除外)。ビルド列は `build:<variant>` に一本化し、`verify.yml` が同じ stage → アーカイブ → verifier を variant × 配布先で実行する
-- **gecko id (extension 識別子)**: `variants/<variant>.json` の `geckoId` から `build-variant.js` 経由で `manifest.json` の `browser_specific_settings.gecko.id` に注入される
-- **共通シークレット**: `AMO_JWT_ISSUER` / `AMO_JWT_SECRET` は全 variant 共有 (同一 Mozilla アカウントの JWT credentials)
-- **レビュー**: `--channel=listed` は AMO の人間レビューが入る。 submission API は受付完了で job 成功扱いとなり、 実際のストア反映は別事象
-- **API キーの発行**: https://addons.mozilla.org/ja/developers/addon/api/key/ で JWT issuer / secret を生成し、 `gh secret set AMO_JWT_ISSUER` / `gh secret set AMO_JWT_SECRET` で登録
-
-##### AMO API rate limit
-
-AMO はアカウント単位で提出を制限する。throttle 時は表示された時間を待ち、提出状態を確認してから手動再開する。連続再試行しない。
-
-#### AMO 初回登録 (CI 自動公開の前提条件)
-
-新 variant の初回登録は AMO Developer Hub で行う。共通PowerShell publisherは登録済みGUIDの新version提出専用で、未登録GUIDの404では停止する。
-
-- **default variant**: 登録済み (`{ee49eeb2-93a9-4062-ba75-06610054323f}`)
-- **将来 variant**: 下記 Developer Hub 手順で初回登録
-
-##### AMO Developer Hub で初回登録
-
-https://addons.mozilla.org/ja/developers/ で「Submit a New Add-on」から XPI を upload → リスティング情報を手動入力。
-
-#### AMO リスティング情報の API 更新時の落とし穴
-
-`PATCH /api/v5/addons/addon/{guid}/` の HTML はプレーンテキスト化される。locale は `ja`・`en-US` 等を使い、英語に `en` 単独は使わない（HTTP 400）。license は `current_version.license.slug` に格納される。GET の privacy policy は本文でなく `has_privacy_policy` で確認する。`?lang=all` は locale が欠けることがあるため個別 locale を指定する。429 時は制限解除を待ち、JWT は短命の HS256 署名を使う。
-#### サプライチェーン対策
-- 公開workflowはネイティブgit・公式BunアーカイブとSHA-256検証・PowerShellのHTTP publisherを使う。製品build/lint用Bunとlockfile固定を維持し、公開専用CLI/NodeActionsは使わない。
-
-#### Secrets Rotation / Revocation (運用ノウハウ)
-
-- **CWS OAuth refresh token**: 6 か月以内に release を回せば自動で alive。 失効した場合は https://developer.chrome.com/docs/webstore/using-api#test の手順で refresh token を再発行 → `gh secret set CWS_REFRESH_TOKEN`
-- **AMO JWT**: 漏洩疑いがあれば https://addons.mozilla.org/ja/developers/addon/api/key/ から即 revoke → 新発行 → `gh secret set AMO_JWT_ISSUER` / `gh secret set AMO_JWT_SECRET` で更新 (60 秒で反映)
-- **CWS_EXTENSION_ID**: immutable (拡張機能の identity)、 rotation 不要
+- 最終XPIを verifier で照合し、SHA-256・GUID・version を `scripts/Publish-Amo.ps1`（PowerShell 7.2 以上）へ渡す。JWT 認証、非公開 listed 版の検査、upload 検証、既存 GUID への PUT 提出の受付応答まで確認する。保存 UUID の再利用・重複・不明な受付結果は停止する。CI 成功は審査完了・公開を意味しない。
+- `firefox-build/` は CI で `package-source.js --stage firefox` により構築する。gecko id は `variants/<variant>.json` の `geckoId` から `manifest.json` へ注入される。`AMO_JWT_ISSUER` / `AMO_JWT_SECRET` は全 variant 共通。
+- 新 variant の初回登録は AMO Developer Hub の「Submit a New Add-on」で行う（publisher は登録済み GUID 専用で 404 では停止する）。default は登録済み。
+- AMO はアカウント単位で提出を制限する。throttle 時は表示時間を待ち、提出状態を確認してから手動再開する。連続再試行しない。
 
 ## Critical Constraints
 
-### Manifest content_scripts のロード順 (絶対)
+### Manifest content_scripts のロード順（絶対）
 
-宣言的 content script は `manifest.template.json` で定義され、 `build-variant.js` が exclude_matches を注入する。MAIN world の `inject.js` とプリセット JS は `background.js` が同じ excludeMatches で動的登録する:
+宣言的 content script は `manifest.template.json` で定義し、`build-variant.js` が exclude_matches を注入する。MAIN world の `inject.js` とプリセット JS は `background.js` が同じ excludeMatches で動的登録する。
 
 ```
-src/content/youtube-target.js — ISOLATED world  (静的・動的 preset に先行する対象判定)
-src/content/variant.js        — ISOLATED world  (VARIANT を font-config 前に定義)
-src/content/font-config.js    — ISOLATED world  (mergeFontSettings は VARIANT に依存)
-src/content/preload-fonts.js  — ISOLATED world  (main script)
-
-動的: src/content/inject.js   — MAIN world      (有効時のみ Shadow DOM intercept)
-動的: youtube-target.js → src/css/preset-*.js — ISOLATED world  (有効時のみ選択プリセット)
+src/content/youtube-target.js — ISOLATED (静的・動的 preset に先行する対象判定)
+src/content/variant.js        — ISOLATED (VARIANT を font-config 前に定義)
+src/content/font-config.js    — ISOLATED (mergeFontSettings は VARIANT に依存)
+src/content/preload-fonts.js  — ISOLATED (main script)
+動的: src/content/inject.js   — MAIN     (有効時のみ Shadow DOM intercept)
+動的: youtube-target.js → src/css/preset-*.js — ISOLATED (有効時のみ選択プリセット)
 ```
 
-Service Worker (`background.js`) も同様の順序で `importScripts('/src/content/variant.js', '/src/content/font-config.js')` を呼ぶ。
+Service Worker（`background.js`）も `importScripts('/src/content/variant.js', '/src/content/font-config.js')` を同順で呼ぶ。
 
-### CSS — 対象要素を明示したセレクタを書く
+### CSS — 対象要素を明示したセレクタ
 
 アイコンフォントを壊さないよう、`*` や `:is(pre, code) :not(i, .icon)` のような暗黙の全要素指定を使わない。`:root :is(pre, code, kbd, samp, ...)` はコンテナに適用して継承させ、`[style*="monospace"]` は該当要素だけを対象にする。編集領域は通常ルールと分離し `font-family: revert !important` で戻す。
+
 ### Performance — preload-fonts.js は Hot Path
 
-全ページ document_start (top + iframe 全フレーム、 `all_frames: true`) 実行されるため:
-- `document_start` 時点の同期処理を最小限に保つ
-- DOM が空の状態での無意味な `querySelector` を避ける
-- `MutationObserver` コールバックは `_replaceFontApplied` フラグで早期 return
-- debug 用 `chrome.runtime.sendMessage` を本番に残さない
-- `scanDynamicFontFamilies` は `document.fonts.size` キャッシュ + `'__' startsWith` 早期 reject + `requestIdleCallback` debounce。件数が同じまま動的 family が入れ替わる場合に備え、`loadingdone` では `event.fontfaces`（今回読み込まれた face だけ）を同期的に確認し、未注入の動的 family があれば件数キャッシュを無効化して次の走査を強制する（`event.fontfaces` が無い・反復できない場合は強制側）。`document.fonts` 全体の反復はイベントごとには行わない
+全ページ・全フレームの `document_start` で実行されるため:
+- 同期処理を最小限にし、DOM が空の状態での無意味な `querySelector` を避ける。
+- `MutationObserver` のコールバックは `_replaceFontApplied` フラグで早期 return する。
+- debug 用 `chrome.runtime.sendMessage` を本番に残さない。
+- `scanDynamicFontFamilies` は `document.fonts.size` キャッシュ + `'__' startsWith` 早期 reject + `requestIdleCallback` debounce。`loadingdone` では `event.fontfaces` だけを同期確認し、未注入の動的 family があるか `event.fontfaces` が使えなければ件数キャッシュを無効化して次の走査を強制する。`document.fonts` 全体の反復はイベントごとには行わない。
 
-### CSP Limitations
+### CSP の制限
 
-`font-src` / `default-src 'none'` の厳格 CSP サイトでは `chrome-extension://` / `moz-extension://` からの `url()` ロードがブロックされる。 `local()` フォールバックのみ動作する (ユーザーがフォントをシステムインストールしていれば置換成功)。 ブラウザ仕様による制約で拡張側では回避不可能。
+`font-src` / `default-src 'none'` の厳格 CSP サイトでは拡張 URL の `url()` がブロックされ、`local()` フォールバックのみ動作する。拡張側では回避不可。
 
-### Cross-Browser Compatibility
+### Cross-Browser
 
-Chrome / Firefox desktop 140+ / Firefox Android 142+ を単一コードで対応する。Firefox は `chrome.*`、`registerContentScripts` の `persistAcrossSessions` / `world`、`updateContentScripts` に対応する。gecko id は variant から注入し、Chrome は `browser_specific_settings` を無視する。`chrome.runtime.getURL('')` は両ブラウザで動作する。取得できない場合、`preload-fonts.js` は URL を組み立てずに処理を止める。popup のフォントは拡張内の相対パスを使う。
-### Firefox MV3 — background は service_worker と scripts の併記必須
+Chrome / Firefox desktop 140+ / Firefox Android 142+ を単一コードで対応する。gecko id は variant から注入し、Chrome は `browser_specific_settings` を無視する。`chrome.runtime.getURL('')` が取得できない場合、`preload-fonts.js` は URL を組み立てずに処理を止める。popup のフォントは拡張内の相対パスを使う。
 
-AMO は `background.service_worker` 単独を拒否する。[manifest.template.json](manifest.template.json) は service worker のみを定義し、`bun scripts/build-variant.js <variant> --firefox` が Firefox 用に `variant.js`、`font-config.js`、`background.js` の順で `background.scripts` を追加する。`zip.ps1` と CI もこの生成経路を使う。Chrome は `--firefox` なしで生成し `scripts` を含めない。
+Firefox MV3 では AMO が `background.service_worker` 単独を拒否する。`manifest.template.json` は service worker のみを定義し、`bun scripts/build-variant.js <variant> --firefox` が `variant.js`、`font-config.js`、`background.js` の順で `background.scripts` を追加する（`zip.ps1` と CI も同経路）。Chrome は `--firefox` なしで生成する。event page では `importScripts` が使えないため、`background.js` は `typeof importScripts === 'function'` でガードする。
 
-Firefox の event page では `importScripts` が使えないため、[background.js](src/background/background.js) は `typeof importScripts === 'function'` でガードする。Chrome service worker では同関数で variant・font config を順次ロードする。
 ### その他の制約
 
-- `web_accessible_resources` に `src/fonts/*.woff2` と `src/css/replacefont-extension.css` を含める。 後者は Path B で `preload-fonts.js` が fetch + placeholder 解決して注入するために必須
-- `src/content/inject.js` は `background.js` が拡張機能パッケージ内のファイルとして MAIN world へ動的登録するため WAR に含めない (攻撃対象面の縮小)
-- 宣言的 `content_scripts.all_frames: true` と動的登録の `allFrames: true` を揃え、top + iframe 全フレームを対象にする。 iframe 内 (広告 / 埋め込みウィジェット) のフォントも置換対象になる
-- `extension_pages` CSP: `script-src 'self'; object-src 'self'; base-uri 'self'; form-action 'none'` (base-uri / form-action は defense-in-depth)
-- M PLUS 2 / Murecho は variable font — Regular/Bold が同一 woff2 から取得される
-- `manifest.json` の `run_at: "document_start"` で最早期に注入
-- popup でのフォント変更は **ページリロードが必要** — CSS は `document_start` 時に一度キャッシュされる
-- `chrome.scripting.registerContentScripts` で CSS ファイル内の相対 URL はページオリジンに解決される (拡張オリジンではない)。 そのため CSS ではなく JS を登録して `chrome.runtime.getURL()` で絶対 URL を構築する設計
+- `web_accessible_resources` に `src/fonts/*.woff2` と `src/css/replacefont-extension.css` を含める（後者は Path B の fetch + placeholder 解決に必須）。`inject.js` は動的登録のため WAR に含めない。
+- 宣言的 `all_frames: true` と動的登録 `allFrames: true` を揃える（iframe 内も対象）。`run_at` は `document_start`。
+- `extension_pages` CSP: `script-src 'self'; object-src 'self'; base-uri 'self'; form-action 'none'`。
+- M PLUS 2 / Murecho は variable font で Regular/Bold が同一 woff2。
+- popup のフォント変更はページリロードが必要（CSS は `document_start` で一度キャッシュされる）。CSS ファイルの相対 URL はページオリジンに解決されるため、JS を登録して `chrome.runtime.getURL()` で絶対 URL を構築する。
 
-### AMO 公開のHTTP境界
+## 依存管理
 
-公開workflowは生成した最終XPIを既存の配布物検証へ通し、SHA-256・GUID・versionを `scripts/Publish-Amo.ps1`（PowerShell 7.2 以上）へ渡す。旧web-ext sign/承認タイムアウトを成功化する手順に代えて、JWT認証・全ページの非公開listed版検査・upload検証・GUIDに対するPUT提出の受付応答まで確認する。XPIの同一snapshotをhash検証と送信に使い、保存UUIDの再利用・重複・不明な受付結果は停止する。CI成功は審査完了・ストア公開を意味しない。
-
-CWS公開workflowはrepository固定のconcurrency groupで直列化する。同期uploadの成功・ID・版を確認した場合だけpublishし、非同期uploadはAPI v2でdraft版を要求と結び付けられないため停止する。APIにはuploadとpublishの原子的なCASが無いため、提出中はDashboardや他の手動公開操作を並行しない。
-
-## Bun依存の脆弱性検出
-
-依存の固定復元は `bun run deps` を使う。lock欠落・破損を拒否し、`[run] bun=true` 経由で依存のpostinstallまでBunで実行する。Node.jsがあるPCでも通常の `bun install` を直接使う経路へ戻さない。
-
-ローカルでは `bun audit` でlock全体を監査できる。通常のDependabot更新PRは維持し、Dependency validationで検証する。
-
-
-### 依存の暫定セキュリティ修正
-
-依存検証 workflow の手動実行は `mode=pr`（既定）と `mode=main` を選べる。PR 再検証では従来どおり `pr`・`base`・`head` を必須とし、本人性・最新 SHA・merge parents の証跡を検査する。`mode=main` は PR 入力をすべて空にし、現在の既定ブランチを選ぶ場合に限る。実行 SHA を固定して検証し、`dependency-main-validation sha=...` の run-name により PR 再検証の証跡とは区別する。
-
-minimatch は 11.0.4 以降、multimatch は named import 対応の 8 系へ override する。ESLint 設定の ESM 経路は @eslint/eslintrc@3.3.7 と @eslint/config-array@0.21.2 の最小 import patch で互換性を保つ。web-ext@10.8.0 の FileFilter は Windows で windowsPathsNoEscape を明示し、開発用ファイルやアーカイブの除外を維持する。
-
-CVE-2026-93753（GHSA-gcqx-w48m-w2h4）の deepmerge 4.3.1 は公式修正版が未公開のため、patches/deepmerge@4.3.1.patch で戻り値への書込みを own データ属性にし、__proto__ 経由の prototype 汚染を防ぐ。bun run test:dependencies で web-ext → addons-linter の実解決先の攻撃入力と通常 API を検証する。Bun 標準の patchedDependencies で適用し、公式修正版の採用時に patch の要否を再確認する。バージョンベースの bun audit 警告は残るため、警告を除外したり成功扱いにしない。
+- 固定復元は `bun run deps`（lock 欠落・破損を拒否し、`[run] bun=true` で postinstall も Bun 実行）。通常の `bun install` 直接実行へ戻さない。ローカルでは `bun audit` で監査する。警告を除外・成功扱いにしない。
+- Dependabot の通常更新 PR は維持し、Dependency validation で検証する。手動実行は `mode=pr`（既定、`pr`・`base`・`head` 必須で本人性・最新 SHA・merge parents を検査）と `mode=main`（PR 入力を空にし既定ブランチを選ぶ。run-name `dependency-main-validation sha=...`）。
+- 暫定修正: minimatch は 11.0.4 以降、multimatch は named import 対応の 8 系へ override。ESLint 設定の ESM 経路は @eslint/eslintrc@3.3.7 と @eslint/config-array@0.21.2 の最小 import patch。web-ext@10.8.0 の FileFilter は Windows で windowsPathsNoEscape を明示する。
+- deepmerge 4.3.1（CVE-2026-93753）は公式修正版が未公開のため `patches/deepmerge@4.3.1.patch`（Bun の patchedDependencies）で `__proto__` 経由の汚染を防ぐ。`bun run test:dependencies` で検証し、公式修正版の採用時に要否を再確認する。
