@@ -34,7 +34,7 @@ bun --bun run sync:support                  # 共有パッケージ正本から�
 bun --bun run check:support                 # 同梱資産が共有パッケージ正本と一致することを読み取り専用で検査
 ```
 
-`manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。初回 checkout 後と `bun.lock` の変更後は `bun run deps` で依存を同期する。"Load unpacked" の前には対象 variant のフルビルドを 1 回走らせる。`bun test ./scripts/verify-style-injection.cjs` はソースを直接読み込むためフルビルドは前提にしない。開発には Bun 1.4.4 を使用する（package.json の packageManager と CI を同じ版に固定）。PowerShell のパッケージ処理には pwsh 7.6.9 以降を推奨する。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
+`manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js` は **ビルド生成物 (.gitignore 済)**。初回 checkout 後と `bun.lock` の変更後は `bun run deps` で依存を同期する。"Load unpacked" の前には対象 variant のフルビルドを 1 回走らせる。`bun test ./scripts/verify-style-injection.cjs` はソースを直接読み込むためフルビルドは前提にしない。開発には Bun 1.4.5 を使用する（package.json の packageManager と CI を同じ版に固定）。PowerShell のパッケージ処理には pwsh 7.7.0 以降を推奨する。 フォント注入の回帰検証手順は下記 Local Testing を参照。その他の UI 検証は実機ブラウザで行う。
 
 `ttf2woff2@8.0.1` のフォント変換は Bun では同梱 WASM への自動フォールバックを使う。ネイティブ addon を必須にせず、実 TTF から WOFF2 が生成できることを確認する。
 
@@ -56,7 +56,9 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 
 ### Local Testing
 
-- **フォント注入の回帰検証**: `bun test ./scripts/verify-style-injection.cjs` — Puppeteer の実ブラウザで Shadow 初期化、遅延した外部 CSS / @import、DOM 更新時の再移動、ページの破棄・復帰イベントを検証する。拡張 API は fixture を使用し、Firefox 実機の代替にはしない。
+- **フォント注入の回帰検証**: `bun test ./scripts/verify-style-injection.cjs` — Puppeteer の実ブラウザで Shadow 初期化、遅延した外部 CSS / @import、DOM 更新時の再移動、ページの破棄・復帰イベント、置換除外リスト一致時の preset・closed Shadow CSS の撤去を検証する。拡張 API は fixture を使用し、Firefox 実機の代替にはしない。
+- **置換除外リストの判定**: `bun --bun run test:exclusions` — 規則の正規化・glob/前方一致・match pattern への変換を検証する（CI の verify でも実行）。
+- **配布 stage の選定規則**: `bun --bun run test:package` — `package-source.js` の `stagePackage` が OS 残骸・preview.html・firefox の TTF を除外し、既存パス・不正な配布先・リンクを拒否し、固定版の除外を適用することを一時 fixture で検証する（CI の verify でも実行）。
 - **Chrome**: `chrome://extensions` → Developer mode ON → "Load unpacked" でリポジトリルートを選択
 - **Firefox**: `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on..." で `manifest.json` を選択 (desktop 140+ / Android 142+)
 - Firefox の読み込み前はフルビルド後に `bun scripts/build-variant.js <variant> --firefox` を実行する。Chrome の検証へ戻るときは `bun --bun run build-variant <variant>` で Chrome 用 manifest を再生成する。
@@ -83,10 +85,15 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 4. (任意) `docs/<name>/privacy-policy.md` / `privacy.html` / `index.html` を用意
 5. (任意) `changelog/<name>.md` を作成
 6. `package.json` の `scripts` に `build:<name>` / `generate-icons:<name>` / `generate-screenshots:<name>` を追加
-7. `.github/workflows/publish.yml` の `strategy.matrix.variant` 配列と `variant に対応する EXTENSION_ID を決定` ステップの `case` 文の両方に新 variant を追加
+7. 次の variant 列挙箇所すべてに新 variant を追加する
+   - `.github/workflows/publish.yml`: `workflow_dispatch.inputs.variant.options`、`strategy.matrix.variant` 配列、`対象を選択` ステップ（id: select）の `case` 文、`variant に対応する EXTENSION_ID を決定` ステップの `case` 文（`CWS_EXTENSION_ID_<UPPER>` の env も追加）
+   - `.github/workflows/cws-submit.yml`: `strategy.matrix.variant` 配列と、extension ID を選ぶ `case` 文（`CWS_EXTENSION_ID_<UPPER>` の env も追加）
+   - `.github/workflows/verify.yml` と `.github/workflows/dependency-validation.yml`: variant 別のビルドステップ（`build:<name>`）
+   - `webstore/run-vitrina.mjs`: `VARIANTS` 配列（`generate-screenshots:<name>` が参照する）
 8. GitHub Secrets に `CWS_EXTENSION_ID_<UPPER>` を登録
 9. `variants/<新>.json` の `version` を default と同じ値に揃える
 10. **新変数を `variant.json` に追加した場合は `scripts/build-variant.js` の `REQUIRED_KEYS` 配列も更新**
+11. リポジトリ直下に `.amo-metadata-<name>.json` を作成（既存の `.amo-metadata-default.json` を参考にする）。`publish.yml` が `Publish-Amo.ps1 -Metadata` に渡す必須ファイルで、無いと Firefox AMO への提出だけが失敗する
 
 ## Architecture
 
@@ -102,6 +109,8 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 - preset生成の区切りには不可視ASCII制御文字を使わず、目視できるトークンまたは明示的なescapeを使う。
 - 保存値は `mergeFontSettings()` で検証し、固定版の `lockedFonts` を優先する。フォント定義・検証を別の実装へ複製しない。
 - 宣言的・動的content scriptの除外を一致させ、有効時だけMAIN worldフックを登録する。
+- background の登録更新は、起動時・インストール時・storage 変更の debounce 発火のいずれも、直列化ロック内で storage を読み直してから行う。storage 変更経路は読込に失敗したら登録を変えず、起動・インストール経路は既定値にフォールバックする。
+- 利用者の置換除外リスト（`storage.local.siteExclusions`、popupの「除外リスト」タブ）は `font-config.js` の `SiteExclusions` を正本にし、規則はReplaceTranslatorの自動翻訳ブラックリストと同じにする。除外の正本は `preload-fonts.js` の実行時判定（YouTube分岐・競合font-face除去より前）で、素のホスト名だけを動的登録の `excludeMatches` へ前倒しで加える。match pattern への変換を広げる場合は意味が完全に一致する規則に限る（無効な pattern は登録全体を失敗させる）。判定を変えたら `bun --bun run test:exclusions` と下記の回帰検証を実行する。
 - Shadow DOMの注入順序を変更したら、[world別Shadow DOM処理](DESIGN.md#world別shadow-dom処理) とLocal Testingの回帰検証により、同期初期化後のCSS保持とページ破棄後の注入停止を確認する。
 - popupの変更は両variant × light/darkの4テーマを実画面で確認する。notosansのテーマも利用中なので維持し、reduced motionとキーボードfocusの表示を保つ。
 
@@ -154,8 +163,9 @@ bun scripts/release.js --yes    # 直接呼び（確認プロンプト省略、C
 全 job が build / 認証等で失敗した場合も同じ手順で未提出対象ごとに再開する。新しい version を公開する場合は /vava を使う。
 
 ### Local Packaging (手動 Web Store アップロード用)
-- `.\zip.ps1 [-Variant <name>]` (Windows): `bun run deps` → アイコン / CSS 生成 → variant 適用 → `<zipBaseName>-chrome.zip` + `<zipBaseName>-firefox.xpi` 生成。 引数省略時は `default`
-- `./zip.sh [<name>]` (Linux/Mac): Chrome ZIP のみ。 Firefox XPI を含むフルリリースは `zip.ps1` 必須
+- `.\zip.ps1 [-Variant <name>]` (Windows): `bun run deps` → `build:<variant>` → `package-source.js --stage` で Chrome / Firefox 用ディレクトリを構築 → `New-FirefoxArchive.ps1` で作業ディレクトリ `temp-build` 内に `chrome.zip` + `firefox.xpi` を生成 → `verify-release-archive.js` で検証（Python 3 が必要。`RELEASE_ZIP_PYTHON` を設定した場合はその値だけを使い、無効なら停止する。未設定時のみ `py -3` → `python3` → `python` を探す）→ 両方の検証後に最終名 `<zipBaseName>-chrome.zip` / `<zipBaseName>-firefox.xpi` へ移す。Chrome 用 manifest へ戻せなかった場合は失敗終了する。既存の最終名2件は build より前に削除する（消せなければ停止する。旧版は保護しない。成果物は git 管理外で作り直せる）。検証を通っていないアーカイブは最終名に置かず、最終名への移動に失敗したら置いた分を外して最終名の現状を表示し失敗終了する。Ctrl+C などの中断では、検証済みの片方だけが最終名に残ることがある。 引数省略時は `default`。フォント変換（`convert-fonts`）は自動実行しない
+- `./zip.sh [<name>]` (Linux/Mac): `bun run deps` → `build:<variant>` → 既存の最終名 ZIP を `rm -f` → `package-source.js --stage chrome` で `mktemp` の作業ディレクトリ（終了時に trap で片付け）内の stage から最終名へ直接 `zip` する Chrome ZIP のみ（verifier は呼ばない）。 Firefox XPI を含むフルリリースは `zip.ps1` 必須
+- 同梱ファイル（manifest.json・_locales・icons/<variant>・src）の選定と OS 残骸・preview.html・Firefox の TTF 除外は `scripts/package-source.js <variant> --stage <chrome|firefox> <新規dir>` に一本化している（manifest は事前に `build-variant` で生成しておく）
 
 ### `/vava` スキル経由の起動
 
@@ -166,7 +176,7 @@ bun scripts/release.js --yes    # 直接呼び（確認プロンプト省略、C
 - **トリガー**: `release/<X.Y.Z>` 形式のブランチへの push (例: `release/3.0.3`, `release/3.1.0`)
 - **matrix strategy**: 現在 `variant: [default, notosans]` の 2 要素で並列公開。 将来 variant を追加する場合は配列を拡張
 - **整合性チェック**: ブランチ末尾の `X.Y.Z` と `variants/<matrix.variant>.json` の `version` と生成された `manifest.json` の `version` が一致しないと該当 variant のジョブが失敗
-- **公開前ゲート**: `verify` job（`.github/workflows/verify.yml` を workflow_call で呼ぶ）が、共通部品の同期確認・両 variant のビルド・`verify-style-injection.cjs` を実行する。失敗すると publish job は走らない。同じ verify.yml は main への push と全 PR でも実行される（Dependabot 再検証は従来どおり `dependency-validation.yml`）
+- **公開前ゲート**: `verify` job（`.github/workflows/verify.yml` を workflow_call で呼ぶ）が、依存パッチの検証（`test:dependencies`）・置換除外リストの判定（`test:exclusions`）・配布 stage の選定規則の直接テスト（`test:package`）・共通部品の同期確認・両 variant のビルド・`verify-style-injection.cjs`・配布 stage → アーカイブ → verifier（variant × 配布先）・CWS / AMO publisher と Firefox XPI builder の fixture テスト（`Test-PublishCws.ps1`・`Test-PublishAmo.ps1`・`Test-FirefoxArchive.ps1`）を実行する。失敗すると publish job は走らない。同じ verify.yml は main への push と全 PR でも実行される（Dependabot 再検証は従来どおり `dependency-validation.yml`）
 - **公開先**: Chrome Web Store と Firefox AMO の **両方** に並列公開
 
 #### Chrome Web Store
@@ -194,7 +204,7 @@ CWS の公開で必須情報不足なら Developer Dashboard の Privacy practic
 
 #### Firefox AMO (addons.mozilla.org)
 - **提出ツール**: 最終XPIをverifierで照合後、receiptのSHA-256を `scripts/Publish-Amo.ps1` へ渡す。既存GUIDへのPUTで新versionを提出し、人手レビューの承認は待たない。
-- **ソースディレクトリ**: `firefox-build/` を CI 内で構築 (Chrome ZIP と同じ `manifest.json + icons/<variant> + src` 構成、 TTF / preview.html / OS メタファイル除外)
+- **ソースディレクトリ**: `firefox-build/` を CI 内で `package-source.js --stage firefox` により構築 (Chrome ZIP と同じ `manifest.json + _locales + icons/<variant> + src` 構成、 TTF / preview.html / OS メタファイル除外)。ビルド列は `build:<variant>` に一本化し、`verify.yml` が同じ stage → アーカイブ → verifier を variant × 配布先で実行する
 - **gecko id (extension 識別子)**: `variants/<variant>.json` の `geckoId` から `build-variant.js` 経由で `manifest.json` の `browser_specific_settings.gecko.id` に注入される
 - **共通シークレット**: `AMO_JWT_ISSUER` / `AMO_JWT_SECRET` は全 variant 共有 (同一 Mozilla アカウントの JWT credentials)
 - **レビュー**: `--channel=listed` は AMO の人間レビューが入る。 submission API は受付完了で job 成功扱いとなり、 実際のストア反映は別事象
@@ -255,7 +265,7 @@ Service Worker (`background.js`) も同様の順序で `importScripts('/src/cont
 - DOM が空の状態での無意味な `querySelector` を避ける
 - `MutationObserver` コールバックは `_replaceFontApplied` フラグで早期 return
 - debug 用 `chrome.runtime.sendMessage` を本番に残さない
-- `scanDynamicFontFamilies` は `document.fonts.size` キャッシュ + `'__' startsWith` 早期 reject + `requestIdleCallback` debounce
+- `scanDynamicFontFamilies` は `document.fonts.size` キャッシュ + `'__' startsWith` 早期 reject + `requestIdleCallback` debounce。件数が同じまま動的 family が入れ替わる場合に備え、`loadingdone` では `event.fontfaces`（今回読み込まれた face だけ）を同期的に確認し、未注入の動的 family があれば件数キャッシュを無効化して次の走査を強制する（`event.fontfaces` が無い・反復できない場合は強制側）。`document.fonts` 全体の反復はイベントごとには行わない
 
 ### CSP Limitations
 
@@ -263,7 +273,7 @@ Service Worker (`background.js`) も同様の順序で `importScripts('/src/cont
 
 ### Cross-Browser Compatibility
 
-Chrome / Firefox desktop 140+ / Firefox Android 142+ を単一コードで対応する。Firefox は `chrome.*`、`registerContentScripts` の `persistAcrossSessions` / `world`、`updateContentScripts` に対応する。gecko id は variant から注入し、Chrome は `browser_specific_settings` を無視する。`chrome.runtime.getURL('')` は両ブラウザで動作し、Chrome 固有フォールバックには到達しない。popup のフォントは拡張内の相対パスを使う。
+Chrome / Firefox desktop 140+ / Firefox Android 142+ を単一コードで対応する。Firefox は `chrome.*`、`registerContentScripts` の `persistAcrossSessions` / `world`、`updateContentScripts` に対応する。gecko id は variant から注入し、Chrome は `browser_specific_settings` を無視する。`chrome.runtime.getURL('')` は両ブラウザで動作する。取得できない場合、`preload-fonts.js` は URL を組み立てずに処理を止める。popup のフォントは拡張内の相対パスを使う。
 ### Firefox MV3 — background は service_worker と scripts の併記必須
 
 AMO は `background.service_worker` 単独を拒否する。[manifest.template.json](manifest.template.json) は service worker のみを定義し、`bun scripts/build-variant.js <variant> --firefox` が Firefox 用に `variant.js`、`font-config.js`、`background.js` の順で `background.scripts` を追加する。`zip.ps1` と CI もこの生成経路を使う。Chrome は `--firefox` なしで生成し `scripts` を含めない。

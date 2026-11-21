@@ -29,11 +29,11 @@
 ## ビルド時データフロー
 
 1. exact pinした`@kagayoi/support-extension`から、問い合わせUIのJS/CSS 5資産を`src/shared/`へ逐語同期する。
-2. `variants/<name>.json` と `manifest.template.json` から、対象バリアントのmanifestと`VARIANT`を生成する。
+2. `variants/<name>.json` と `manifest.template.json` から、対象バリアントのmanifestと`VARIANT`を生成する。あわせて`l10n/shared/<code>.json`（9言語共通のUI文言）に`variants/<name>.json`の`locales`（拡張名・説明・popup文言）を合成し、`_locales/<code>/messages.json`を生成する。
 3. `FONT_REGISTRY`から、ランタイム置換用CSSと本文・等幅・weightの全42presetを生成する。
 4. variant別SVGからPNGアイコンを生成する。
 5. Chrome成果物には`background.service_worker`を使用する。Firefox成果物はAMO validatorとの互換性のため`background.scripts`を追加する。
-6. `scripts/package-source.js`がCI・Windows・Linuxの同梱資産を選定する。完全かつ有効な`lockedFonts`を持つ固定版は、一致するpresetとレジストリで解決した置換用WOFF2、およびpopup・共有UIなどのCSSが実参照するWOFF2を残す。通常版や不完全・不正な固定設定は全preset・WOFF2を保持する。ソース資産、Path B用CSS、ライセンスは削除しない。
+6. `scripts/package-source.js`がCI・Windows・Linuxの同梱資産を選定する。`--stage <chrome|firefox> <新規dir>`はmanifest.json・_locales・icons/<variant>・srcを、OS残骸・preview.html（firefoxはTTFも）を除いて新規ディレクトリへ集約し、publish.yml・verify.yml・zip.ps1・zip.shが共用する（manifestは呼び出し側が事前に生成し、削除・再生成はしない）。完全かつ有効な`lockedFonts`を持つ固定版は、一致するpresetとレジストリで解決した置換用WOFF2、およびpopup・共有UIなどのCSSが実参照するWOFF2を残す。通常版や不完全・不正な固定設定は全preset・WOFF2を保持する。ソース資産、Path B用CSS、ライセンスは削除しない。
 7. CIは共有資産の正本との一致とChrome ZIP内の必須CSSを検査し、問い合わせUIが不完全な成果物の公開を拒否する。
 
 `manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js`、生成PNGはビルド成果物であり、直接編集しない。
@@ -47,6 +47,7 @@
 5. open Shadow DOMはISOLATED world側の監視と共有`CSSStyleSheet`で処理する。closed Shadow DOMはMAIN world側が`attachShadow`の返り値を保持して直接処理する。Constructable Stylesheetを採用できないrootでは`<style>`へフォールバックする。
 6. popupの変更は`chrome.storage.local.fontSettings`へ保存され、Service Workerが150msでデバウンスして動的登録を原子的に更新する。
 7. 無効化時は動的登録と登録成功フラグを解除する。既に開いているページからMAIN worldフックを取り除くにはページ再読み込みが必要になる。
+8. 利用者の置換除外リスト（`chrome.storage.local.siteExclusions`）に一致したframeでは置換しない。`preload-fonts.js`は設定と同じ1回の`storage.local.get`で除外リストを読み、一致したら無効時と同じく監視を畳み、Path Aが同期注入したpreset styleを外し、MAIN worldの`inject.js`へイベントで撤去を伝える。判定はYouTube分岐と競合font-faceの除去より前に行うため、サイトのフォントは元のまま残る。
 
 ChromeのYouTubeドメインでは例外としてpresetを注入せず、Path BだけがCSSを所有する。Service Workerは保存設定を再確認し、レジストリにある選択フォント、通常テンプレート、YouTube用の追加CSSを取得して同一frameへ渡す。追加CSSは確認済みの説明文とチャンネル名だけを対象とし、編集・等幅・アイコンの対象自身と祖先を除外する。frame内でWOFF2をBlob URL化し、全CSS・preload・force loadで共有する。初期設定取得から期限を設け、設定の変更を監視し、注入直前にも再確認する。Blobの準備やCSSが受理される前に失敗したときは競合font-faceを除去せず元の表示を維持する。CSS適用後の初期化例外は部分適用としてコンソールへ記録し、使用中のBlob URLは非永続のpagehideまで保持する。通常のページ破棄ではURLを解放し、BFCacheでは維持する。この経路は非同期のため初期表示のちらつきゼロは保証しない。Firefoxと対象外サイトは従来の同期presetを使う。
 
@@ -65,12 +66,22 @@ ChromeのYouTubeドメインでは例外としてpresetを注入せず、Path B�
 
 `mergeFontSettings()`は不正な値を既定値へ戻し、最後に`VARIANT.lockedFonts`を適用する。固定版ではフォント選択UIも非表示になる。`prebuiltCSSRegistered`は動的preset登録の成否を示すbooleanであり、そのページへの注入成功を保証しないためDOMも確認する。popupは設定を自動保存し、開いているページへの反映には再読み込みが必要となる。
 
+popupは「設定」（ステータスとフォント設定）と「除外リスト」の2タブで構成し、WAI-ARIAのタブパターン（左右・Home/Endキー）に従う。固定版でも除外リストは利用できる。
+
+`chrome.storage.local.siteExclusions`は置換除外規則の文字列配列で、`fontSettings`とは別キーに保存する（フォント設定の保存・YouTube経路の設定変更監視へ影響させないため）。規則と判定はReplaceTranslatorの自動翻訳ブラックリストと同じで、`font-config.js`の`SiteExclusions`を正本にする。
+
+- 1行1規則。前後の空白を除き、重複・1000文字超を捨て、最大500件。
+- `*`は任意の文字列。`://`を含むURL規則は同一オリジンの指定パス以下（`*`を含む場合はURL全体へのglob）、ホスト規則はホスト名全体（大文字小文字を区別しない）、`host/path`はそのホストの指定パス以下に一致する。
+- 判定は各frame自身のURLで行う（content scriptはabout:blank等のframeでは動かない）。タブ全体のURLで判定するReplaceTranslatorとは異なり、除外サイトに埋め込まれた別オリジンのiframeは、そのiframeのURLで判定する。
+- default / notosansが同居する場合、除外時に外すpresetとclosed Shadow rootのCSSは、自身の拡張URLを含むものに限る。共有されるMAIN worldフックは、他方のCSSが残っていればそれを使い続ける。
+- popupは入力を450msのdebounceとblurで自動保存し、前回保存値との差分を最新の保存値へ適用する。「現在のサイトを追加」はアクティブタブのhttp(s)ホスト名を追加する。開いているページへの反映には再読み込みが必要になる。
+
 popupは`body[data-variant]`と`prefers-color-scheme`でテーマを切り替える。defaultはEditorial Day / Editorial Night、notosansはLab Day / Cyber Nightを使用する。フォントは同梱WOFF2から読み込み、外部CDNへ依存しない。`prefers-reduced-motion`でアニメーションを停止し、`:focus-visible`でキーボード操作を示す。
 
 ## 責務の境界
 
 - `VARIANT.lockedFonts`は利用者の保存値より後に適用し、固定版の設定を常に優先する。
-- 宣言的content script、preset、MAIN worldフックには同じ`excludeMatches`を適用する。
+- 宣言的content script、preset、MAIN worldフックには同じ`excludeMatches`を適用する。利用者の除外リストは実行時判定を正本とし、素のホスト名だけを動的登録の`excludeMatches`へ追加する。
 - MAIN worldとISOLATED worldの間でShadowRootを直接渡さず、open rootのhost属性`data-rfs-shadow`だけを通知に使う。
 - Kagayoi Supportへの送信は共有コンポーネント内に閉じ、フォント置換ランタイムから分離する。
 
@@ -117,6 +128,8 @@ closed rootへの注入はmicrotaskへ遅延し、`attachShadow`呼び出し元�
 ### サイト単位の除外
 
 リッチエディタやデザインツールまで強制置換すると、編集体験やアイコンフォントを壊す場合がある。全サイト対応より既存UIの保全を優先し、既知の対象はバリアント設定で除外する。
+
+利用者の除外リストはglobとパス前方一致を含み、match patternでは同じ意味を表せない規則がある。動的登録はコードを埋め込めず、content scriptはstorageを同期で読めないため、除外の正本は`preload-fonts.js`の実行時判定とする。そのうえで、意味が完全に一致する素のホスト名（`*`・パス・ポートを含まない）だけを`*://host/*`へ変換し、presetとMAIN worldフックの`excludeMatches`へ前倒しで加える。`*.x.com`はmatch patternだと`x.com`自身も含むため変換しない。無効なmatch patternが1件でも混じると登録全体が失敗するため、変換対象は厳格に検証する。変換できない規則のページでは、presetが設定読込までの短時間だけ注入される。その間にclosed Shadow rootへ採用した共有sheetは中身を空にし、`<style>` fallbackは除去する。
 
 ### 問い合わせUIの共有資産同期
 
