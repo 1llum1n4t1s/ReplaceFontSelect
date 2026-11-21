@@ -127,38 +127,37 @@ Kagayoi Support の問い合わせUIは、exact pinした `@kagayoi/support-exte
 
 ### Release Kick-off (`scripts/release.js`)
 
-`scripts/release.js` は `variants/*.json` の version を patch +1 し、 `release/<X.Y.Z>` ブランチを作って push する。 push が CI のトリガーになり、 GitHub Actions の matrix strategy が default + notosans を並列公開する。
+`scripts/release.js` は `variants/*.json` の version を patch +1 し、 main に commit・push し、同じ commit に軽量タグ `v<X.Y.Z>` を付けてそのタグだけを push する (`git push --tags` は使わない)。 タグの push が CI のトリガーになり、 GitHub Actions の matrix strategy が default + notosans を並列公開する。
 
 ```bash
-bun --bun run release                 # variant patch +1 → release/<X.Y.Z> ブランチ
+bun --bun run release                 # variant patch +1 → main push → タグ v<X.Y.Z> push
 bun scripts/release.js --yes    # 直接呼び（確認プロンプト省略、CI / Codex から）
 
 # フラグ
 --dry-run / -n  計画だけ表示。 書き込み・push しない
 --yes / -y      対話確認をスキップ
---prune-old     既存の release/* ブランチをリモートから削除
 ```
 
 #### minor / major bump の運用
 
-スクリプトは patch +1 専用。minor / major は `/vava` で指定版を決定し、全 `variants/*.json` と `package.json` をその版に手動更新して main に commit・push し、同じ版の `release/<X.Y.Z>` branch を作成・push する。`release.js` は実行しない。branch push はストア提出を起動するため、公開依頼の範囲でのみ実行する。
+スクリプトは patch +1 専用。minor / major は `/vava` で指定版を決定し、全 `variants/*.json` と `package.json` をその版に手動更新して main に commit・push し、同じ commit に軽量タグ `v<X.Y.Z>` を付けてそのタグだけを push する。`release.js` は実行しない。タグ push はストア提出を起動するため、公開依頼の範囲でのみ実行する。
 
 #### 前提条件と挙動
 - 実行は **clean な main ブランチ** から (リモートと同期済みであること)。 違反時は abort
-- リモートに同名 `release/<X.Y.Z>` が既存なら abort (force push はしない)
+- リモートに同名タグ `v<X.Y.Z>` が既存なら abort (タグの付け替え・force push はしない)
 - preset JS や `manifest.json` はビルド時に CI 側で生成されるため、 ローカルでの再生成は不要 (variants/*.json だけが真実の源泉)
 
 ### リリース失敗時のリカバリー
 
-`release/<X.Y.Z>` push 後の CI で一部のストア publish が失敗した場合の対処。
+版タグ `v<X.Y.Z>` の push 後の CI で一部のストア publish が失敗した場合の対処。
 
 #### 対象を指定して再開
 
-新規 release branch の初回 push だけが両 variant の自動提出を開始する。同一 job の Chrome が失敗すると後続の Firefox は skip される。修復 push や GitHub の rerun は提出を開始しない。
+版タグの新規 push だけが両 variant の自動提出を開始する。同一 job の Chrome が失敗すると後続の Firefox は skip される。修復 push や GitHub の rerun は提出を開始しない。
 
 1. 各 variant・ストアの提出状態をストアと Actions で確認し、未提出または再提出が必要な対象を特定する。受付済みか不明な場合は確認が済むまで再提出しない。
-2. 修正が必要なら main と該当 release branch に反映し、release branch の完全な 40 桁 SHA を確認する。
-3. Actions の Publish workflow を該当 release branch で手動実行し、`variant`（default / notosans）、`target`（chrome / firefox）、`expected_sha`（確認した release branch の SHA）を指定する。対象ごとに実行し、結果とストア側の状態を確認する。
+2. 版タグは動かさず、削除・付け替え・force push もしない。コード・workflow の修正が要る場合は patch を 1 つ上げて新しい版タグで公開し直す（/vava）。runner・外部障害・secret・Environment の許可 ref など修正が要らない原因は解消したうえで、タグの完全な 40 桁 SHA を確認する。
+3. Actions の Publish workflow を該当タグ（`--ref v<X.Y.Z>`）で手動実行し、`variant`（default / notosans）、`target`（chrome / firefox）、`expected_sha`（確認したタグの SHA）を指定する。対象ごとに実行し、結果とストア側の状態を確認する。
 
 全 job が build / 認証等で失敗した場合も同じ手順で未提出対象ごとに再開する。新しい version を公開する場合は /vava を使う。
 
@@ -169,13 +168,13 @@ bun scripts/release.js --yes    # 直接呼び（確認プロンプト省略、C
 
 ### `/vava` スキル経由の起動
 
-このプロジェクトの `/vava` は patch リリースに限り `bun --bun run release`（`scripts/release.js`）に委譲する。patch 版の同期、main への commit・push と release branch の作成・push を行う。minor / major は上記の手動手順に従う。旧 branch の削除は明示許可がある場合の `--prune-old` 指定時のみ。
+このプロジェクトの `/vava` は patch リリースに限り `bun --bun run release`（`scripts/release.js`）に委譲する。patch 版の同期、main への commit・push と軽量タグ `v<X.Y.Z>` の作成・push を行う。minor / major は上記の手動手順に従う。
 
 ### CI 自動公開 (`.github/workflows/publish.yml`)
 
-- **トリガー**: `release/<X.Y.Z>` 形式のブランチへの push (例: `release/3.0.3`, `release/3.1.0`)
+- **トリガー**: main のコミットに付けた軽量タグ `v<X.Y.Z>` の push (例: `v3.0.3`, `v3.1.0`)。`workflow_dispatch` は push の run が出なかったときや対象を指定した再開用。配信前に、タグの形・軽量タグ・main の祖先を Secrets を使う step より前に確認する
 - **matrix strategy**: 現在 `variant: [default, notosans]` の 2 要素で並列公開。 将来 variant を追加する場合は配列を拡張
-- **整合性チェック**: ブランチ末尾の `X.Y.Z` と `variants/<matrix.variant>.json` の `version` と生成された `manifest.json` の `version` が一致しないと該当 variant のジョブが失敗
+- **整合性チェック**: タグの `X.Y.Z` と `variants/<matrix.variant>.json` の `version` と生成された `manifest.json` の `version` が一致しないと該当 variant のジョブが失敗
 - **公開前ゲート**: `verify` job（`.github/workflows/verify.yml` を workflow_call で呼ぶ）が、依存パッチの検証（`test:dependencies`）・置換除外リストの判定（`test:exclusions`）・配布 stage の選定規則の直接テスト（`test:package`）・共通部品の同期確認・両 variant のビルド・`verify-style-injection.cjs`・配布 stage → アーカイブ → verifier（variant × 配布先）・CWS / AMO publisher と Firefox XPI builder の fixture テスト（`Test-PublishCws.ps1`・`Test-PublishAmo.ps1`・`Test-FirefoxArchive.ps1`）を実行する。失敗すると publish job は走らない。同じ verify.yml は main への push と全 PR でも実行される（Dependabot 再検証は従来どおり `dependency-validation.yml`）
 - **公開先**: Chrome Web Store と Firefox AMO の **両方** に並列公開
 
@@ -190,13 +189,13 @@ CWS の公開で必須情報不足なら Developer Dashboard の Privacy practic
 
 ##### CWS のアップロードと申請の分離
 
-`publish.yml` は検証済みZIPを `-Stage Upload` で下書きとしてアップロードするだけで、審査へは申請しない。新ロケールの掲載画像欄はアップロード後でないと Dashboard に出ないため、申請は別workflow `.github/workflows/cws-submit.yml`（手動実行、`-Stage Publish`）で行う。
+`publish.yml`（版タグ `v<X.Y.Z>` の push で起動）は検証済みZIPを `-Stage Upload` で下書きとしてアップロードするだけで、審査へは申請しない。新ロケールの掲載画像欄はアップロード後でないと Dashboard に出ないため、申請は別workflow `.github/workflows/cws-submit.yml`（手動実行、`-Stage Publish`）で行う。
 
-1. `release/x.y.z` を push する（publish.yml がアップロードする）
+1. `main` を push してから、同じ commit に軽量タグ `vx.y.z` を付けて push する（publish.yml がアップロードする）
 2. Dashboard（Edictora）でロケール別の掲載画像などを整えて下書き保存する
-3. `gh workflow run cws-submit.yml -f version=x.y.z --ref release/x.y.z` で申請する
+3. `gh workflow run cws-submit.yml -f version=x.y.z --ref vx.y.z` で申請する
 
-- API v2 は未申請の下書き版を返さないため、下書きの版そのものは確認できない。`cws-submit.yml` は次を満たす場合だけ `:publish` する: 実行 ref が `release/<version>` で manifest の版が入力と一致する。`publish.yml` の直近のアップロード成功 run（固定ステップ名 `Chrome Web Store にアップロード（下書き）`。`actions: read` で履歴を参照）が同じ commit である。fetchStatus で item identity・直近アップロード状態・公開/審査中の版を確認できる。
+- API v2 は未申請の下書き版を返さないため、下書きの版そのものは確認できない。`cws-submit.yml` は次を満たす場合だけ `:publish` する: 実行 ref が軽量タグ `v<version>`（`main` の祖先）で manifest の版が入力と一致する。`publish.yml` の直近のアップロード成功 run（固定ステップ名 `Chrome Web Store にアップロード（下書き）`。`actions: read` で履歴を参照）が同じ commit で、同じタグから起動している。fetchStatus で item identity・直近アップロード状態・公開/審査中の版を確認できる。
 - 同版が申請済み・公開済み（PENDING_REVIEW / STAGED / PUBLISHED / PUBLISHED_TO_TESTERS）なら再送せず成功終了する。別版の審査中、より新しい版の存在、直近アップロードの進行中・失敗、状態不明は申請せず停止する。
 - Dashboard で手動アップロードした下書きなど、同じ commit のアップロード成功 run が無い場合は申請されない。その場合は Dashboard から手動で申請する。
 - 両workflowは同じ concurrency group で直列化する。申請中は Dashboard の操作を並行しない。

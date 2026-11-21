@@ -1,23 +1,21 @@
 #!/usr/bin/env bun
-// 全 variant のバージョンを同期して patch +1 し、release/<X.Y.Z> ブランチを作成・push する。
+// 全 variant のバージョンを同期して patch +1 し、main のコミットに軽量タグ v<X.Y.Z> を付けて push する。
 // 「両 variant 同時リリース」が常態のため、version を全 variant で揃え、
-// 1 ブランチで GitHub Actions matrix が両 variant を並列公開する仕組み。
+// 1 つのタグで GitHub Actions matrix が両 variant を並列公開する仕組み。
 //
 // 使い方:
-//   bun scripts/release.js [--dry-run] [--yes] [--prune-old]
+//   bun scripts/release.js [--dry-run] [--yes]
 //
 //   --dry-run / -n = 実際の書き込み・push を行わず、計画だけ表示
 //   --yes / -y     = 確認プロンプトを省略（CI / Claude Code から呼ぶ場合に使用）
-//   --prune-old    = 古い release ブランチ (release/<X.Y.Z> および旧形式
-//                    release/<variant>-<X.Y.Z>) をリモートから削除
 //
 // 動作:
 //   1. 全 variants/*.json の version が一致しているか確認 (一致しなければ abort)
-//   2. version を patch +1 して全 variant に反映
-//   3. main にコミット & push
-//   4. main のまま release/<X.Y.Z> ブランチを作って push
-//      (これが publish.yml のトリガー)
-//   (--prune-old) 5. 古い release/* ブランチをリモートから削除
+//   2. リモートに同名の v<X.Y.Z> タグが無いことを確認 (あれば abort)
+//   3. version を patch +1 して全 variant に反映
+//   4. main にコミット & push (git push --no-follow-tags)
+//   5. そのコミットに軽量タグ v<X.Y.Z> を付け、タグだけを push
+//      (これが publish.yml のトリガー。git push --tags は使わない)
 
 const fs = require('fs');
 const path = require('path');
@@ -34,11 +32,15 @@ const positional = args.filter(a => !a.startsWith('-'));
 
 const DRY_RUN = flags.has('--dry-run') || flags.has('-n');
 const AUTO_YES = flags.has('--yes') || flags.has('-y');
-const PRUNE_OLD = flags.has('--prune-old');
 
 function fail(msg) {
   console.error(`❌ ${msg}`);
   process.exit(1);
+}
+
+const KNOWN_FLAGS = new Set(['--dry-run', '-n', '--yes', '-y']);
+for (const f of flags) {
+  if (!KNOWN_FLAGS.has(f)) fail(`未対応のオプションです: ${f} (--prune-old は廃止しました。release/* ブランチは作りません)`);
 }
 
 if (positional.length > 0) {
@@ -90,7 +92,7 @@ function runFile(file, fileArgs, opts = {}) {
 
 // 非 ASCII のコミット文は引数で渡さず、UTF-8（BOM なし）のファイルで渡す。
 // commit 後に実際の文面を読み戻して予定文と照合する。不一致なら巻き戻さず、push せずに停止する。
-function commitWithMessageFile(message, branch) {
+function commitWithMessageFile(message, tag) {
   if (DRY_RUN) {
     console.log('$ git -c i18n.commitEncoding=UTF-8 commit --file <message-file>');
     console.log('  (dry-run — skipped)');
@@ -114,7 +116,7 @@ function commitWithMessageFile(message, branch) {
       `  実際の文: ${actual}\n` +
       `  原因（commit-msg hook・文字コード設定など）を確認してください。このまま再実行すると main が origin と不一致で停止し、main を push した後に再実行すると版がもう一度上がるため、次のどちらかで進めてください。\n` +
       `  - 取り消す: version の書き換えごと main を origin/main と同じ状態へ戻してから再実行する。\n` +
-      `  - 修正して続行する: 再実行せず、コミット文を直したうえで git push origin main → git branch ${branch} → git push -u origin ${branch} を手動で行う。`
+      `  - 修正して続行する: 再実行せず、コミット文を直したうえで git push --no-follow-tags origin main → git tag ${tag} → git push --no-follow-tags origin refs/tags/${tag} を手動で行う。`
     );
   }
 }
@@ -163,16 +165,6 @@ async function confirm(prompt) {
   });
 }
 
-function listAllReleaseBranches() {
-  // 新形式 release/X.Y.Z と旧形式 release/<variant>-X.Y.Z の両方を列挙
-  const out = runQuiet(`git ls-remote --refs --heads origin "refs/heads/release/*"`);
-  if (!out) return [];
-  return out.split('\n')
-    .map(line => line.split('\t')[1])
-    .filter(Boolean)
-    .map(ref => ref.replace(/^refs\/heads\//, ''));
-}
-
 async function main() {
   ensureCleanMain();
 
@@ -193,31 +185,19 @@ async function main() {
 
   const oldVersion = uniqueVersions[0];
   const newVersion = bumpPatch(oldVersion);
-  const branch = `release/${newVersion}`;
+  const tag = `v${newVersion}`;
 
   // 表示
   console.log('\n📋 リリース計画 (全 variant 同期):');
   console.log(`   version: ${oldVersion} → ${newVersion}`);
-  console.log(`   ブランチ: ${branch}`);
+  console.log(`   タグ: ${tag} (main のコミットに付ける軽量タグ)`);
   console.log(`   反映先 variant: ${variantNames.join(', ')}`);
   if (DRY_RUN) console.log('   ⚠️  --dry-run 指定: 実際の変更は行いません');
-  if (PRUNE_OLD) console.log('   🗑️  --prune-old 指定: 古いリリースブランチをリモートから削除します');
   console.log('');
 
-  // リモートに同名ブランチがあれば abort
-  const existsRemote = runQuiet(`git ls-remote --heads origin ${branch}`);
-  if (existsRemote) fail(`リモートに既に ${branch} が存在します。手動で削除するか variants/*.json を手で minor/major bump してください。`);
-
-  // 古いリリースブランチをリストアップ
-  let pruneCandidates = [];
-  if (PRUNE_OLD) {
-    pruneCandidates = listAllReleaseBranches().filter(b => b !== branch);
-    if (pruneCandidates.length > 0) {
-      console.log('🗑️  削除予定のリモートブランチ:');
-      for (const b of pruneCandidates) console.log(`   - ${b}`);
-      console.log('');
-    }
-  }
+  // リモートに同名タグがあれば abort (既存タグの付け替え・上書きはしない)
+  const existsRemote = runQuiet(`git ls-remote --tags origin refs/tags/${tag}`);
+  if (existsRemote) fail(`リモートに既に ${tag} が存在します。手動で確認するか variants/*.json を手で minor/major bump してください。`);
 
   if (!await confirm('続行しますか？')) {
     console.log('中止しました。');
@@ -253,23 +233,16 @@ async function main() {
   ].join(' ');
   const commitMsg = `v${newVersion} をリリース`;
   run(`git add ${stagedFiles}`, { modifyState: true });
-  commitWithMessageFile(commitMsg, branch);
-  run('git push origin main', { modifyState: true });
+  commitWithMessageFile(commitMsg, tag);
+  run('git push --no-follow-tags origin main', { modifyState: true });
 
-  // 4. release/<X.Y.Z> ブランチを作成・push
-  run(`git branch ${branch}`, { modifyState: true });
-  run(`git push -u origin ${branch}`, { modifyState: true });
-
-  // 5. 古いリリースブランチを削除
-  if (PRUNE_OLD && pruneCandidates.length > 0) {
-    for (const old of pruneCandidates) {
-      run(`git push origin --delete ${old}`, { modifyState: true });
-    }
-  }
+  // 4. 軽量タグ v<X.Y.Z> を付け、そのタグだけを push (publish.yml のトリガー)
+  run(`git tag ${tag}`, { modifyState: true });
+  run(`git push --no-follow-tags origin refs/tags/${tag}`, { modifyState: true });
 
   console.log('\n🎉 リリースキックオフ完了！');
   console.log(`   GitHub Actions が matrix strategy で variant 並列公開:`);
-  console.log(`   ${branch} → CWS_EXTENSION_ID_DEFAULT / CWS_EXTENSION_ID_NOTOSANS`);
+  console.log(`   ${tag} → CWS_EXTENSION_ID_DEFAULT / CWS_EXTENSION_ID_NOTOSANS`);
 }
 
 main().catch(e => fail(e.message));
