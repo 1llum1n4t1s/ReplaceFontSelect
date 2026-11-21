@@ -46,5 +46,41 @@
   },
   "kagayoiSupportRate": {
     "message": "評価をお願いします！"
+  },
+  "tabsLabel": {
+    "message": "ポップアップの表示切替"
+  },
+  "tabSettings": {
+    "message": "設定"
+  },
+  "tabExclusions": {
+    "message": "除外リスト"
+  },
+  "exclusionsTitle": {
+    "message": "フォント置換の除外リスト"
+  },
+  "exclusionsDesc": {
+    "message": "1行に1件入力してください。登録したURLまたはホストではフォントを置換しません。"
+  },
+  "exclusionsHelp": {
+    "message": "* は任意の文字列に一致します。URLは指定したパス以下、ホスト名はそのホスト全体が対象です。ページを再読み込みすると反映されます。"
+  },
+  "exclusionsAddCurrentSite": {
+    "message": "現在のサイトを追加"
+  },
+  "exclusionsCurrentSiteAdded": {
+    "message": "現在のサイトを追加しました"
+  },
+  "exclusionsCurrentSiteUnavailable": {
+    "message": "このページは追加できません"
+  },
+  "exclusionsSaving": {
+    "message": "保存中…"
+  },
+  "exclusionsSaved": {
+    "message": "保存しました"
+  },
+  "exclusionsPlaceholder": {
+    "message": "192.168.*\nhttps://photos.google.com/\nx.com"
   }
 }

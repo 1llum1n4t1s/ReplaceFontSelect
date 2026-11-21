@@ -102,8 +102,106 @@ const FONT_REGISTRY = {
     bodyFontWeight: '400'
   },
   storageKey: 'fontSettings',
-  presetRegisteredKey: 'prebuiltCSSRegistered'
+  presetRegisteredKey: 'prebuiltCSSRegistered',
+  // 置換除外リスト（URL / ホスト glob の配列）。fontSettings とは別キーにし、
+  // フォント設定の保存やYouTubeの設定変更監視へ影響させない。
+  siteExclusionsKey: 'siteExclusions'
 };
+
+// ---- 置換除外リスト ----
+// popup の複数行入力・content の実行時判定・background の excludeMatches 生成で同じ判定を共有する。
+// 規則は ReplaceTranslator の自動翻訳ブラックリストと同じ:
+//   - `*` は任意の文字列。URL 規則（`://` を含む）は指定パス以下、ホスト規則はそのホスト全体。
+//   - `host/path` はそのホストの指定パス以下（大文字小文字を区別しない）。
+const SITE_EXCLUSIONS_MAX_ENTRIES = 500;
+const SITE_EXCLUSIONS_MAX_PATTERN_CHARS = 1000;
+
+function normalizeSiteExclusions(value) {
+  const source = Array.isArray(value) ? value : (typeof value === 'string' ? [value] : []);
+  const result = [];
+  const seen = new Set();
+  for (const item of source) {
+    if (typeof item !== 'string') continue;
+    for (const raw of item.split(/\r?\n/)) {
+      const pattern = raw.trim();
+      if (!pattern || pattern.length > SITE_EXCLUSIONS_MAX_PATTERN_CHARS || seen.has(pattern)) continue;
+      seen.add(pattern);
+      result.push(pattern);
+      if (result.length >= SITE_EXCLUSIONS_MAX_ENTRIES) return result;
+    }
+  }
+  return result;
+}
+
+function siteExclusionGlobMatches(value, pattern, prefix) {
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+  try { return new RegExp(`^${escaped}${prefix ? '' : '$'}`, 'i').test(value); } catch (_e) { return false; }
+}
+
+function siteExclusionPatternMatches(url, pattern) {
+  if (pattern.includes('://')) {
+    if (pattern.includes('*')) return siteExclusionGlobMatches(url.href, pattern, false);
+    try {
+      const ruleUrl = new URL(pattern);
+      if (ruleUrl.origin !== url.origin) return false;
+      const rulePath = ruleUrl.pathname + ruleUrl.search + ruleUrl.hash;
+      const actualPath = url.pathname + url.search + url.hash;
+      return actualPath.startsWith(rulePath);
+    } catch (_e) { return false; }
+  }
+
+  const slash = pattern.indexOf('/');
+  const hostPattern = slash >= 0 ? pattern.slice(0, slash) : pattern;
+  const pathPattern = slash >= 0 ? pattern.slice(slash) : '';
+  if (!hostPattern || !siteExclusionGlobMatches(url.hostname, hostPattern, false)) return false;
+  if (!pathPattern) return true;
+  const actualPath = url.pathname + url.search + url.hash;
+  return siteExclusionGlobMatches(actualPath, pathPattern, !pathPattern.includes('*'));
+}
+
+function siteExclusionMatches(urlValue, value) {
+  let url;
+  try { url = new URL(urlValue); } catch (_e) { return false; }
+  return normalizeSiteExclusions(value).some((pattern) => siteExclusionPatternMatches(url, pattern));
+}
+
+function siteExclusionSitePattern(urlValue) {
+  try {
+    const url = new URL(urlValue);
+    return (url.protocol === 'http:' || url.protocol === 'https:') && url.hostname ? url.hostname.toLowerCase() : null;
+  } catch (_e) { return null; }
+}
+
+// 動的登録 (preset JS / MAIN world フック) の excludeMatches へ前倒しで反映できる規則だけを
+// match pattern に変換する。意味が完全に一致する「ワイルドカード・パス・ポートを含まない素のホスト名」
+// に限る（`*.x.com` は match pattern だと x.com 自身も含み、意味が変わるため変換しない）。
+// 1件でも無効な match pattern が混じると登録全体が失敗するため、変換対象は厳格に検証する。
+// 変換できない規則は content 側の実行時判定だけで除外する。
+// URL として解釈したホスト名が規則と同一の場合に限る（`1.2.3` → `1.2.0.3` のような正規化や、
+// `example.123` のような URL として無効なホストは、実行時判定と一致しないため変換しない）。
+// 既知の差: Chrome は照合時に末尾ドットを無視するため、`*://x.com/*` は `x.com.` にも一致するが、
+// 実行時判定（ReplaceTranslator と同じ規則）は一致しない。その場合、preset JS と MAIN world フックは外れるが、
+// 本文の置換は fallback 経路で続く。
+const SITE_EXCLUSION_PLAIN_HOST = /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/;
+function siteExclusionHostIsCanonical(host) {
+  try { return new URL(`http://${host}/`).hostname === host; } catch (_e) { return false; }
+}
+function siteExclusionsToMatchPatterns(value) {
+  const result = [];
+  for (const pattern of normalizeSiteExclusions(value)) {
+    const host = pattern.toLowerCase();
+    if (SITE_EXCLUSION_PLAIN_HOST.test(host) && siteExclusionHostIsCanonical(host)) result.push(`*://${host}/*`);
+  }
+  return [...new Set(result)];
+}
+
+// eslint-disable-next-line no-unused-vars
+const SiteExclusions = Object.freeze({
+  normalize: normalizeSiteExclusions,
+  matches: siteExclusionMatches,
+  sitePattern: siteExclusionSitePattern,
+  toMatchPatterns: siteExclusionsToMatchPatterns
+});
 
 // eslint-disable-next-line no-unused-vars
 const FONT_SETTINGS_VALIDATORS = {
@@ -202,6 +300,7 @@ if (typeof module !== 'undefined' && module.exports) {
     FONT_SETTINGS_VALIDATORS,
     getBodyWoff2,
     buildPlaceholderMap,
-    PLACEHOLDER_REGEX_SOURCE
+    PLACEHOLDER_REGEX_SOURCE,
+    SiteExclusions
   };
 }

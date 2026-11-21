@@ -8,6 +8,7 @@
   const RFS_SELECTOR = 'data-replace-font';
   const RFS_PRESET = 'preset';
   const RFS_FALLBACK = 'fallback';
+  const PRESET_STYLE_SELECTOR = `style[${RFS_SELECTOR}="${RFS_PRESET}"]`;
   const RFS_DYNAMIC = 'dynamic';
 
   // タイムアウト定数
@@ -26,7 +27,7 @@
   // 同じ rule のファミリー名を監視の再実行間でも再利用する。
   const _fontFamilyCache = new WeakMap();
 
-  // 拡張機能のベースURL取得
+  // 拡張機能のベースURL取得。取得できない場合は誤った URL を組み立てず処理を止める。
   const getExtensionBaseURL = () => {
     try {
       const url = chrome.runtime.getURL('');
@@ -34,15 +35,17 @@
     } catch (e) {
       log('[フォント置換] runtime.getURL failed:', e.message);
     }
-    return `chrome-extension://${chrome.runtime.id}/`;
+    return null;
   };
 
   const BASE_URL = getExtensionBaseURL();
+  if (!BASE_URL) return;
   const FONT_BASE_URL = `${BASE_URL}src/fonts/`;
   const CSS_BASE_URL = `${BASE_URL}src/css/`;
   const TEMPLATE_CSS_URL = `${CSS_BASE_URL}replacefont-extension.css`;
   const youtubeTarget = globalThis.__replaceFontYouTubeTarget === true;
   const blobUrls = new Set();
+  const isOwnFontUrl = (url) => youtubeTarget ? blobUrls.has(url) : url.startsWith(FONT_BASE_URL);
   let youtubeCSS = null;
   let youtubeUrls = null;
   let youtubeHeadReady = false;
@@ -69,7 +72,32 @@
   let fontConfig = [];
   let settingsReady = false;
   let prebuiltCSSRegistered = false;
+  let siteExcluded = false;
   const pendingRoots = new Set();
+
+  // MAIN world の inject.js へ除外確定を伝えるイベント名（inject.js の FLAG_KEY と同じ固定接頭辞）。
+  const SITE_EXCLUDED_EVENT = '__rfs_7d42f8c1_site_excluded__';
+
+  /**
+   * 置換除外リストに一致するか、このフレーム自身の URL で判定する。
+   * （content script は match_about_blank 等を指定していないため、about:blank / srcdoc / blob:
+   *   のフレームでは実行されず、祖先 URL を辿る必要はない。）
+   */
+  function isSiteExcluded(rules) {
+    if (typeof SiteExclusions === 'undefined') return false;
+    return SiteExclusions.matches(location.href, rules);
+  }
+
+  // 除外確定時: この拡張の preset JS が document_start で同期注入した <style> を外し、
+  // closed ShadowRoot へ採用済みのシートも inject.js に撤去させる。
+  // default / notosans が同居する場合に他方の CSS を消さないよう、自身の拡張 URL を含むものだけを対象にする。
+  function releaseForExcludedSite() {
+    for (const style of document.querySelectorAll(PRESET_STYLE_SELECTOR)) {
+      if (!(style.textContent || '').includes(BASE_URL)) continue;
+      try { style.remove(); } catch (_) {}
+    }
+    try { window.dispatchEvent(new CustomEvent(SITE_EXCLUDED_EVENT, { detail: BASE_URL })); } catch (_) {}
+  }
 
   // ページ離脱時のクリーンアップ関数（MutationObserver / Listener 等のリーク防止）
   const disposers = [];
@@ -122,7 +150,7 @@
    * プリセットJSが注入した <style data-replace-font="preset"> がDOMに存在するかチェックする
    */
   function checkPresetCSSInDOM() {
-    return document.querySelector(`style[${RFS_SELECTOR}="${RFS_PRESET}"]`) !== null;
+    return document.querySelector(PRESET_STYLE_SELECTOR) !== null;
   }
 
   /**
@@ -135,7 +163,7 @@
 
     let getPromise;
     try {
-      getPromise = chrome.storage.local.get([FONT_REGISTRY.storageKey, presetKey]);
+      getPromise = chrome.storage.local.get([FONT_REGISTRY.storageKey, presetKey, FONT_REGISTRY.siteExclusionsKey]);
     } catch (e) {
       log('[フォント置換] 設定読み込み例外:', e && e.message);
       if (youtubeTarget) return Promise.reject(e);
@@ -154,6 +182,7 @@
       clearTimeout(timeoutId);
       const stored = result[FONT_REGISTRY.storageKey] || {};
       prebuiltCSSRegistered = !youtubeTarget && result[presetKey] === true;
+      siteExcluded = isSiteExcluded(result[FONT_REGISTRY.siteExclusionsKey]);
       return mergeFontSettings(stored);
     }, (e) => {
       clearTimeout(timeoutId);
@@ -206,7 +235,7 @@
     const promise = (async () => {
       try {
         if (prebuiltCSSRegistered) {
-          const presetStyle = document.querySelector(`style[${RFS_SELECTOR}="${RFS_PRESET}"]`);
+          const presetStyle = document.querySelector(PRESET_STYLE_SELECTOR);
           if (presetStyle) {
             return presetStyle.textContent;
           }
@@ -409,20 +438,12 @@
     let pendingIdleHandle = null;
 
     function scheduleChunk(fn) {
-      if (window.requestIdleCallback) {
-        pendingIdleHandle = window.requestIdleCallback(fn, { timeout: 100 });
-      } else {
-        pendingIdleHandle = setTimeout(fn, 0);
-      }
+      pendingIdleHandle = requestIdleCallback(fn, { timeout: 100 });
     }
 
     function cancelPendingChunk() {
       if (pendingIdleHandle == null) return;
-      if (window.cancelIdleCallback && window.requestIdleCallback) {
-        try { window.cancelIdleCallback(pendingIdleHandle); } catch (e) {}
-      } else {
-        clearTimeout(pendingIdleHandle);
-      }
+      try { cancelIdleCallback(pendingIdleHandle); } catch (e) {}
       pendingIdleHandle = null;
     }
 
@@ -481,7 +502,7 @@
     if (!root) return;
     const fragment = document.createDocumentFragment();
     for (const config of fontConfig) {
-      if (!config.fontUrl || !(youtubeTarget ? blobUrls.has(config.fontUrl) : config.fontUrl.startsWith(FONT_BASE_URL))) continue;
+      if (!config.fontUrl || !isOwnFontUrl(config.fontUrl)) continue;
       // (P1-3) 本文 Regular の woff2 のみ preload。 Bold / Mono は font-display:swap 任せで FOUT 許容。
       // 起動クリティカルパスで preload が効くのは「最初に表示される本文文字」 で、 Bold / Mono は CSS parse 後の遅延ロードでも体感差が小さい。
       if (config.weight !== 'Regular') continue;
@@ -503,7 +524,7 @@
     // サブフレームでは top frame の HTTP キャッシュが効くため重複 FontFace 生成は不要
     if (window !== window.top) return;
     for (const config of fontConfig) {
-      if (!config.fontUrl || !(youtubeTarget ? blobUrls.has(config.fontUrl) : config.fontUrl.startsWith(FONT_BASE_URL))) continue;
+      if (!config.fontUrl || !isOwnFontUrl(config.fontUrl)) continue;
       const fontName = config.fontFamily || config.weight;
       const fontWeight = config.fontWeight || 'normal';
       try {
@@ -594,22 +615,12 @@
   // (P0-1) requestIdleCallback ベースの debounce で loadingdone burst を 1 回にまとめる。
   // ride-out: idle で発火、 cap 200ms で確実に呼び出し。
   let _scanIdleHandle = null;
-  let _scanUsesIdle = false;
   function scheduleScan() {
     if (disposed || _scanIdleHandle !== null) return;
-    if (typeof requestIdleCallback === 'function') {
-      _scanUsesIdle = true;
-      _scanIdleHandle = requestIdleCallback(() => {
-        _scanIdleHandle = null;
-        scanDynamicFontFamilies();
-      }, { timeout: 200 });
-    } else {
-      _scanUsesIdle = false;
-      _scanIdleHandle = setTimeout(() => {
-        _scanIdleHandle = null;
-        scanDynamicFontFamilies();
-      }, 32);
-    }
+    _scanIdleHandle = requestIdleCallback(() => {
+      _scanIdleHandle = null;
+      scanDynamicFontFamilies();
+    }, { timeout: 200 });
   }
 
   function setupDynamicFontWatcher() {
@@ -621,18 +632,31 @@
       document.fonts.ready.then(() => scanDynamicFontFamilies()).catch(() => {});
     } catch (e) {}
     // 後から追加される FontFace を拾う (P0-1: debounce で連続発火を 1 回にまとめる)
-    const onLoadingDone = () => scheduleScan();
+    // 件数が同じまま @font-face が入れ替わっても見逃さないよう、今回読み込まれた face だけを同期的に確認し、
+    // 未注入の動的 family があれば件数キャッシュを無効化する (document.fonts 全体は反復しない)。
+    const hasUninjectedDynamicFace = (event) => {
+      try {
+        const faces = event && event.fontfaces;
+        if (!faces) return true;
+        for (const ff of faces) {
+          const name = String(ff.family || '').replace(/['"]/g, '');
+          if (name.charCodeAt(0) === 0x5F && name.charCodeAt(1) === 0x5F
+            && DYNAMIC_FONT_PATTERN.test(name) && !dynamicFontsInjected.has(name)) return true;
+        }
+        return false;
+      } catch (e) { return true; }
+    };
+    const onLoadingDone = (event) => {
+      if (hasUninjectedDynamicFace(event)) lastScannedFontsSize = -1;
+      scheduleScan();
+    };
     try {
       document.fonts.addEventListener('loadingdone', onLoadingDone);
     } catch (e) {}
     disposers.push(() => {
       try { document.fonts.removeEventListener('loadingdone', onLoadingDone); } catch (e) {}
       if (_scanIdleHandle !== null) {
-        if (_scanUsesIdle) {
-          if (typeof cancelIdleCallback === 'function') cancelIdleCallback(_scanIdleHandle);
-        } else {
-          clearTimeout(_scanIdleHandle);
-        }
+        cancelIdleCallback(_scanIdleHandle);
         _scanIdleHandle = null;
       }
     });
@@ -1071,6 +1095,14 @@
     }
     if (disposed) return;
     log('[フォント置換] 設定読み込み完了:', settings, 'プリセットモード:', prebuiltCSSRegistered);
+
+    if (settings.enabled && siteExcluded) {
+      // 置換除外リストに一致: 無効時と同じく監視を畳み、注入済みの preset も外す。
+      // サイト側 @font-face の削除（setupStyleSheetMonitor）より前なので、元の表示へ完全に戻る。
+      releaseForExcludedSite();
+      runDisposers();
+      return;
+    }
 
     if (!settings.enabled) {
       pendingRoots.clear();

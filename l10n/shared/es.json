@@ -46,5 +46,41 @@
   },
   "kagayoiSupportRate": {
     "message": "¡Déjenos su valoración!"
+  },
+  "tabsLabel": {
+    "message": "Secciones de la ventana emergente"
+  },
+  "tabSettings": {
+    "message": "Ajustes"
+  },
+  "tabExclusions": {
+    "message": "Exclusiones"
+  },
+  "exclusionsTitle": {
+    "message": "Exclusiones del reemplazo de fuentes"
+  },
+  "exclusionsDesc": {
+    "message": "Escriba una regla por línea. Las fuentes no se reemplazan en las URL o hosts que coincidan."
+  },
+  "exclusionsHelp": {
+    "message": "* equivale a cualquier texto. Las reglas de URL se aplican a esa ruta y a las inferiores; las reglas de host, a todo el host. Recargue la página para aplicar los cambios."
+  },
+  "exclusionsAddCurrentSite": {
+    "message": "Añadir sitio actual"
+  },
+  "exclusionsCurrentSiteAdded": {
+    "message": "Sitio actual añadido"
+  },
+  "exclusionsCurrentSiteUnavailable": {
+    "message": "No se puede añadir esta página"
+  },
+  "exclusionsSaving": {
+    "message": "Guardando…"
+  },
+  "exclusionsSaved": {
+    "message": "Guardado"
+  },
+  "exclusionsPlaceholder": {
+    "message": "192.168.*\nhttps://photos.google.com/\nx.com"
   }
 }

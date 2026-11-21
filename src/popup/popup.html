@@ -45,6 +45,15 @@
       <span class="divider__line"></span>
     </div>
 
+    <!-- タブ: 設定 / 除外リスト -->
+    <nav class="tabs" role="tablist" data-i18n-attr="aria-label:tabsLabel" aria-label="Popup sections">
+      <button class="tab is-active" type="button" role="tab" id="tab-settings" data-tab="settings" aria-selected="true" aria-controls="pane-settings" data-i18n="tabSettings">Settings</button>
+      <button class="tab" type="button" role="tab" id="tab-exclusions" data-tab="exclusions" aria-selected="false" aria-controls="pane-exclusions" tabindex="-1" data-i18n="tabExclusions">Exclusions</button>
+      <span class="tab-ink" aria-hidden="true"></span>
+    </nav>
+
+    <!-- タブ 1: 設定 -->
+    <div class="pane is-active" id="pane-settings" role="tabpanel" data-pane="settings" aria-labelledby="tab-settings">
     <!-- セクション I: ステータス -->
     <section class="status-card">
       <div class="section-meta">
@@ -93,6 +102,21 @@
         Reload the page to apply the changes.
       </div>
     </section>
+    </div>
+
+    <!-- タブ 2: 置換除外リスト -->
+    <div class="pane" id="pane-exclusions" role="tabpanel" data-pane="exclusions" aria-labelledby="tab-exclusions" hidden>
+      <section class="exclusions-card">
+        <div class="exclusions-head">
+          <h2 class="exclusions-title" id="exclusions-title" data-i18n="exclusionsTitle">Font replacement exclusions</h2>
+          <span id="exclusions-save-state" class="exclusions-save-state" role="status" aria-live="polite"></span>
+        </div>
+        <p class="exclusions-desc" id="exclusions-desc" data-i18n="exclusionsDesc">Enter one rule per line. Fonts are not replaced on matching URLs or hosts.</p>
+        <button id="exclusions-add-current" class="exclusions-current-btn" type="button" data-i18n="exclusionsAddCurrentSite">Add current site</button>
+        <textarea id="site-exclusions" aria-labelledby="exclusions-title" aria-describedby="exclusions-desc exclusions-help" class="exclusions-input" rows="10" maxlength="20000" spellcheck="false" autocomplete="off" placeholder="192.168.*&#10;https://photos.google.com/&#10;x.com" data-i18n-attr="placeholder:exclusionsPlaceholder"></textarea>
+        <p class="exclusions-help" id="exclusions-help" data-i18n="exclusionsHelp">* matches any text. URL rules apply to that path and below; host rules apply to the whole host. Reload the page to apply the changes.</p>
+      </section>
+    </div>
 
     <div class="support-footer">
       <kagayoi-support-footer product-id="replace-font-select" firefox-data-consent></kagayoi-support-footer>

@@ -100,12 +100,17 @@ function getPresetPath(settings) {
   return `src/css/${getPresetFileName(settings.bodyFont, settings.monoFont, settings.bodyFontWeight)}`;
 }
 
-async function loadSettings() {
+// フォント設定と置換除外リストを1回の読込で同じ時点の値として読む。失敗時は null を返す。
+async function readRegistrationInputs() {
   try {
-    const result = await chrome.storage.local.get(FONT_REGISTRY.storageKey);
-    return mergeFontSettings(result[FONT_REGISTRY.storageKey] || {});
-  } catch {
-    return getDefaultSettings();
+    const result = await chrome.storage.local.get([FONT_REGISTRY.storageKey, FONT_REGISTRY.siteExclusionsKey]);
+    return {
+      settings: mergeFontSettings(result[FONT_REGISTRY.storageKey] || {}),
+      siteMatches: SiteExclusions.toMatchPatterns(result[FONT_REGISTRY.siteExclusionsKey])
+    };
+  } catch (e) {
+    console.error('[フォント置換] 設定の読込に失敗:', e && e.message);
+    return null;
   }
 }
 
@@ -154,8 +159,17 @@ async function ensureScriptRegistration(scriptConfig, currentRegistration) {
   }
 }
 
-async function _doEnsureRegistration(settings) {
+// preserveOnFailure: 設定を読めないとき、既定値で張り替えず現在の登録を保つ (storage.onChanged 経路)。
+// false の場合 (onInstalled / onStartup) は既定値へフォールバックして登録する。
+async function _doEnsureRegistration(preserveOnFailure) {
   const presetKey = FONT_REGISTRY.presetRegisteredKey;
+  // 設定と除外リストは直列化ロック内で読む。どちらかを読めなければ両方とも読込失敗として扱う。
+  let inputs = await readRegistrationInputs();
+  if (!inputs) {
+    if (preserveOnFailure) return;
+    inputs = { settings: getDefaultSettings(), siteMatches: [] };
+  }
+  const { settings, siteMatches } = inputs;
 
   if (!settings.enabled) {
     try { await chrome.scripting.unregisterContentScripts({ ids: MANAGED_SCRIPT_IDS }); } catch {}
@@ -167,9 +181,12 @@ async function _doEnsureRegistration(settings) {
   // variant 設定の excludeMatches を動的登録にも反映する。
   // manifest.json の content_scripts.exclude_matches は宣言的な preload 側にしか効かない。
   // 動的登録するプリセット JS と MAIN world フックにも同じ除外を適用する。
-  const excludeMatches = (typeof VARIANT !== 'undefined' && Array.isArray(VARIANT.excludeMatches))
-    ? VARIANT.excludeMatches.slice()
+  // 置換除外リストのうち match pattern で同じ意味を表せる規則（素のホスト名）も前倒しで除外する。
+  // それ以外の規則は preload-fonts.js の実行時判定が preset を外す。
+  const variantExcludes = (typeof VARIANT !== 'undefined' && Array.isArray(VARIANT.excludeMatches))
+    ? VARIANT.excludeMatches
     : [];
+  const excludeMatches = [...new Set([...variantExcludes, ...siteMatches])];
   const commonConfig = {
     matches: ['<all_urls>'],
     runAt: 'document_start',
@@ -207,41 +224,33 @@ async function _doEnsureRegistration(settings) {
  * ensureRegistration のシリアライズラッパー
  * 複数の呼び出しを直列化して、"Duplicate script ID" 競合を防ぐ
  */
-function ensureRegistration(settings) {
+function ensureRegistration(preserveOnFailure = false) {
   const next = _registrationLock
     .catch(() => {}) // 前回の reject は握りつぶして連鎖を止める
-    .then(() => _doEnsureRegistration(settings));
+    .then(() => _doEnsureRegistration(preserveOnFailure));
   _registrationLock = next;
   return next;
 }
 
 // インストール時・アップデート時・リロード時に登録
-chrome.runtime.onInstalled.addListener(async () => {
-  const settings = await loadSettings();
-  await ensureRegistration(settings);
-});
+chrome.runtime.onInstalled.addListener(() => ensureRegistration());
 
 // ブラウザ起動時の防御策（persistAcrossSessions が失われた場合のリカバリ）
-chrome.runtime.onStartup.addListener(async () => {
-  const settings = await loadSettings();
-  await ensureRegistration(settings);
-});
+chrome.runtime.onStartup.addListener(() => ensureRegistration());
 
 // 設定変更の監視 (連続更新をデバウンスして registerContentScripts の無駄打ちを避ける)
 (() => {
   let _storageDebounceTimer = null;
-  let _pendingSettings = null;
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
+    // fontSettings と siteExclusions の変更だけを契機にする。
     // 我々自身が書いた presetRegisteredKey の変更は無視（無限ループ防止）
-    if (!changes[FONT_REGISTRY.storageKey]) return;
-    _pendingSettings = mergeFontSettings(changes[FONT_REGISTRY.storageKey].newValue || {});
+    if (!changes[FONT_REGISTRY.storageKey] && !changes[FONT_REGISTRY.siteExclusionsKey]) return;
     if (_storageDebounceTimer) clearTimeout(_storageDebounceTimer);
-    _storageDebounceTimer = setTimeout(async () => {
+    _storageDebounceTimer = setTimeout(() => {
       _storageDebounceTimer = null;
-      const toApply = _pendingSettings;
-      _pendingSettings = null;
-      if (toApply) await ensureRegistration(toApply);
+      // 発火時に storage を読み直す。読めない場合は現在の登録を保つ。
+      ensureRegistration(true).catch((e) => console.error('[フォント置換] 登録更新に失敗:', e && e.message));
     }, STORAGE_DEBOUNCE_MS);
   });
 })();

@@ -46,5 +46,41 @@
   },
   "kagayoiSupportRate": {
     "message": "請為我們評分！"
+  },
+  "tabsLabel": {
+    "message": "彈出視窗分頁"
+  },
+  "tabSettings": {
+    "message": "設定"
+  },
+  "tabExclusions": {
+    "message": "排除清單"
+  },
+  "exclusionsTitle": {
+    "message": "字型替換排除清單"
+  },
+  "exclusionsDesc": {
+    "message": "每行輸入一條規則。符合的網址或主機不會替換字型。"
+  },
+  "exclusionsHelp": {
+    "message": "* 可代表任意文字。網址規則適用於該路徑及其下層，主機規則適用於整個主機。重新整理頁面後生效。"
+  },
+  "exclusionsAddCurrentSite": {
+    "message": "加入目前網站"
+  },
+  "exclusionsCurrentSiteAdded": {
+    "message": "已加入目前網站"
+  },
+  "exclusionsCurrentSiteUnavailable": {
+    "message": "無法加入此頁面"
+  },
+  "exclusionsSaving": {
+    "message": "儲存中…"
+  },
+  "exclusionsSaved": {
+    "message": "已儲存"
+  },
+  "exclusionsPlaceholder": {
+    "message": "192.168.*\nhttps://photos.google.com/\nx.com"
   }
 }

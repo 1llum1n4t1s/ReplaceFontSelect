@@ -46,5 +46,41 @@
   },
   "kagayoiSupportRate": {
     "message": "평가해 주세요!"
+  },
+  "tabsLabel": {
+    "message": "팝업 화면 전환"
+  },
+  "tabSettings": {
+    "message": "설정"
+  },
+  "tabExclusions": {
+    "message": "제외 목록"
+  },
+  "exclusionsTitle": {
+    "message": "글꼴 교체 제외 목록"
+  },
+  "exclusionsDesc": {
+    "message": "한 줄에 규칙 하나씩 입력하세요. 일치하는 URL이나 호스트에서는 글꼴을 교체하지 않습니다."
+  },
+  "exclusionsHelp": {
+    "message": "*는 임의의 문자열과 일치합니다. URL 규칙은 해당 경로와 그 하위에 적용되고, 호스트 규칙은 호스트 전체에 적용됩니다. 페이지를 새로고침하면 반영됩니다."
+  },
+  "exclusionsAddCurrentSite": {
+    "message": "현재 사이트 추가"
+  },
+  "exclusionsCurrentSiteAdded": {
+    "message": "현재 사이트를 추가했습니다"
+  },
+  "exclusionsCurrentSiteUnavailable": {
+    "message": "이 페이지는 추가할 수 없습니다"
+  },
+  "exclusionsSaving": {
+    "message": "저장 중…"
+  },
+  "exclusionsSaved": {
+    "message": "저장됨"
+  },
+  "exclusionsPlaceholder": {
+    "message": "192.168.*\nhttps://photos.google.com/\nx.com"
   }
 }

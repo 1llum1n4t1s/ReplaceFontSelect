@@ -40,6 +40,7 @@
 - 選択された本文用フォントキー（例: `noto-sans-jp`）
 - 選択された本文用フォントの太さ（`400` または `500`）
 - 選択された等幅フォントキー（例: `udev-gothic-jpdoc`）
+- 利用者が「除外リスト」に入力した、置換を行わないサイトの規則（サイト名や URL の一覧）
 - 登録済みプリセット CSS のフラグ（boolean、内部状態）
 
 このデータはブラウザ内にのみ保存され、外部サーバーへの送信は一切行いません。
@@ -62,7 +63,7 @@ Firefox では、個人識別情報（メールアドレス・お名前）と認
 | 権限 | 理由 |
 |---|---|
 | `<all_urls>` (host_permissions) | ユーザーが訪問するすべてのウェブページでフォント置換を実行するため。データの収集や送信には使用しません。 |
-| `storage` | フォント設定と、プリセット登録済みかを示す内部フラグの保存に使用します。 |
+| `storage` | フォント設定、置換を行わないサイトの除外リスト、およびプリセット登録済みかを示す内部フラグの保存に使用します。 |
 | `scripting` | 有効時に、同梱プリセット CSS と Shadow DOM 検出用スクリプトを `chrome.scripting.registerContentScripts` で登録するため。外部コードの取得や動的コード生成は行いません。 |
 
 ### 第三者への情報提供
@@ -107,6 +108,7 @@ This extension uses `chrome.storage.local` to store only:
 - Selected body font key (e.g. `noto-sans-jp`)
 - Selected body font weight (`400` or `500`)
 - Selected monospace font key (e.g. `udev-gothic-jpdoc`)
+- Site exclusion list: the site names or URL rules you enter to skip font replacement
 - A boolean flag indicating whether preset CSS was registered (internal state)
 
 This data is stored only within the browser and is never transmitted to external servers.
@@ -129,7 +131,7 @@ Firefox requests permission to transmit personally identifying information (emai
 | Permission | Reason |
 |---|---|
 | `<all_urls>` (host_permissions) | Required to run font replacement on every page the user visits. Never used for data collection. |
-| `storage` | Used to persist font settings and an internal flag indicating preset-registration status. |
+| `storage` | Used to persist font settings, the site exclusion list, and an internal flag indicating preset-registration status. |
 | `scripting` | Used while enabled to register the bundled preset CSS and Shadow DOM detector via `chrome.scripting.registerContentScripts`. No remote code is fetched or evaluated. |
 
 ### Third-Party Data Sharing

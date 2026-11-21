@@ -46,5 +46,41 @@
   },
   "kagayoiSupportRate": {
     "message": "Bitte bewerten Sie uns!"
+  },
+  "tabsLabel": {
+    "message": "Bereiche des Pop-ups"
+  },
+  "tabSettings": {
+    "message": "Einstellungen"
+  },
+  "tabExclusions": {
+    "message": "Ausnahmen"
+  },
+  "exclusionsTitle": {
+    "message": "Ausnahmen für die Schriftersetzung"
+  },
+  "exclusionsDesc": {
+    "message": "Geben Sie pro Zeile eine Regel ein. Bei passenden URLs oder Hosts werden die Schriften nicht ersetzt."
+  },
+  "exclusionsHelp": {
+    "message": "* steht für beliebigen Text. URL-Regeln gelten für diesen Pfad und alle darunter; Host-Regeln gelten für den gesamten Host. Laden Sie die Seite neu, um die Änderungen zu übernehmen."
+  },
+  "exclusionsAddCurrentSite": {
+    "message": "Aktuelle Website hinzufügen"
+  },
+  "exclusionsCurrentSiteAdded": {
+    "message": "Aktuelle Website hinzugefügt"
+  },
+  "exclusionsCurrentSiteUnavailable": {
+    "message": "Diese Seite kann nicht hinzugefügt werden"
+  },
+  "exclusionsSaving": {
+    "message": "Speichern…"
+  },
+  "exclusionsSaved": {
+    "message": "Gespeichert"
+  },
+  "exclusionsPlaceholder": {
+    "message": "192.168.*\nhttps://photos.google.com/\nx.com"
   }
 }

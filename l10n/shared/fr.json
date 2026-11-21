@@ -46,5 +46,41 @@
   },
   "kagayoiSupportRate": {
     "message": "Évaluez-nous !"
+  },
+  "tabsLabel": {
+    "message": "Sections de la fenêtre contextuelle"
+  },
+  "tabSettings": {
+    "message": "Paramètres"
+  },
+  "tabExclusions": {
+    "message": "Exclusions"
+  },
+  "exclusionsTitle": {
+    "message": "Exclusions du remplacement de polices"
+  },
+  "exclusionsDesc": {
+    "message": "Saisissez une règle par ligne. Les polices ne sont pas remplacées pour les URL ou hôtes correspondants."
+  },
+  "exclusionsHelp": {
+    "message": "* remplace n’importe quel texte. Les règles d’URL s’appliquent à ce chemin et à ses sous-chemins ; les règles d’hôte s’appliquent à l’hôte entier. Rechargez la page pour appliquer les modifications."
+  },
+  "exclusionsAddCurrentSite": {
+    "message": "Ajouter le site actuel"
+  },
+  "exclusionsCurrentSiteAdded": {
+    "message": "Site actuel ajouté"
+  },
+  "exclusionsCurrentSiteUnavailable": {
+    "message": "Cette page ne peut pas être ajoutée"
+  },
+  "exclusionsSaving": {
+    "message": "Enregistrement…"
+  },
+  "exclusionsSaved": {
+    "message": "Enregistré"
+  },
+  "exclusionsPlaceholder": {
+    "message": "192.168.*\nhttps://photos.google.com/\nx.com"
   }
 }

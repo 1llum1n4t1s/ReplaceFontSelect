@@ -169,6 +169,7 @@
       style.textContent = cssText;
       root.appendChild(style);
       styledClosedRoots.add(root);
+      rememberClosedRootFallbackStyle(style);
     } catch (_) {
       // root 自体が破棄済み等で注入できなければ、その root だけ諦める。
     }
@@ -179,6 +180,38 @@
     closedRootDisposed = true;
     stopClosedRootStyleObserver();
     clearPendingClosedRoots();
+  });
+
+  // 置換除外リストに一致したページでは、ISOLATED world（preload-fonts.js）が自身の preset を外した後、
+  // 拡張のベース URL を detail に付けてこのイベントを送る。match pattern へ変換できない規則では
+  // preset が一時的に注入されるため、その間に closed ShadowRoot へ採用した同じ拡張の CSS もここで撤去する。
+  // このフックは default / notosans で共有されるため、他方の CSS が残っていればそれを使い続ける。
+  // ページ側が送っても、そのページ自身の置換が止まるだけで拡張の他の動作には影響しない。
+  const closedRootFallbackStyles = new Set();
+  function rememberClosedRootFallbackStyle(style) {
+    closedRootFallbackStyles.add(typeof WeakRef === 'function' ? new WeakRef(style) : { deref: () => style });
+  }
+  window.addEventListener('__rfs_7d42f8c1_site_excluded__', (event) => {
+    const base = typeof event.detail === 'string' ? event.detail : '';
+    if (!base) return;
+    // 共有シートは全 closed root で同一オブジェクトのため、中身を空にすれば一括で外れる。
+    if (closedRootSharedCSSText && closedRootSharedCSSText.includes(base)) {
+      try { closedRootSharedSheet?.replaceSync(''); } catch (_) {}
+      closedRootSharedSheet = null;
+      closedRootSharedCSSText = null;
+    }
+    for (const ref of closedRootFallbackStyles) {
+      const style = ref.deref();
+      if (!style) { closedRootFallbackStyles.delete(ref); continue; }
+      if (!(style.textContent || '').includes(base)) continue;
+      try { style.remove(); } catch (_) {}
+      closedRootFallbackStyles.delete(ref);
+    }
+    if (!findExtensionStyle()) {
+      closedRootDisposed = true;
+      stopClosedRootStyleObserver();
+      clearPendingClosedRoots();
+    }
   });
 
   try {

@@ -55,5 +55,41 @@
   },
   "kagayoiSupportRate": {
     "message": "Please rate us!"
+  },
+  "tabsLabel": {
+    "message": "Popup sections"
+  },
+  "tabSettings": {
+    "message": "Settings"
+  },
+  "tabExclusions": {
+    "message": "Exclusions"
+  },
+  "exclusionsTitle": {
+    "message": "Font replacement exclusions"
+  },
+  "exclusionsDesc": {
+    "message": "Enter one rule per line. Fonts are not replaced on matching URLs or hosts."
+  },
+  "exclusionsHelp": {
+    "message": "* matches any text. URL rules apply to that path and below; host rules apply to the whole host. Reload the page to apply the changes."
+  },
+  "exclusionsAddCurrentSite": {
+    "message": "Add current site"
+  },
+  "exclusionsCurrentSiteAdded": {
+    "message": "Current site added"
+  },
+  "exclusionsCurrentSiteUnavailable": {
+    "message": "This page cannot be added"
+  },
+  "exclusionsSaving": {
+    "message": "Saving…"
+  },
+  "exclusionsSaved": {
+    "message": "Saved"
+  },
+  "exclusionsPlaceholder": {
+    "message": "192.168.*\nhttps://photos.google.com/\nx.com"
   }
 }

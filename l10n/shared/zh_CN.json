@@ -46,5 +46,41 @@
   },
   "kagayoiSupportRate": {
     "message": "请给我们评分！"
+  },
+  "tabsLabel": {
+    "message": "弹出窗口分区"
+  },
+  "tabSettings": {
+    "message": "设置"
+  },
+  "tabExclusions": {
+    "message": "排除列表"
+  },
+  "exclusionsTitle": {
+    "message": "字体替换排除列表"
+  },
+  "exclusionsDesc": {
+    "message": "每行输入一条规则。匹配的 URL 或主机不会替换字体。"
+  },
+  "exclusionsHelp": {
+    "message": "* 匹配任意文本。URL 规则适用于该路径及其下级；主机规则适用于整个主机。刷新页面后生效。"
+  },
+  "exclusionsAddCurrentSite": {
+    "message": "添加当前网站"
+  },
+  "exclusionsCurrentSiteAdded": {
+    "message": "已添加当前网站"
+  },
+  "exclusionsCurrentSiteUnavailable": {
+    "message": "无法添加此页面"
+  },
+  "exclusionsSaving": {
+    "message": "正在保存…"
+  },
+  "exclusionsSaved": {
+    "message": "已保存"
+  },
+  "exclusionsPlaceholder": {
+    "message": "192.168.*\nhttps://photos.google.com/\nx.com"
   }
 }

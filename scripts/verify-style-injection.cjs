@@ -151,6 +151,107 @@ test('G1: ページ破棄後は遅延した closed Shadow 注入を実行しな�
   } finally { await page.close(); }
 });
 
+// match pattern へ変換できない規則（ホスト glob）は、preset が同期注入された後に実行時判定で外す。
+for (const [rule, coexist] of [['127.0.0.*', false], ['127.0.0.1/', false], ['127.0.0.*', true]]) {
+  test(`G3: 除外リストに一致したページでは preset と closed Shadow の CSS を外し、サイトのフォントを残す (${rule}, 別variant同居=${coexist})`, async () => {
+    const page = await browser.newPage();
+    try {
+      await page.goto(origin);
+      await extensionStyle(page);
+      assert.equal(await siteStyle(page), true);
+      // 同居する別 variant の preset（別の拡張 URL）は除外対象外なので残る
+      if (coexist) await page.evaluate(() => {
+        const other = document.createElement('style');
+        other.dataset.replaceFont = 'preset';
+        other.textContent = ':host { --rfs-other: kept; } /* chrome-extension://other-variant/ */';
+        document.head.append(other);
+      });
+      await page.addScriptTag({ path: path.join(root, 'src/content/inject.js') });
+      await page.evaluate(() => {
+        const host = document.createElement('div');
+        document.body.append(host);
+        window.testRoot = host.attachShadow({ mode: 'closed' });
+      });
+      await page.waitForFunction(() => getComputedStyle(testRoot.host).getPropertyValue('--rfs-test').trim() === 'applied');
+      await page.evaluate(({ base, rule }) => {
+        window.chrome = {
+          runtime: { id: 'local-test', getURL: p => `${base}/${p}` },
+          storage: { local: { get: async () => ({ prebuiltCSSRegistered: true, siteExclusions: ['other.example', rule] }) } }
+        };
+      }, { base: origin, rule });
+      await page.addScriptTag({ path: path.join(root, 'src/content/font-config.js') });
+      await page.addScriptTag({ path: path.join(root, 'src/content/preload-fonts.js') });
+      await page.waitForFunction(() => !Array.from(document.querySelectorAll('style[data-replace-font]')).some(s => s.textContent.includes('NotoSansJP')));
+      const actual = await page.evaluate(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        // 除外確定後に作られた closed root にも注入しない
+        const late = document.createElement('div');
+        document.body.append(late);
+        const lateRoot = late.attachShadow({ mode: 'closed' });
+        await new Promise(resolve => setTimeout(resolve, 50));
+        return {
+          styles: document.querySelectorAll('style[data-replace-font]').length,
+          closed: getComputedStyle(testRoot.host).getPropertyValue('--rfs-test').trim(),
+          lateAdopted: lateRoot.adoptedStyleSheets.length,
+          lateOther: lateRoot.adoptedStyleSheets.some(sheet => Array.from(sheet.cssRules).some(r => r.cssText.includes('--rfs-other'))),
+          applied: document.head._replaceFontApplied === true
+        };
+      });
+      assert.deepEqual(actual, coexist
+        ? { styles: 1, closed: '', lateAdopted: 1, lateOther: true, applied: false }
+        : { styles: 0, closed: '', lateAdopted: 0, lateOther: false, applied: false });
+      const fonts = await renderedFonts(page);
+      console.log(rule, '除外ページの描画フォント:', fonts);
+      assert.ok(fonts.some(name => name.includes('Rounded')), JSON.stringify(fonts));
+      assert.ok(!fonts.includes('Noto Sans JP Thin'), JSON.stringify(fonts));
+    } finally { await page.close(); }
+  });
+}
+
+// document.fonts.size が同じまま @font-face が入れ替わっても、新しい動的 family を見逃さない。
+test('G4: 件数が同じまま入れ替わった動的 family にも置換が割り当てられる', async () => {
+  const page = await browser.newPage();
+  try {
+    await page.goto(origin);
+    await monitor(page);
+    // replace を指定すると、その family の face を同じ同期区間で外して件数を変えずに入れ替える
+    const addFace = (family, replace) => page.evaluate(async ({ family, base, replace }) => {
+      if (replace) {
+        document.getElementById(`face-${replace}`).remove();
+        document.getElementById(`use-${replace}`).remove();
+      }
+      const style = document.createElement('style');
+      style.id = `face-${family}`;
+      style.textContent = `@font-face { font-family: ${family}; src: url("${base}/src/fonts/MPLUSRounded1c-Regular.woff2"); }`;
+      document.head.append(style);
+      const span = document.createElement('span');
+      span.id = `use-${family}`;
+      span.style.fontFamily = family;
+      span.textContent = '日本語ABC';
+      document.body.append(span);
+      // 入替直後（拡張が置換を足す前）の件数
+      const sizeAtSwap = document.fonts.size;
+      await document.fonts.load(`16px ${family}`, '日本語ABC');
+      return sizeAtSwap;
+    }, { family, base: origin, replace });
+    const dynamicCss = () => page.evaluate(() => Array.from(document.querySelectorAll('style[data-replace-font="dynamic"]')).map(s => s.textContent).join(''));
+    const settle = () => page.evaluate(() => new Promise(resolve => setTimeout(resolve, 700)));
+
+    await addFace('__Old_abc123');
+    await page.waitForFunction(() => document.querySelector('style[data-replace-font="dynamic"]')?.textContent.includes('__Old_abc123'), { timeout: 5000 });
+    await settle();
+    // 動的でない face を読み込み、件数が落ち着いた状態の走査を1回挟んで件数キャッシュを確定させる
+    await addFace('Settled');
+    await settle();
+    const sizeBefore = await page.evaluate(() => document.fonts.size);
+
+    const sizeAfter = await addFace('__New_def456', '__Old_abc123');
+    assert.equal(sizeAfter, sizeBefore, '入替前後で document.fonts.size が等しい前提');
+    await settle();
+    assert.ok((await dynamicCss()).includes('__New_def456'), '入れ替わった新しい動的 family に置換が割り当てられていない');
+  } finally { await page.close(); }
+});
+
 for (const mode of ['initial', 'late-link', 'late-import', 'late-body-link', 'bfcache']) {
   test(`G2: 読めない CSS より拡張フォントが優先される (${mode})`, async () => {
     const page = await browser.newPage();

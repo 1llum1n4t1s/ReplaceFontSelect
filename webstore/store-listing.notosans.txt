@@ -151,7 +151,7 @@ https://replacefont.kagayoi.com/privacy
 ■ 権限の正当性
 
   storage:
-  拡張機能の有効/無効の状態とフォント設定（本文フォント・太さ・等幅フォント）、およびスタイル登録済みかを示す内部フラグを chrome.storage.local に保存するために使用します。端末内にのみ保存し、外部へ送信しません。
+  拡張機能の有効/無効の状態とフォント設定（本文フォント・太さ・等幅フォント）、置換を行わないサイトの除外リスト、およびスタイル登録済みかを示す内部フラグを chrome.storage.local に保存するために使用します。端末内にのみ保存し、外部へ送信しません。
 
   scripting:
   有効時に、同梱のフォント置換スタイル用スクリプトと Shadow DOM 対応用スクリプトを chrome.scripting.registerContentScripts で document_start に登録するために使用します。有効/無効の切り替えに応じて登録・解除する必要があるため、静的な content_scripts だけでは対応できません。外部コードの取得は行いません。
