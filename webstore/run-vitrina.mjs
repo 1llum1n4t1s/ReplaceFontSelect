@@ -12,7 +12,7 @@
 //   `bun --bun run build:<variant>` 済みであること（初回 checkout 直後は先にそれを実行する）。
 // - all は notosans → default の順に処理し、終了時に default の manifest が残るようにする
 //   （通常の開発・検証は default の manifest を前提にするため）。
-// - 既定の work-dir: キットの既定値（Windows は D:\tmp\vitrina-<リポジトリ名>、それ以外は OS の一時フォルダー配下）に
+// - 既定の work-dir: キットの既定値（OS の一時フォルダー %TEMP% = os.tmpdir() 配下の vitrina-<リポジトリ名>）に
 //   -<variant> を付ける（variant ごとに ui-defects.json を分けるため）。
 import path from "node:path";
 import { fileURLToPath } from "node:url";
