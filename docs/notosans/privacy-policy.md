@@ -6,7 +6,7 @@
 
 「NotoSansへ置換するやつ(改修型)」は、ユーザーのプライバシーを最大限に尊重するChrome拡張機能です。
 
-このポリシーは、姉妹版の「目に優しいフォント置換」と共通の公開ページ（`https://replacefont.kagayoi.com/privacy`）に掲載されており、2 つの拡張機能の両方に適用されます。「NotoSansへ置換するやつ(改修型)」は、本文を Noto Sans JP、等幅を UDEV Gothic JPDOC に固定した版で、データの扱いは「目に優しいフォント置換」と同じです。
+このポリシーは、姉妹版の「目に優しいフォント置換」と共通の公開ページ（`https://privacy.kagayoi.com/replacefont`）に掲載されており、2 つの拡張機能の両方に適用されます。「NotoSansへ置換するやつ(改修型)」は、本文を Noto Sans JP、等幅を UDEV Gothic JPDOC に固定した版で、データの扱いは「目に優しいフォント置換」と同じです。
 
 ## データの収集
 

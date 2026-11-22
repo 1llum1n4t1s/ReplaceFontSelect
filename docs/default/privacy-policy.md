@@ -8,7 +8,7 @@
 
 ### 対象製品
 
-このポリシーは、次の 2 つの拡張機能に共通で適用されます（同じ公開ページ `https://replacefont.kagayoi.com/privacy` を共用しています）。以下、単に「本拡張機能」と書くときは両方を指します。
+このポリシーは、次の 2 つの拡張機能に共通で適用されます（同じ公開ページ `https://privacy.kagayoi.com/replacefont` を共用しています）。以下、単に「本拡張機能」と書くときは両方を指します。
 
 - **目に優しいフォント置換** — 本文用 7 種類・等幅用 3 種類のフォントから選べる版
 - **NotoSansへ置換するやつ(改修型)** — 本文を Noto Sans JP、等幅を UDEV Gothic JPDOC に固定した版（フォント選択の画面はありません）
@@ -76,7 +76,7 @@ Firefox では、個人識別情報（メールアドレス・お名前）と認
 
 ### Covered products
 
-This policy applies to both of the following extensions, which share the same public page (`https://replacefont.kagayoi.com/privacy`). "This extension" below means either of them.
+This policy applies to both of the following extensions, which share the same public page (`https://privacy.kagayoi.com/replacefont`). "This extension" below means either of them.
 
 - **目に優しいフォント置換** (Eye-Friendly Font Replacer) — lets you choose from 7 body fonts and 3 monospace fonts
 - **NotoSansへ置換するやつ(改修型)** (Replace with Noto Sans, improved version) — fixed to Noto Sans JP for body text and UDEV Gothic JPDOC for monospace, with no font-selection screen

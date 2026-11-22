@@ -109,7 +109,7 @@ LINE Seed JP は Medium を選んだ場合も Regular で表示されます。
 ウェブページ上の日本語フォントをユーザーが選択したフォントに置き換えます。
 
 プライバシーポリシー URL
-https://replacefont.kagayoi.com/privacy
+https://privacy.kagayoi.com/replacefont
 
 データ使用の開示（お問い合わせフォームを同梱しているため必要）
 ・個人を特定できる情報   … 問い合わせフォームのメールアドレス・お名前
