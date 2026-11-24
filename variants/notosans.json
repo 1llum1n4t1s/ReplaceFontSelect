@@ -55,7 +55,7 @@
       "popupDescription": "Substitui automaticamente fontes difíceis de ler por Noto Sans JP / UDEV Gothic JPDOC."
     }
   },
-  "version": "3.1.7",
+  "version": "3.1.8",
   "geckoId": "{ee49eeb2-93a9-4062-ba75-06610054323e}",
   "lockedFonts": {
     "bodyFont": "noto-sans-jp",
