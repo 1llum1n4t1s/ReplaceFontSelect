@@ -58,6 +58,7 @@ Kagayoi Support の問い合わせUIは、exact pin した `@kagayoi/support-ext
 
 - **フォント注入の回帰検証**: `bun test ./scripts/verify-style-injection.cjs` — Puppeteer の実ブラウザで Shadow 初期化、遅延した外部 CSS / @import、DOM 更新時の再移動、ページの破棄・復帰、除外リスト一致時の撤去を検証する。拡張 API は fixture で、Firefox 実機の代替にはしない。
 - **置換除外リストの判定**: `bun --bun run test:exclusions` — 規則の正規化・glob/前方一致・match pattern への変換を検証する（CI の verify でも実行）。
+- **起動後の補填注入**: `bun --bun run test:startup` — 対象判定・除外・応答しないタブの独立性を検証する（CI の verify でも実行）。
 - **配布 stage の選定規則**: `bun --bun run test:package` — `stagePackage` の除外・拒否・固定版の除外を一時 fixture で検証する（CI の verify でも実行）。
 - **Chrome**: `chrome://extensions` → Developer mode ON → "Load unpacked" でリポジトリルートを選択
 - **Firefox**: `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on..." で `manifest.json` を選択 (desktop 140+ / Android 142+)

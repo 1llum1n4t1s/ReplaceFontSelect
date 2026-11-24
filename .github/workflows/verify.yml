@@ -44,6 +44,8 @@ jobs:
         run: bun run test:dependencies
       - name: Site exclusion rules
         run: bun --bun run test:exclusions
+      - name: Startup injection
+        run: bun --bun run test:startup
       - name: Sync support assets
         run: bun --bun run sync:support
       - name: Check support assets

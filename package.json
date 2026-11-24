@@ -23,7 +23,8 @@
     "release": "bun scripts/release.js",
     "test:dependencies": "bun test ./scripts/dependency-security.test.cjs",
     "test:exclusions": "bun test ./scripts/site-exclusions.test.cjs",
-    "test:package": "bun test ./scripts/package-source.test.cjs"
+    "test:package": "bun test ./scripts/package-source.test.cjs",
+    "test:startup": "bun test ./scripts/startup-injection.test.cjs"
   },
   "devDependencies": {
     "@kagayoi/support-extension": "1.0.12",

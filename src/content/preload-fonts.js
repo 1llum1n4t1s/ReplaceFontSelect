@@ -40,6 +40,11 @@
 
   const BASE_URL = getExtensionBaseURL();
   if (!BASE_URL) return;
+  // isolated world で一度だけ初期化する。宣言的 content script と background の起動後補填が同じ文書で
+  // 両方走っても二重初期化しない。BASE_URL が取れない場合は何も始めていないので、このガードより前に
+  // 返し、補填側が後から再試行できるようにする。補填プローブもこのフラグで初期化済みか判定する。
+  if (globalThis.__replaceFontPreloadStarted === true) return;
+  globalThis.__replaceFontPreloadStarted = true;
   const FONT_BASE_URL = `${BASE_URL}src/fonts/`;
   const CSS_BASE_URL = `${BASE_URL}src/css/`;
   const TEMPLATE_CSS_URL = `${CSS_BASE_URL}replacefont-extension.css`;

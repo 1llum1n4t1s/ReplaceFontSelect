@@ -232,11 +232,152 @@ function ensureRegistration(preserveOnFailure = false) {
   return next;
 }
 
+// ---- ブラウザ起動後の補填 ----
+// 起動時のタブ復元で、宣言的 content script が入らないページが出ることがある（再読み込みで直る）。
+// onStartup のときだけ、未初期化の http/https フレームへ manifest と同じ順で注入し直す。
+const STARTUP_SUPPLEMENT_DELAYS_MS = [0, 2000, 8000];
+
+// '*' だけをワイルドカードとして扱う glob 判定（正規表現は使わない）。
+function matchesGlob(pattern, text) {
+  const parts = pattern.split('*');
+  if (parts.length === 1) return pattern === text;
+  const first = parts[0];
+  const last = parts[parts.length - 1];
+  if (!text.startsWith(first)) return false;
+  let pos = first.length;
+  for (let i = 1; i < parts.length - 1; i++) {
+    const found = text.indexOf(parts[i], pos);
+    if (found < 0) return false;
+    pos = found + parts[i].length;
+  }
+  return text.length - last.length >= pos && text.endsWith(last);
+}
+
+function matchesPatternHost(patternHost, hostname) {
+  const host = patternHost.toLowerCase();
+  if (host === '*') return true;
+  if (host.startsWith('*.')) {
+    const base = host.slice(2);
+    return hostname === base || hostname.endsWith('.' + base);
+  }
+  return hostname === host;
+}
+
+// match pattern（<all_urls>・スキーム `*`・`*.` ホスト・パスのワイルドカード）に URL が一致するか。
+function matchesMatchPattern(pattern, url) {
+  if (pattern === '<all_urls>') return true;
+  let parsed;
+  try { parsed = new URL(url); } catch { return false; }
+  const schemeEnd = pattern.indexOf('://');
+  if (schemeEnd < 0) return false;
+  const rest = pattern.slice(schemeEnd + 3);
+  const slash = rest.indexOf('/');
+  if (slash < 0) return false;
+  const scheme = pattern.slice(0, schemeEnd);
+  const protocol = parsed.protocol.slice(0, -1);
+  const schemeOk = scheme === '*' ? (protocol === 'http' || protocol === 'https') : scheme === protocol;
+  return schemeOk &&
+    matchesPatternHost(rest.slice(0, slash), parsed.hostname) &&
+    matchesGlob(rest.slice(slash), parsed.pathname + parsed.search);
+}
+
+function isSupplementTarget(url, excludes) {
+  if (typeof url !== 'string' || !(url.startsWith('https://') || url.startsWith('http://'))) return false;
+  return !excludes.some((pattern) => matchesMatchPattern(pattern, url));
+}
+
+// 各フレームの isolated world で実行する。preload-fonts.js が一度でも始まっていればフラグが立っている。
+function probeContentScriptState() {
+  return { href: location.href, ready: globalThis.__replaceFontPreloadStarted === true };
+}
+
+// 応答しない executeScript で次の回が止まらないよう、タブごとに待ちの上限を置く。
+const STARTUP_TAB_TIMEOUT_MS = 1500;
+const _startupSupplementTabs = new Set();
+
+// 1タブ分。待ちの上限を過ぎてから解決したプローブからも注入する（起動直後はページが重く、往復が遅れうる）。
+// 次の回と重なっても、documentId の固定と preload-fonts.js の初期化ガードで二重に動かない。
+async function runTabSupplement(tabId, files, excludes) {
+  const probes = await chrome.scripting.executeScript({
+    target: { tabId, allFrames: true },
+    injectImmediately: true,
+    func: probeContentScriptState
+  });
+  // documentId の無いフレームは、プローブ後に別文書へ遷移していても判別できないため注入しない。
+  const targets = (probes || []).filter((r) =>
+    r && r.documentId && r.result && r.result.ready === false && isSupplementTarget(r.result.href, excludes));
+  // 一部のフレームの消失で全体が失敗しないよう、フレームごとに個別に注入する。
+  const results = await Promise.allSettled(targets.map((r) => chrome.scripting.executeScript({
+    target: { tabId, documentIds: [r.documentId] },
+    files,
+    injectImmediately: true
+  })));
+  const failed = results.filter((r) => r.status === 'rejected');
+  if (failed.length > 0) {
+    const reason = failed[0].reason;
+    console.error(`[フォント置換] 起動後の補填に一部失敗 (tab ${tabId}, ${failed.length}/${targets.length} フレーム):`, reason && reason.message);
+  }
+}
+
+async function supplementTab(tabId, files, excludes) {
+  if (_startupSupplementTabs.has(tabId)) return;
+  _startupSupplementTabs.add(tabId);
+  let timer;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(resolve, STARTUP_TAB_TIMEOUT_MS);
+  });
+  try {
+    await Promise.race([runTabSupplement(tabId, files, excludes), timeout]);
+  } catch (e) {
+    console.error(`[フォント置換] 起動後の補填に失敗 (tab ${tabId}):`, e && e.message);
+  } finally {
+    clearTimeout(timer);
+    _startupSupplementTabs.delete(tabId);
+  }
+}
+
+// タブの URL（読み込み中は pendingUrl）が http/https のものだけを対象にする。url が取れないタブは対象外。
+function isSupplementTab(tab) {
+  if (!tab || typeof tab.id !== 'number' || tab.discarded) return false;
+  const url = tab.url || tab.pendingUrl;
+  return typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'));
+}
+
+async function supplementStartupTabs() {
+  try {
+    const inputs = await readRegistrationInputs();
+    if (!inputs || !inputs.settings.enabled) return;
+    const manifestScript = (chrome.runtime.getManifest().content_scripts || [])[0];
+    if (!manifestScript || !Array.isArray(manifestScript.js)) return;
+    const variantExcludes = (typeof VARIANT !== 'undefined' && Array.isArray(VARIANT.excludeMatches))
+      ? VARIANT.excludeMatches
+      : [];
+    const excludes = [...new Set([...variantExcludes, ...(manifestScript.exclude_matches || []), ...inputs.siteMatches])];
+    const tabs = await chrome.tabs.query({});
+    await Promise.all(tabs
+      .filter(isSupplementTab)
+      .map((tab) => supplementTab(tab.id, manifestScript.js, excludes)));
+  } catch (e) {
+    console.error('[フォント置換] 起動後の補填に失敗:', e && e.message);
+  }
+}
+
+// タブの復元が遅れる場合に備え、数回に分けて実行する（Service Worker が生きている範囲）。
+function scheduleStartupSupplement() {
+  for (const delay of STARTUP_SUPPLEMENT_DELAYS_MS) {
+    setTimeout(() => { supplementStartupTabs(); }, delay);
+  }
+}
+
 // インストール時・アップデート時・リロード時に登録
 chrome.runtime.onInstalled.addListener(() => ensureRegistration());
 
-// ブラウザ起動時の防御策（persistAcrossSessions が失われた場合のリカバリ）
-chrome.runtime.onStartup.addListener(() => ensureRegistration());
+// ブラウザ起動時の防御策（persistAcrossSessions が失われた場合のリカバリ）。
+// 登録の成否にかかわらず、すでに開いているタブへの補填も行う。
+chrome.runtime.onStartup.addListener(() => {
+  ensureRegistration().catch((e) => console.error('[フォント置換] 起動時の登録に失敗:', e && e.message));
+  scheduleStartupSupplement();
+});
 
 // 設定変更の監視 (連続更新をデバウンスして registerContentScripts の無駄打ちを避ける)
 (() => {
