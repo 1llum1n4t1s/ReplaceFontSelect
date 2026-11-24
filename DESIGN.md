@@ -9,74 +9,16 @@
 - `default`: 本文7種、等幅3種、本文weight 400/500をポップアップで選択する通常版
 - `notosans`: Noto Sans JP、UDEV Gothic JPDOC、weight 400へ固定した版
 
-`../vps-web/lp/replacefont/` はVPSから配信する製品ページとプライバシーポリシーであり、拡張機能のランタイムには含まれない。`docs/`、`webstore/`、`changelog/` はストア掲載・公開文書である。`webstore/` の掲載画像は共通キット `webstore/vitrina/` が variant ごとの `store-assets.<variant>.json` から生成する（手順は [AGENTS.md](AGENTS.md#ストア掲載画像vitrina)）。
+`../vps-web/lp/replacefont/` はVPSから配信する製品ページとプライバシーポリシーであり、拡張機能のランタイムには含まれない。`docs/`、`webstore/`、`changelog/` はストア掲載・公開文書である。`webstore/` の掲載画像は共通キット `webstore/vitrina/` が variant ごとの `store-assets.<variant>.json` から生成する（手順は [ストア掲載画像](docs/agents/section-03.md)）。
 
-## 主要コンポーネントと責務
+## 構造とデータフロー
 
-| コンポーネント | 責務 |
-|---|---|
-| `variants/*.json` | 名前、version、Gecko ID、固定フォント、UI表示、除外サイト、成果物名を定義するバリアント正本 |
-| `manifest.template.json` / `scripts/build-variant.js` | バリアント設定から対象ブラウザ用の `manifest.json` と `src/content/variant.js` を生成 |
-| `src/content/font-config.js` | `FONT_REGISTRY`、既定値、保存値の検証、`lockedFonts`を含む設定マージを一元管理 |
-| `scripts/generate-css.js` | fallback・YouTube用CSSテンプレートと42通りのpreset JSを生成 |
-| `src/background/background.js` | 保存設定を読み、preset JSとShadow DOMフックの動的content script登録を同期 |
-| `src/content/preload-fonts.js` | preset CSSの再利用またはfallback CSSの解決・注入、競合font-face除去、動的フォント検出、open Shadow DOM適用、フォントpreloadを担当 |
-| `src/content/inject.js` | MAIN worldで`attachShadow`を捕捉し、open rootを通知しつつclosed rootへ直接CSSを適用 |
-| `src/popup/` | 有効状態・フォント・weightの設定UI。`chrome.storage.local`へ保存 |
-| `@kagayoi/support-extension` / `src/shared/kagayoi-support-*` | 共有パッケージを正本として問い合わせUIのJS/CSS 5資産を同梱し、Kagayoi Supportへの送信境界を形成。Firefoxでは個人識別・認証情報をrequiredとして申告し、通信内容のoptional permissionを送信前に取得 |
-| `.github/workflows/publish.yml` | 版タグ`vX.Y.Z`のpushを起点に2バリアントを生成し、Chrome Web StoreとFirefox AMOへ提出 |
+バリアント設定からmanifestと`VARIANT`を、`FONT_REGISTRY`からpresetを生成する。Service Workerが選択presetを動的登録し、content scriptがページへ適用する。
 
-## ビルド時データフロー
-
-1. exact pinした`@kagayoi/support-extension`から、問い合わせUIのJS/CSS 5資産を`src/shared/`へ逐語同期する。
-2. `variants/<name>.json` と `manifest.template.json` から、対象バリアントのmanifestと`VARIANT`を生成する。あわせて`l10n/shared/<code>.json`（9言語共通のUI文言）に`variants/<name>.json`の`locales`（拡張名・説明・popup文言）を合成し、`_locales/<code>/messages.json`を生成する。
-3. `FONT_REGISTRY`から、ランタイム置換用CSSと本文・等幅・weightの全42presetを生成する。
-4. variant別SVGからPNGアイコンを生成する。
-5. Chrome成果物には`background.service_worker`を使用する。Firefox成果物はAMO validatorとの互換性のため`background.scripts`を追加する。
-6. `scripts/package-source.js`がCI・Windows・Linuxの同梱資産を選定する。`--stage <chrome|firefox> <新規dir>`はmanifest.json・_locales・icons/<variant>・srcを、OS残骸・preview.html（firefoxはTTFも）を除いて新規ディレクトリへ集約し、publish.yml・verify.yml・zip.ps1・zip.shが共用する（manifestは呼び出し側が事前に生成し、削除・再生成はしない）。完全かつ有効な`lockedFonts`を持つ固定版は、一致するpresetとレジストリで解決した置換用WOFF2、およびpopup・共有UIなどのCSSが実参照するWOFF2を残す。通常版や不完全・不正な固定設定は全preset・WOFF2を保持する。ソース資産、Path B用CSS、ライセンスは削除しない。
-7. CIは共有資産の正本との一致とChrome ZIP内の必須CSSを検査し、問い合わせUIが不完全な成果物の公開を拒否する。
-
-`manifest.json`、`src/content/variant.js`、`src/css/replacefont-extension.css`、`src/css/youtube-override.css`、`src/css/preset-*.js`、生成PNGはビルド成果物であり、直接編集しない。
-
-## ランタイムデータフロー
-
-1. `document_start`で`youtube-target.js`、`variant.js`、`font-config.js`、`preload-fonts.js`をISOLATED worldへ宣言的に読み込む。動的presetにも同じ対象判定を先行させる。
-2. Service Workerは`fontSettings`を検証・マージし、有効時だけ選択presetをISOLATED world、`inject.js`をMAIN worldへ全frame対象で動的登録する。
-3. **Path A**はpreset JSが選択設定を解決済みのCSS全体（`@font-face`、置換規則、CSS変数override）を同期注入する。`__REPLACE_FONT_BASE__`だけは実行時に`chrome.runtime.getURL('')`で解決し、headがなければdocumentElementへ置く。
-4. **Path B**は`preload-fonts.js`がpresetの登録成功フラグとDOM上の存在を確認し、presetがあればCSSを再利用し、なければfallback CSSをfetchして実URL・選択フォントへ解決して注入する。どちらの場合も競合する`@font-face`の監視・除去を行い、直接font-familyを指定するサイトのfallback chainを置換フォントへ導く。
-5. open Shadow DOMはISOLATED world側の監視と共有`CSSStyleSheet`で処理する。closed Shadow DOMはMAIN world側が`attachShadow`の返り値を保持して直接処理する。Constructable Stylesheetを採用できないrootでは`<style>`へフォールバックする。
-6. popupの変更は`chrome.storage.local.fontSettings`へ保存され、Service Workerが150msでデバウンスして動的登録を原子的に更新する。
-7. 無効化時は動的登録と登録成功フラグを解除する。既に開いているページからMAIN worldフックを取り除くにはページ再読み込みが必要になる。
-8. 利用者の置換除外リスト（`chrome.storage.local.siteExclusions`）に一致したframeでは置換しない。`preload-fonts.js`は設定と同じ1回の`storage.local.get`で除外リストを読み、一致したら無効時と同じく監視を畳み、Path Aが同期注入したpreset styleを外し、MAIN worldの`inject.js`へイベントで撤去を伝える。判定はYouTube分岐と競合font-faceの除去より前に行うため、サイトのフォントは元のまま残る。
-
-ChromeのYouTubeドメインでは例外としてpresetを注入せず、Path BだけがCSSを所有する。Service Workerは保存設定を再確認し、レジストリにある選択フォント、通常テンプレート、YouTube用の追加CSSを取得して同一frameへ渡す。追加CSSは確認済みの説明文とチャンネル名だけを対象とし、編集・等幅・アイコンの対象自身と祖先を除外する。frame内でWOFF2をBlob URL化し、全CSS・preload・force loadで共有する。初期設定取得から期限を設け、設定の変更を監視し、注入直前にも再確認する。Blobの準備やCSSが受理される前に失敗したときは競合font-faceを除去せず元の表示を維持する。CSS適用後の初期化例外は部分適用としてコンソールへ記録し、使用中のBlob URLは非永続のpagehideまで保持する。通常のページ破棄ではURLを解放し、BFCacheでは維持する。この経路は非同期のため初期表示のちらつきゼロは保証しない。Firefoxと対象外サイトは従来の同期presetを使う。
-
-## 保存設定とpopup
-
-`chrome.storage.local.fontSettings`は次の形式で保存する。
-
-```json
-{
-  "enabled": true,
-  "bodyFont": "ibm-plex-sans-jp",
-  "monoFont": "udev-gothic-jpdoc",
-  "bodyFontWeight": "400"
-}
-```
-
-`mergeFontSettings()`は不正な値を既定値へ戻し、最後に`VARIANT.lockedFonts`を適用する。固定版ではフォント選択UIも非表示になる。`prebuiltCSSRegistered`は動的preset登録の成否を示すbooleanであり、そのページへの注入成功を保証しないためDOMも確認する。popupは設定を自動保存し、開いているページへの反映には再読み込みが必要となる。
-
-popupは「設定」（ステータスとフォント設定）と「除外リスト」の2タブで構成し、WAI-ARIAのタブパターン（左右・Home/Endキー）に従う。固定版でも除外リストは利用できる。
-
-`chrome.storage.local.siteExclusions`は置換除外規則の文字列配列で、`fontSettings`とは別キーに保存する（フォント設定の保存・YouTube経路の設定変更監視へ影響させないため）。規則と判定はReplaceTranslatorの自動翻訳ブラックリストと同じで、`font-config.js`の`SiteExclusions`を正本にする。
-
-- 1行1規則。前後の空白を除き、重複・1000文字超を捨て、最大500件。
-- `*`は任意の文字列。`://`を含むURL規則は同一オリジンの指定パス以下（`*`を含む場合はURL全体へのglob）、ホスト規則はホスト名全体（大文字小文字を区別しない）、`host/path`はそのホストの指定パス以下に一致する。
-- 判定は各frame自身のURLで行う（content scriptはabout:blank等のframeでは動かない）。タブ全体のURLで判定するReplaceTranslatorとは異なり、除外サイトに埋め込まれた別オリジンのiframeは、そのiframeのURLで判定する。
-- default / notosansが同居する場合、除外時に外すpresetとclosed Shadow rootのCSSは、自身の拡張URLを含むものに限る。共有されるMAIN worldフックは、他方のCSSが残っていればそれを使い続ける。
-- popupは入力を450msのdebounceとblurで自動保存し、前回保存値との差分を最新の保存値へ適用する。「現在のサイトを追加」はアクティブタブのhttp(s)ホスト名を追加する。開いているページへの反映には再読み込みが必要になる。
-
-popupは`body[data-variant]`と`prefers-color-scheme`でテーマを切り替える。defaultはEditorial Day / Editorial Night、notosansはLab Day / Cyber Nightを使用する。フォントは同梱WOFF2から読み込み、外部CDNへ依存しない。`prefers-reduced-motion`でアニメーションを停止し、`:focus-visible`でキーボード操作を示す。
+- [構造とランタイムの設計判断](docs/design/architecture.md): コンポーネントの責務、注入経路、動的登録と起動時の補填注入、Shadow DOM、サイト除外、製品ページの配信先。
+- [ビルド時データフロー](docs/design/workflow.md): 生成と同梱資産の選定。
+- [保存設定とpopup](docs/design/data-model.md): 保存形式、除外規則、popupの構成とテーマ。
+- [問い合わせUIの送信境界](docs/design/security.md): 共有資産の同期とFirefoxのデータ送信許可。
 
 ## 責務の境界
 
@@ -97,50 +39,8 @@ popupは`body[data-variant]`と`prefers-color-scheme`でテーマを切り替え
 - 問い合わせUIの同梱5資産は共有パッケージと逐語一致させ、拡張側で派生実装を作らない。
 - versionは全バリアントと`package.json`で同期し、版タグ名とも一致させる。
 
-## 採用済み設計判断とトレードオフ
+## 主な設計判断とトレードオフ
 
-### 二経路のフォント注入
-
-同期presetは初期表示のちらつきを抑えられる一方、サイト側の競合font-faceへの対処や、動的登録が間に合わない場合の代替経路も必要になる。fallback CSSと競合font-face監視を併用し、初期表示と対応範囲を両立する代わりに、生成物とランタイム監視の複雑さを受け入れている。
-
-動的に生成されたハッシュ付きfamilyにも本文・等幅の選択WOFF2を割り当てる。top frameでは本文Regular用WOFF2だけをpreloadし、Boldと等幅は遅延ロードに委ねる。
-
-競合font-faceの走査は、グループ規則の内側と読み取り可能な`@import`先も対象とする。`document.adoptedStyleSheets`は初回・BFCache復帰・style/link追加時に確認する。DOM変化を伴わないCSSOMだけの変更は常時監視しない。
-
-読み取り不能なシートは規則を削除できないため、初回走査だけでなくstyle/linkの追加・load完了・BFCache復帰時にも、preset / fallbackのstyleをサイトの最後のstyle/linkより後ろへ移して後勝ちを利用する。サイトCSSがhead内ならhead末尾、body内ならサイトの部品へ混入しないようdocumentElement直下へ置く。移動要求はmicrotaskで集約し、拡張自身のstyle移動を監視対象から除外することで再帰的な移動を防ぐ。通常の本文DOM更新だけでは再移動しない。
-
-### 動的content script登録
-
-設定に一致するpresetだけを`document_start`へ登録でき、無効時はMAIN worldフックも停止できる。更新は`updateContentScripts`を優先し、初回だけ`registerContentScripts`へフォールバックすることで、unregister/register間のraceを避ける。MV3 Service Workerのevictionで短いdebounceが失われる可能性は、`persistAcrossSessions`と`onStartup`で回復する。
-
-起動時に宣言的content scriptが入らなかったタブは、`onStartup`から0/2/8秒の3回だけ調べ、`preload-fonts.js`が始まっていないhttp/httpsフレームへmanifestと同じ4ファイルを補填注入する。除外URLは注入前に判定し、documentIdを特定できないフレームには入れない。宣言的注入との競合は`preload-fonts.js`先頭の一度きりのガードで吸収する。補填したタブはfallback経路で動き、MAIN worldフックは入らないためclosed Shadow DOMは対象外になる。
-
-### world別Shadow DOM処理
-
-open rootはISOLATED worldで安全に扱えるが、closed rootは`host.shadowRoot`から再取得できない。そのためMAIN worldで返り値を捕捉する責務を分け、共有sheetと`<style>` fallbackで互換性とメモリ効率を両立する。
-
-open rootのhost属性通知はmicrotaskへ遅延し、カスタム要素のコンストラクタと両立させる。ISOLATED worldは属性変更のtargetからhostを取得し、処理後に属性を削除する。未接続hostや既存rootは、接続時の走査と初回TreeWalkerで補完する。
-
-closed rootへの注入はmicrotaskへ遅延し、`attachShadow`呼び出し元による同期的な`adoptedStyleSheets` / `innerHTML`初期化で拡張CSSが消えることを防ぐ。preset / fallback CSSが未到着ならrootを弱参照で保留し、`document`・`documentElement`・`head`の直下と、必要な空styleの変化だけを監視する。弱参照を使えない環境では従来の保持方式へ戻す。一方のvariantが失敗しても、共有されるMAIN worldのフックは他方の遅延CSSを待てる。open rootの通知属性は他のvariantも受け取れるようmicrotaskで片付ける。BFCacheへ保存しない`pagehide`では保留rootと監視を解放し、予約済みmicrotaskからも注入しない。CSSが現れない場合は、管理用の弱参照と限定された監視がページ破棄まで残り得る。
-
-### バリアント方式
-
-公開IDと利用者層を維持しつつ実装を共有できる。代わりに、version、workflow matrix、store ID、variant必須キーを同期する運用制約がある。
-
-### サイト単位の除外
-
-リッチエディタやデザインツールまで強制置換すると、編集体験やアイコンフォントを壊す場合がある。全サイト対応より既存UIの保全を優先し、既知の対象はバリアント設定で除外する。
-
-利用者の除外リストはglobとパス前方一致を含み、match patternでは同じ意味を表せない規則がある。動的登録はコードを埋め込めず、content scriptはstorageを同期で読めないため、除外の正本は`preload-fonts.js`の実行時判定とする。そのうえで、意味が完全に一致する素のホスト名（`*`・パス・ポートを含まない）だけを`*://host/*`へ変換し、presetとMAIN worldフックの`excludeMatches`へ前倒しで加える。`*.x.com`はmatch patternだと`x.com`自身も含むため変換しない。無効なmatch patternが1件でも混じると登録全体が失敗するため、変換対象は厳格に検証する。変換できない規則のページでは、presetが設定読込までの短時間だけ注入される。その間にclosed Shadow rootへ採用した共有sheetは中身を空にし、`<style>` fallbackは除去する。
-
-### 問い合わせUIの共有資産同期
-
-複数拡張で問い合わせUIの挙動・プライバシー境界を揃えるため、共有パッケージを唯一の実装正本とする。一方、MV3拡張は実行時にnpm packageを参照できずremote codeも読み込めないため、JS/CSS 5資産をビルド前に`src/shared/`へ同期して配布物へ同梱する。ビルド時の自動同期に加えてCIで逐語一致とCSSのアーカイブ収録を検査し、正本との乖離や同梱漏れを公開前に止める。
-
-Firefoxの申告は`manifest.template.json`で`personallyIdentifyingInfo`・`authenticationInfo`をrequired、`personalCommunications`をoptionalとする。popupの`firefox-data-consent`属性を受けた共有部品は、送信・確認コード再送のユーザー操作内で通信内容の任意許可を要求し、拒否または取得失敗なら認証APIも問い合わせAPIも呼ばない。必須の申告があっても自動送信は行わず、問い合わせの許可状態はフォント置換の有効状態から独立させる。
-
-## 製品ページの配信先
-
-製品ページの配信HTMLは `../vps-web/lp/replacefont/`（編集元は `../vps-web/tools/lp/templates/`）、公開実体はVPSの `/srv/www/lp/replacefont/`。
-直接配信の設定は `../vps-web/deploy/caddy-sites/lp-replacefont.caddy` に置く。
-公開URLを維持し、静的ファイルの配信は `../vps-web/deploy/deploy-lp.ps1` へ統一する。
+- **二経路の注入**: 初期表示のちらつき抑制と対応範囲を両立する代わりに、生成物と監視の複雑さを受け入れる。
+- **サイト除外**: 全サイト対応より、編集体験とアイコンフォントの保全を優先する。
+- **バリアント方式**: 公開IDと利用者層を維持しつつ実装を共有できる。代わりに、version、workflow matrix、store ID、variant必須キーを同期する運用制約がある。

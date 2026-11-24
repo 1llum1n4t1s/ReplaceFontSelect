@@ -1,0 +1,15 @@
+# フォント注入の二経路とYouTube例外
+
+## 二経路のフォント注入
+
+同期presetは初期表示のちらつきを抑えられる一方、サイト側の競合font-faceへの対処や、動的登録が間に合わない場合の代替経路も必要になる。fallback CSSと競合font-face監視を併用し、初期表示と対応範囲を両立する代わりに、生成物とランタイム監視の複雑さを受け入れている。
+
+動的に生成されたハッシュ付きfamilyにも本文・等幅の選択WOFF2を割り当てる。top frameでは本文Regular用WOFF2だけをpreloadし、Boldと等幅は遅延ロードに委ねる。
+
+競合font-faceの走査は、グループ規則の内側と読み取り可能な`@import`先も対象とする。`document.adoptedStyleSheets`は初回・BFCache復帰・style/link追加時に確認する。DOM変化を伴わないCSSOMだけの変更は常時監視しない。
+
+読み取り不能なシートは規則を削除できないため、初回走査だけでなくstyle/linkの追加・load完了・BFCache復帰時にも、preset / fallbackのstyleをサイトの最後のstyle/linkより後ろへ移して後勝ちを利用する。サイトCSSがhead内ならhead末尾、body内ならサイトの部品へ混入しないようdocumentElement直下へ置く。移動要求はmicrotaskで集約し、拡張自身のstyle移動を監視対象から除外することで再帰的な移動を防ぐ。通常の本文DOM更新だけでは再移動しない。
+
+## YouTubeの例外経路
+
+ChromeのYouTubeドメインでは例外としてpresetを注入せず、Path BだけがCSSを所有する。Service Workerは保存設定を再確認し、レジストリにある選択フォント、通常テンプレート、YouTube用の追加CSSを取得して同一frameへ渡す。追加CSSは確認済みの説明文とチャンネル名だけを対象とし、編集・等幅・アイコンの対象自身と祖先を除外する。frame内でWOFF2をBlob URL化し、全CSS・preload・force loadで共有する。初期設定取得から期限を設け、設定の変更を監視し、注入直前にも再確認する。Blobの準備やCSSが受理される前に失敗したときは競合font-faceを除去せず元の表示を維持する。CSS適用後の初期化例外は部分適用としてコンソールへ記録し、使用中のBlob URLは非永続のpagehideまで保持する。通常のページ破棄ではURLを解放し、BFCacheでは維持する。この経路は非同期のため初期表示のちらつきゼロは保証しない。Firefoxと対象外サイトは従来の同期presetを使う。

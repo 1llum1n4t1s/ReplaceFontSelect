@@ -1,0 +1,7 @@
+# world別Shadow DOM処理
+
+open rootはISOLATED worldで安全に扱えるが、closed rootは`host.shadowRoot`から再取得できない。そのためMAIN worldで返り値を捕捉する責務を分け、共有sheetと`<style>` fallbackで互換性とメモリ効率を両立する。
+
+open rootのhost属性通知はmicrotaskへ遅延し、カスタム要素のコンストラクタと両立させる。ISOLATED worldは属性変更のtargetからhostを取得し、処理後に属性を削除する。未接続hostや既存rootは、接続時の走査と初回TreeWalkerで補完する。
+
+closed rootへの注入はmicrotaskへ遅延し、`attachShadow`呼び出し元による同期的な`adoptedStyleSheets` / `innerHTML`初期化で拡張CSSが消えることを防ぐ。preset / fallback CSSが未到着ならrootを弱参照で保留し、`document`・`documentElement`・`head`の直下と、必要な空styleの変化だけを監視する。弱参照を使えない環境では従来の保持方式へ戻す。一方のvariantが失敗しても、共有されるMAIN worldのフックは他方の遅延CSSを待てる。open rootの通知属性は他のvariantも受け取れるようmicrotaskで片付ける。BFCacheへ保存しない`pagehide`では保留rootと監視を解放し、予約済みmicrotaskからも注入しない。CSSが現れない場合は、管理用の弱参照と限定された監視がページ破棄まで残り得る。

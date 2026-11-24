@@ -1,0 +1,5 @@
+# 動的content script登録と補填注入
+
+設定に一致するpresetだけを`document_start`へ登録でき、無効時はMAIN worldフックも停止できる。更新は`updateContentScripts`を優先し、初回だけ`registerContentScripts`へフォールバックすることで、unregister/register間のraceを避ける。MV3 Service Workerのevictionで短いdebounceが失われる可能性は、`persistAcrossSessions`と`onStartup`で回復する。
+
+起動時に宣言的content scriptが入らなかったタブは、`onStartup`から0/2/8秒の3回だけ調べ、`preload-fonts.js`が始まっていないhttp/httpsフレームへmanifestと同じ4ファイルを補填注入する。除外URLは注入前に判定し、documentIdを特定できないフレームには入れない。宣言的注入との競合は`preload-fonts.js`先頭の一度きりのガードで吸収する。補填したタブはfallback経路で動き、MAIN worldフックは入らないためclosed Shadow DOMは対象外になる。
