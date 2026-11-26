@@ -33,4 +33,4 @@ Browser settings pages, pages where extensions cannot run, and some editing/desi
 
 ## Fonts and Replacement Logic
 
-General fonts are replaced with the selected body font, and monospace fonts with the selected monospace font. See [Fonts and Replacement Logic](section-01.md) for the font list and weights.
+General fonts are replaced with the selected body font, and monospace fonts with the selected monospace font. See [Fonts and Replacement Logic](fonts-and-replacement.md) for the font list and weights.

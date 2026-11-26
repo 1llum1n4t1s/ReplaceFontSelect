@@ -33,4 +33,4 @@ Kagayoi Support の問い合わせUIは、exact pin した `@kagayoi/support-ext
 
 ## ストア掲載画像
 
-`webstore/vitrina/` の共通キットが実拡張を撮影して生成する。キットは直接編集しない。生成・文言変更の前に [ストア掲載画像（vitrina）](section-03.md) を読む。
+`webstore/vitrina/` の共通キットが実拡張を撮影して生成する。キットは直接編集しない。生成・文言変更の前に [ストア掲載画像（vitrina）](store-listing-images.md) を読む。

@@ -29,4 +29,4 @@
 
 ### ストア別の提出規則
 
-Chrome は `publish.yml` で下書きまで行い `cws-submit.yml` で申請し、Firefox は検証済み XPI を `Publish-Amo.ps1` で提出する。提出・再開・publisher 変更の前に [ストア別の提出規則](section-04.md) を読む。
+Chrome は `publish.yml` で下書きまで行い `cws-submit.yml` で申請し、Firefox は検証済み XPI を `Publish-Amo.ps1` で提出する。提出・再開・publisher 変更の前に [ストア別の提出規則](store-submission.md) を読む。

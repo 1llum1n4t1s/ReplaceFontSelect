@@ -28,10 +28,10 @@
 
 ## 設計判断の詳細
 
-- [フォント注入の二経路とYouTube例外](section-02.md): 同期presetとfallback・競合font-face監視を併用する。ChromeのYouTubeだけはPath Bの非同期Blob経路を使う。
-- [動的content script登録と補填注入](section-03.md): 登録更新のraceを避け、起動時に処理が入らなかったタブを補う。
-- [world別Shadow DOM処理](section-01.md): open rootとclosed rootの責務をworldで分け、注入を遅延する。
-- [サイト単位の除外](section-04.md): 実行時判定を正本とし、完全に一致する規則だけを動的登録へ前倒しする。
+- [フォント注入の二経路とYouTube例外](font-injection-paths.md): 同期presetとfallback・競合font-face監視を併用する。ChromeのYouTubeだけはPath Bの非同期Blob経路を使う。
+- [動的content script登録と補填注入](content-script-registration.md): 登録更新のraceを避け、起動時に処理が入らなかったタブを補う。
+- [world別Shadow DOM処理](shadow-dom-worlds.md): open rootとclosed rootの責務をworldで分け、注入を遅延する。
+- [サイト単位の除外](site-exclusions.md): 実行時判定を正本とし、完全に一致する規則だけを動的登録へ前倒しする。
 
 ## 製品ページの配信先
 

@@ -12,7 +12,7 @@
 - 宣言的・動的content scriptの除外を一致させ、有効時だけMAIN worldフックを登録する。
 - background の登録更新は、起動時・インストール時・storage 変更の debounce 発火のいずれも、直列化ロック内で storage を読み直してから行う。storage 変更経路は読込に失敗したら登録を変えず、起動・インストール経路は既定値にフォールバックする。
 - 利用者の置換除外リスト（`storage.local.siteExclusions`、popupの「除外リスト」タブ）は `font-config.js` の `SiteExclusions` を正本にし、規則はReplaceTranslatorの自動翻訳ブラックリストと同じにする。除外の正本は `preload-fonts.js` の実行時判定（YouTube分岐・競合font-face除去より前）で、素のホスト名だけを動的登録の `excludeMatches` へ前倒しで加える。match pattern への変換を広げる場合は意味が完全に一致する規則に限る（無効な pattern は登録全体を失敗させる）。判定を変えたら `bun --bun run test:exclusions` と[回帰検証](testing.md)を実行する。
-- Shadow DOMの注入順序を変更したら、[world別Shadow DOM処理](../design/section-01.md) と[テスト手順](testing.md)の回帰検証により、同期初期化後のCSS保持とページ破棄後の注入停止を確認する。
+- Shadow DOMの注入順序を変更したら、[world別Shadow DOM処理](../design/shadow-dom-worlds.md) と[テスト手順](testing.md)の回帰検証により、同期初期化後のCSS保持とページ破棄後の注入停止を確認する。
 - popupの変更は両variant × light/darkの4テーマを実画面で確認する。notosansのテーマも利用中なので維持し、reduced motionとキーボードfocusの表示を保つ。
 
 ## フォントの追加
@@ -40,4 +40,4 @@ Service Worker（`background.js`）も `importScripts('/src/content/variant.js',
 
 ## Manifest・CSP・ブラウザ互換
 
-Firefox 用の background 定義、`web_accessible_resources`、全 frame 登録、CSP の制約は、変更前に [Manifest・CSP・ブラウザ互換](section-02.md) を読む。
+Firefox 用の background 定義、`web_accessible_resources`、全 frame 登録、CSP の制約は、変更前に [Manifest・CSP・ブラウザ互換](manifest-csp-compat.md) を読む。

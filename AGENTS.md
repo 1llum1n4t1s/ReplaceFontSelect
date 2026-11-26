@@ -35,5 +35,5 @@ bun test ./scripts/verify-style-injection.cjs  # フォント注入の回帰検�
 - variant・除外ドメインの変更前: [configuration.md](docs/agents/configuration.md)
 - ランタイム・フォント・manifest・CSS の変更前: [architecture.md](docs/agents/architecture.md)
 - リリース・梱包・公開 workflow の作業前: [release-process.md](docs/agents/release-process.md)
-- 依存の更新前: [section-01.md（依存管理）](docs/agents/section-01.md)
+- 依存の更新前: [dependency-management.md（依存管理）](docs/agents/dependency-management.md)
 - システム構造と設計判断: [DESIGN.md](DESIGN.md)
